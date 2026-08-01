@@ -176,6 +176,45 @@ Separately, Lean `v4.33.0-rc1` reports `Lean.reduceBool` as **deprecated**
 ("in-kernel native reduction is deprecated; assert native evaluations with
 axioms instead"), so that hook is on its way out regardless.
 
+## Update 2026-08-01: `comparator.live` now enables `nanoda` by default
+
+De Moura's [#14576
+postmortem](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/)
+records that [`comparator.live`](https://comparator.live.lean-lang.org/) now runs
+`nanoda` by default, and that `nanoda` is tracked daily so the hosted judge does
+not drift behind upstream fixes. The standalone CLI is unchanged — the README's
+example config and the `config.json` files here still carry
+`"enable_nanoda": false`, which is what everything above was measured under.
+
+What this does and does not change, stated carefully, because two things are
+easily conflated:
+
+* **The `builtinTargets` gap closes for the hosted judge.** With `enable_nanoda`
+  true, `Char.ofNat`, `List.cons`, `List.nil` and `String.mk` are compared. That
+  removes the omission described just above.
+* **It does not close the `accepted/` construction**, whose whole point is that
+  comparison is for *agreement*, never genuineness. `accepted/Challenge.lean` and
+  `accepted/Solution.lean` share a byte-identical `Char.ofNat : Empty → Char`, so
+  a wider target list compares it and finds it equal — as noted above, "even a
+  complete primitive list that compared `Char.ofNat` would not have caught this."
+* **The real new obstacle is `nanoda` itself**, as a second kernel that must also
+  accept the solution. Whether it does is **untested here**, and it is the obvious
+  next measurement: `nanoda` would have to reproduce Lean's `string_lit_to_constructor`
+  behaviour of assembling `Char.ofNat` by name without checking it. Do not assume
+  either answer from this file.
+
+The relevant caution is §3.0 of [`../../../CATALOG.md`](../../../CATALOG.md):
+adding a second checker raises the bar by however much the two checkers' blind
+spots differ, which in the one case where it was measured was less than it looked.
+
+Upstream has meanwhile removed one adjacent foothold. Lean
+[#14632](https://github.com/leanprover/lean4/pull/14632) (merged 2026-08-01) makes
+`add_quot` refuse to declare `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` over existing
+names — a path its own description says "only a module replacing the prelude can
+arrange, and which Comparator already reports." That is the same prelude-replacing
+precondition this directory's exhibits rely on; it is now one constant family
+narrower, and none of the exhibits here used it.
+
 ## Reproducing
 
 Comparator needs Lean `v4.33.0-rc1`, `lean4export`, and `landrun`. `landrun` is

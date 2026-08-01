@@ -22,9 +22,18 @@ a structure with 2^32 fields — which is why upstream rates it P-medium.  What 
 does establish is that the kernel's range check on projection indices can be
 bypassed, and that `is_small()` is not a sufficient guard.
 
-Upstream: lean4#12746 (OPEN, P-medium, filed 2026-03-01, found by Opus 4.6).
+Upstream: lean4#12746 (P-medium, filed 2026-03-01, found by Opus 4.6).
 lean4#13602 reported the same defect as an accepted theorem and was closed as a
-duplicate of #12746.  Neither is fixed.
+duplicate of #12746.
+
+FIXED ON `master` 2026-08-01 by lean4#14632, a five-part kernel hardening pass.
+It adds a `to_proj_idx` helper that rejects an index above `UINT_MAX` — the bound
+`is_small()` never had — and routes both `infer_proj` and `reduce_proj` through
+it; the accompanying comment names `.proj S 2^32 c` becoming `.proj S 0 c` as the
+failure mode, i.e. exactly this file.  Issue #12746 was still OPEN and unlabelled
+as of 2026-08-01, and no released toolchain carries the fix, so the matrix below
+stands and this module keeps its value as the regression witness: re-run it on the
+first release after v4.33 and the first column should flip to `no`.
 
 Verified with `elan run leanprover/lean4:<v> lean --trust=0` on this file:
 

@@ -95,8 +95,26 @@ rejects is the design working. That is the standard applied here — every defec
 is pinned to exact versions, given a control, and checked against an independent
 judge where one exists. The
 [Lean Kernel Arena](https://arena.lean-lang.org/) has since made that argument
-operational, running a standard attack corpus against fifteen independent
+operational, running a standard attack corpus against sixteen registered
 checkers.
+
+De Moura's [*Postmortem for Kernel Soundness Bug
+#14576*](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/)
+is the follow-up, and it sharpens that claim rather than repeating it. The AI-assisted
+"disproof" of the Collatz conjecture that triggered the bug passed the official
+kernel **and** a week-old build of `nanoda`, the main external checker — for two
+entirely unrelated reasons, one bug in each. Cross-checking held, in the sense
+that defeating it took two implementations failing at once; but it held only for
+people running current versions of both, and the two failures turn out to be the
+same omission wearing different clothes. Independence of implementations is not
+independence of blind spots. [`CATALOG.md`](CATALOG.md) §3.0 works through it.
+
+The postmortem is also worth reading for what it refuses. The suggested
+mitigation — restrict metaprogramming so the attack is not expressible — is
+rejected outright, because the elaborator is untrusted by design and *"soundness
+cannot depend on an untrusted component refusing to build a bad term."* That is
+the same premise this directory is organised around: what the audit reports is
+the thing that matters, and the kernel is the only component whose verdict counts.
 
 Lawrence Paulson's [*Broken proofs and broken
 provers*](https://lawrencecpaulson.github.io/2026/01/15/Broken_proofs.html)

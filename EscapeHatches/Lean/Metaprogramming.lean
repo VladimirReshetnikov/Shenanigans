@@ -85,3 +85,27 @@ doing its job.
 The Rocq counterpart is `#[bypass_check(...)]` (`../Coq/TypingFlags.v` §4) — but
 Rocq's version is strictly better behaved, because `Print Assumptions` reports
 it. There is no Lean equivalent of that report. -/
+
+/-! ## 4. Why the answer is not "remove metaprogramming"
+
+Every kernel defect in the July 2026 wave (`../../CATALOG.md` §2.2 — #14484,
+#14576, #14607 through #14616) is reachable *only* by handing a declaration to the
+kernel directly, past a frontend that would have caught it. That naturally
+suggests restricting metaprogramming as the mitigation, and de Moura's
+[postmortem for #14576](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/)
+rejects it outright:
+
+> the elaborator is untrusted by design; soundness cannot depend on an untrusted
+> component refusing to build a bad term
+
+with the argument that an attacker willing to write a malicious metaprogram is
+equally willing to write the `.olean` directly or edit memory, both of which skip
+the elaborator entirely. The kernel has to reject ill-typed declarations on its
+own, in its own process.
+
+Note that this file is *not* an instance of that: `debug.skipKernelTC` does not
+smuggle a bad term past the kernel, it turns the kernel off. That is why §3 calls
+it the control. The distinction is the whole point of the categories in
+`../../README.md` — this is a sanctioned hatch, taken deliberately, and an
+independent re-check sees it. A defect is what gets past a kernel that *is*
+running. -/

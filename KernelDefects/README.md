@@ -61,7 +61,10 @@ arithmetic, structure eta, and nested inductives.
 * Lean's kernel is written in C++ with **fixed-width integer fields**, and
   `size_t`→`unsigned` truncation has now produced the same class of defect twice
   four years apart ([#1433](https://github.com/leanprover/lean4/issues/1433) in
-  2022, [#12746](https://github.com/leanprover/lean4/issues/12746) still open).
+  2022, [#12746](https://github.com/leanprover/lean4/issues/12746) in 2026 —
+  fixed on `master` 2026-08-01 by
+  [#14632](https://github.com/leanprover/lean4/pull/14632), though no released
+  toolchain carries the fix yet and the issue itself is still open).
 
 Neither observation makes either system safer overall. The point is that the two
 systems' soundness risks live in structurally different places, so a catalog of

@@ -25,6 +25,14 @@ Last survey: **2026-07-31**, against the Lean and Rocq trackers, the
 Lean's release-note corpus, `lean4lean`'s `bugs-found.md` and `divergences.md`,
 and the blog posts in §6. Local exhibits verified on Lean `4.32.0` and Rocq `9.2`.
 
+Partial re-survey **2026-08-01**, prompted by de Moura's
+[postmortem for #14576](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/)
+(§6). Scope: the Lean kernel PRs of the last week, the arena corpus and its live
+results, `nanoda`'s history, and the `releases/v4.33.0` branch. Rocq (§4) was not
+re-surveyed. Everything the postmortem asserts was checked against the upstream
+artifact rather than taken from the prose; where the two differ, the difference is
+recorded at the point of use.
+
 ---
 
 ## 1. The taxonomy: every mechanism, both systems
@@ -119,8 +127,8 @@ fixed-width integer fields.
 
 | Issue | Defect | Coverage |
 | --- | --- | --- |
-| [#14582](https://github.com/leanprover/lean4/pull/14582) | **The live one.** Follow-up to #14577 by Arthur Adjedj: a datatype being declared can occur applied to arguments that are *not* the parameters of the mutual declaration, hidden in the parametric arguments of a nested inductive, which are dropped from the generated auxiliary declaration and so escape type checking. Adds `check_uniform_params`. **OPEN as of 2026-07-31.** | **gap** |
-| [#12746](https://github.com/leanprover/lean4/issues/12746) | `Expr.proj` indices narrowed `size_t`→C++ `unsigned` in `infer_proj`, `reduce_proj`, `lazy_delta_proj_reduction`, guarded only by `is_small()` (`< 2^63`, not `< 2^32`). Index `2^32 + k` silently becomes `k`. Not a `False` by itself — truncation is consistent, and a collision needs a structure with 2^32 fields. [#13602](https://github.com/leanprover/lean4/issues/13602) is the same defect reported *with* an axiom-free accepted theorem, closed as a duplicate. OPEN, `P-medium`. | **artifact** — [`Projections/ProjIndexTruncation.lean`](KernelDefects/Lean/Projections/ProjIndexTruncation.lean). **Verified here** present on `v4.32.0`, `v4.32.2`, `v4.33.0-rc1`; control rejected on all three. |
+| [#14582](https://github.com/leanprover/lean4/pull/14582) | **The live one.** Follow-up to #14577 by Arthur Adjedj: a datatype being declared can occur applied to arguments that are *not* the parameters of the mutual declaration, hidden in the parametric arguments of a nested inductive, which are dropped from the generated auxiliary declaration and so escape type checking. Adds `check_uniform_params`. The FRO's own framing: it makes the kernel *"check that the parameters of a nested occurrence actually behave as parameters, rather than only re-type-checking them"* (§6 postmortem). **OPEN as of 2026-08-01.** | **noted** — now an arena test, §3.1 `nested-nonuniform-param` |
+| [#12746](https://github.com/leanprover/lean4/issues/12746) | `Expr.proj` indices narrowed `size_t`→C++ `unsigned` in `infer_proj`, `reduce_proj`, `lazy_delta_proj_reduction`, guarded only by `is_small()` (`< 2^63`, not `< 2^32`). Index `2^32 + k` silently becomes `k`. Not a `False` by itself — truncation is consistent, and a collision needs a structure with 2^32 fields. [#13602](https://github.com/leanprover/lean4/issues/13602) is the same defect reported *with* an axiom-free accepted theorem, closed as a duplicate. **Fixed on `master` 2026-08-01 by [#14632](https://github.com/leanprover/lean4/pull/14632)** (`to_proj_idx`, §2.5); the issue is still OPEN and unlabelled-as-fixed, and no released toolchain carries the fix. | **artifact** — [`Projections/ProjIndexTruncation.lean`](KernelDefects/Lean/Projections/ProjIndexTruncation.lean). **Verified here** present on `v4.32.0`, `v4.32.2`, `v4.33.0-rc1`; control rejected on all three. The artifact keeps its value as the regression witness — re-run it on the first release after `v4.33` and it should flip. |
 | [#12747](https://github.com/leanprover/lean4/issues/12747) | `Level.normalize` does not canonicalize when an `imax` collapses to a `max`. **Incompleteness, not unsoundness.** OPEN, `P-low`. | **artifact** (as incompleteness) — [`DefEq/LevelNormalizeIncomplete.lean`](KernelDefects/Lean/DefEq/LevelNormalizeIncomplete.lean). **Verified here** on `v4.32.0`. |
 | [#7637](https://github.com/leanprover/lean4/issues/7637) | Primitive projections are not conservative over recursors. OPEN. | **artifact** — [`Audits/Lean/Metatheory/ProjBeyondRecursor.lean`](Audits/Lean/Metatheory/ProjBeyondRecursor.lean), which reaches the same conclusion independently |
 | [#8982](https://github.com/leanprover/lean4/issues/8982) | An unsound `unif_hint` makes everything defeq and crashes Lean. Elaborator-level. OPEN; fix PR #8988 unmerged. | **gap** |
@@ -139,7 +147,7 @@ Chronological. Every one of these was accepted by the *checked* kernel.
 | [#8060](https://github.com/leanprover/lean4/pull/8060) | `reduce_pow` interpreted an expression as an `mpz` without checking it was a `Nat` literal. Found by fuzzing with GMP and mimalloc disabled. | 2025-04-23 |
 | [#8554](https://github.com/leanprover/lean4/pull/8554) family | `Expr.Data`/`Level.Data` overflow handled by `panic!`, which **does not abort** — execution continued with the field's default `0`, so `hasFVar`, `hasMVar`, `hasLevelParam`, `hasLooseBVars` all stopped being conservative. Found by Carneiro *via lean4lean*, by failing to prove a theorem and working backwards. #8554 closed unmerged; fixed by [#8559](https://github.com/leanprover/lean4/pull/8559)/[#8560](https://github.com/leanprover/lean4/pull/8560). | 2025-05-31 |
 | [#14484](https://github.com/leanprover/lean4/issues/14484) | The checked `Declaration.opaqueDecl` path did not reject free variables in the body; with the inference cache, a safe metaprogram adds an opaque `False` whose value is an unbound fvar. | 2026-07-22, `v4.32.1` |
-| [#14576](https://github.com/leanprover/lean4/issues/14576) | Nested-inductive parametric arguments substituted **without being type-checked**; a wrong-structure projection hidden behind a deliberate `Expr.hash` + `approxDepth` collision. Found while reviewing an AI-assisted Collatz proof. **Exploitable even through `comparator`** — the release notes say so. | 2026-07-28, `v4.32.2` |
+| [#14576](https://github.com/leanprover/lean4/issues/14576) | Nested-inductive parametric arguments substituted **without being type-checked**; a wrong-structure projection hidden behind a deliberate `Expr.hash` + `approxDepth` collision. Parameters that are *phantom* — not mentioned in any constructor field — vanish from the generated auxiliary type and so are never seen. **Exploitable even through `comparator`** — the release notes say so. Provenance, from the postmortem: Ramana Kumar published a `sorry`-free AI-assisted "disproof" of the Collatz conjecture on **2026-07-25**; Kiran Gopinathan reduced it to a small `False` and filed the issue on **07-28**; #14577 was pushed **one hour** later and reviewed by Joachim Breitner. (The original repository, [`xrchz/collatzlean`](https://github.com/xrchz/collatzlean), is named not by the postmortem but by the arena test's `origin` field.) | 2026-07-28, `v4.32.2` |
 | [#14613](https://github.com/leanprover/lean4/pull/14613) | `type_checker::is_prop` compared `whnf(infer_type(e))` against `Prop` **syntactically**. `Sort (imax 1 0)` really *is* a proposition, so proof irrelevance applies — but `is_prop` said no, and `infer_proj` skipped its `Prop` restriction, letting a `Bool` be projected out of a proof. | 2026-07-31 |
 | [#14616](https://github.com/leanprover/lean4/pull/14616) | A declaration naming one of the kernel's `_nested` auxiliary types: `restore_nested` can hand a stored constructor a type in a *different universe* than it was checked against. Notable because it **cannot be captured as an arena export test** — the exploit depends on transient `equiv_manager` state. | 2026-07-31 |
 | [#14607](https://github.com/leanprover/lean4/pull/14607) | Missing `check_no_metavar_no_fvar` in `inductive.cpp`: nested inductive declarations containing fvars/mvars. | 2026-07-30 |
@@ -148,6 +156,18 @@ Chronological. Every one of these was accepted by the *checked* kernel.
 
 **Only two releases in Lean 4's history were cut specifically for kernel
 soundness: `v4.32.1` and `v4.32.2`, eight days apart in July 2026.**
+
+**Every defect in the July 2026 wave is reachable only through metaprogramming** —
+by handing a declaration to the kernel directly, past a frontend that would have
+caught it. The postmortem states this of #14576 and of #14607–#14616; for #14484
+it is this repo's own measurement
+([`Reports/2026-07-29-lean-4.33-…`](Reports/2026-07-29-lean-4.33-backport-gap.md),
+"Scope"), not something upstream says. It is *not* a mitigation, and the postmortem is
+unusually direct about why: the elaborator is untrusted by design, an attacker
+can write `.olean` files or modify memory instead, and *"soundness cannot depend
+on an untrusted component refusing to build a bad term."* The two counterexamples
+in the table above are the ones worth remembering for contrast — #1433 is a plain
+`rfl` and #2125 is ordinary surface syntax.
 
 Two further kernel bugs found by lean4lean verification with no demonstrated
 exploit: [#10475](https://github.com/leanprover/lean4/issues/10475) (`infer_let`
@@ -202,9 +222,11 @@ support. Coverage: **noted**; the descendant mechanism is
 
 ### 2.5 Hardening fixes (defensive, no published derivation of `False`)
 
-Closed 2026-05-03/04 after a systematic audit sweep. Coverage: **noted** for all.
-The recurring theme is that `lean_assert`/`assert!`/`panic!` are debug-only or
-non-aborting, so every "guarded" invariant is unguarded in a release build.
+Two waves. Coverage: **noted** for all.
+
+**May 2026**, closed 2026-05-03/04 after a systematic audit sweep. The recurring
+theme is that `lean_assert`/`assert!`/`panic!` are debug-only or non-aborting, so
+every "guarded" invariant is unguarded in a release build.
 
 | Issue | Substance |
 | --- | --- |
@@ -214,6 +236,18 @@ non-aborting, so every "guarded" invariant is unguarded in a release build.
 | [#13618](https://github.com/leanprover/lean4/issues/13618) | `nparams + idx` unsigned wraparound in `reduce_proj_core` — duplicate of the #12746 family |
 | [#13619](https://github.com/leanprover/lean4/issues/13619) | integer overflow in the `.olean` deserializer's byte-size functions |
 | [#13620](https://github.com/leanprover/lean4/issues/13620) | `cheap_beta_reduce` unsigned underflow when `bvar_idx >= i` |
+
+**July–August 2026**, the tail of the #14576 response. Named in the postmortem
+(§6); each verified merged here on 2026-08-01. The theme has changed: these take
+an invariant the kernel already relies on somewhere else and check it *locally*,
+so that a future mistake nearby surfaces as an error instead of being amplified.
+
+| PR | Substance | Merged |
+| --- | --- | --- |
+| [#14615](https://github.com/leanprover/lean4/pull/14615) | The inductive checker now tests a resulting universe for zero **up to normalization**, so `Sort (imax 1 0)` and `Sort 0` describe the same inductive type. The two spellings previously disagreed on whether a constructor field may carry data, on whether the recursor eliminates only into `Prop`, and on whether the type is a K-like reduction target. **Widens** what the kernel accepts and is explicitly *not* a soundness fix — every syntactic test erred in the restrictive direction. Its actual content is a **kernel/`nanoda` divergence**: `nanoda` decides all three semantically and derives recursors rather than trusting the export, so it rejected exports the kernel accepted. Same `imax 1 0` surface as #14613, opposite direction. | 2026-07-31 |
+| [#14621](https://github.com/leanprover/lean4/pull/14621) | The kernel re-checks the declarations it adds after eliminating a nested inductive. Redundant by construction; a backstop in case the nested-inductive code is still missing a validation. §5.1 records this repo's attempt to exercise it from inside Lean, and why that cannot be done. | 2026-07-31 |
+| [#14631](https://github.com/leanprover/lean4/pull/14631) | `type_checker::is_def_eq_core` and `equiv_manager::is_equiv_core` compared only the projection index and the projected expression, **ignoring `proj_sname`**. Not exploitable: `infer_proj` rejects a structure name disagreeing with the projected expression's type, and kernel-built projections always carry the right one, so two projections reaching def-eq can differ on the name only if one is ill-typed. Turns that global invariant into a local one. Two reasons it matters here — it edits the exact function analysed in [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md), and it is the *same omission* as the `nanoda` bug of §3.0. | 2026-08-01 |
+| [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part hardening pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
 
 ### 2.6 Findings originating in this repository
 
@@ -240,6 +274,60 @@ Moura's *Who Watches the Provers?* argument made operational.
 Coverage: **gap** for the entire section. None of these is reproduced here, and
 the whole corpus is the single largest outstanding item in this catalog.
 
+### 3.0 The one time cross-checking nearly failed
+
+The single most useful thing in the #14576 postmortem, and the reason §3 is worth
+reading before §2. The Collatz repository did not only pass the official kernel —
+**it also passed a week-old `nanoda`**, the main external checker. Two *unrelated*
+bugs were required:
+
+* the official kernel never checked the phantom parameters of a nested occurrence
+  at all (#14576), and
+* `nanoda` did check that spot, but **did not verify the type name in a projection
+  node**.
+
+The payload is a wrong-structure projection, so it had to sit somewhere the kernel
+never inspects *and* be something the old `nanoda` would wave through. It was.
+`nanoda`'s bug was reported by Jeremy Chen and fixed before the Lean bug was
+reported — the fix is [`nanoda_lib`#22](https://github.com/ammkrn/nanoda_lib/pull/22),
+*"more strict/nuanced handling for structure/proj interactions"*, merged
+**2026-07-27**. (The postmortem says "a week before"; the merge is one day before
+the 07-28 issue. The exact interval is worth pinning down, because the interval
+*is* the story.) Ramana Kumar believes the timing was coincidental but cannot rule
+out that the model had seen the `nanoda` report; Joachim Breitner's alternative is
+that the coincidence is just what a supply of strong models looks like.
+
+The FRO's conclusion is the honest one and worth quoting rather than paraphrasing:
+checking with an independent kernel **still works**, since defeating it took two
+distinct bugs in two implementations — but users who rely on it *"need current
+versions of both."*
+
+**The sharper reading, for this catalog.** The two bugs were unrelated in
+provenance but not in *kind*. Both are the same omission — a projection's
+structure name going unverified — in two different places. The kernel's own
+remaining instance of it was closed on 2026-08-01 by #14631 (§2.5), which
+compared projections for definitional equality while ignoring `proj_sname`. The
+asymmetry matters and should not be smoothed over: `nanoda`'s omission was
+load-bearing for its verdict, while the kernel's was not exploitable, because
+`infer_proj` had already rejected mismatched names on the paths that reach it.
+But the shape is the same, and the moral is that **independence of implementations
+is not independence of blind spots.** A checker written against the same
+specification tends to skip the same checks.
+
+`lean4lean` is the clearest case: the postmortem states it is affected by the
+#14576 kernel bug too, *because its handling of inductives is a port of the
+reference implementation* — which is precisely the caveat §3.3 already quotes,
+now with a concrete instance attached. Its consistency proof does
+not yet cover inductive types; de Moura's expectation is that the bug would have
+been found on the way to concluding that part.
+
+Two operational consequences recorded in the postmortem:
+[`comparator.live`](https://comparator.live.lean-lang.org/) now runs `nanoda` **by
+default** (the standalone CLI's documented default is still `enable_nanoda: false`
+— see [`Comparator/README.md`](KernelDefects/Lean/Comparator/README.md)), and
+`nanoda` is tracked daily so that `lean-eval` and comparator do not drift behind
+upstream fixes.
+
 ### 3.1 The attack corpus
 
 | Test | Mechanism | Who fell for it |
@@ -248,9 +336,8 @@ the whole corpus is the single largest outstanding item in this catalog.
 | `nat-rec-rules` | The checker compared imported recursor rules **against themselves** (`rec_rules.iter().zip(rec_rules.iter())`) instead of independently reconstructed ones | **nanoda** |
 | `level-imax-normalization` | The normalizer drops the accumulated offset when decomposing `imax u (param v)`, so `imax 0 v ≡ succ (imax 0 v)` | **lean4lean** |
 | `proj-of-prop` | Typing a projection by *inferring* rather than *checking* its structure argument | **nanoda** |
-| `proj-of-imax-prop` | §2.2 / #14613 | **the official kernel** |
-| `nested-unused-param` | §2.2 / #14576 | **the official kernel** |
-| `nested-aux-name` | §2.2 / #14616 | **the official kernel** |
+| `proj-of-imax-prop` | §2.2 / #14613 | **the official kernel** — and still, at `4.32.2`: this is the one test the released official kernel fails |
+| `nested-unused-param` | §2.2 / #14576. Payload is the malformed projection `C.0 (C.0 w)` applied to a `W`, disguised by the hash collision; the property under test is that the *parameter* is checked | **the official kernel** (4.28/4.29 accept) |
 | `constlevels` | §2.2 / #10577 | **the official kernel** (4.28/4.29 segfault) |
 | `large-elim-param` | If "is this level surely nonzero?" wrongly returns true for a *param*, `inductive MyBool.{u} : Sort u | tt | ff` gets a recursor that large-eliminates a `Prop`; proof irrelevance gives `tt = ff` | found by Anthony Wang using Aristotle |
 | `ctor-num-fields` | Lie about a constructor's `numFields` so a 1-field structure looks unit-like; definitional eta then equates all inhabitants | trusted-metadata class |
@@ -259,8 +346,32 @@ the whole corpus is the single largest outstanding item in this catalog.
 | `k-rec-conv` | Broken K-like reduction makes `fun x => x ≡ fun _ => y` | regression test for a **sokonanoda** bug |
 | `bogus1` | `debug.skipKernelTC` calibration case | — |
 
-Plus 43 invalid `tutorial/*` tests giving a full taxonomy of what a kernel must
-reject.
+Fourteen tests, and that is the whole reject-corpus as of 2026-08-01. **#14616 is
+not among them** and has no arena test: its exploit depends on transient
+`equiv_manager` state and so cannot be captured as an export (§2.2). Of the
+fourteen, three have caught the official kernel — `constlevels`,
+`nested-unused-param`, `proj-of-imax-prop`.
+
+The corpus is not only attacks. Several other outcome classes now carry weight,
+and a checker's score is the sum of all of them:
+
+| Test | Outcome | What it measures |
+| --- | --- | --- |
+| `nested-nonuniform-param` | **either** | §2.1 / #14582 — Arthur Adjedj's non-uniform case, raised on #14577 as not covered by that fix. `E.mk : (w : W) → L (E ⟨false⟩) → E w` puts a constant where `E`'s parameter belongs. Type-correct, so re-type-checking the nested application does not catch it; a checker must additionally verify it *is* the expected parameter. Scored `either` because it is **not a demonstrated unsoundness** — with `L` phantom, `E w` is `Unit` for every `w`; the variant where `L` really stores an `α` is already rejected by the positivity check. That is the same conclusion this repo reached independently (§5.1, last row) |
+| `proof-irrel` | accept | Incompleteness: `h a ≡ h b` for `h : A → P` with `P : Prop`. A checker comparing the proofs structurally wrongly rejects |
+| `level-index-out-of-order`, `sparse-name-index` | accept | Export-format robustness: `lean4export` emits internalization-table references densely and in order, but the spec only requires integers. A checker treating them as array indices fails. `nanoda` currently errors on both |
+| `perf/` (`app-lam`, `grind-ring-5`, `shift-cascade`) | accept + timed | Asymptotics, not correctness. `shift-cascade` separates de Bruijn kernels with deferred shifts (O(N²) on cascading `let`s) from locally-nameless ones (O(N)) |
+| `tutorial/` | mixed | **135 tests**, a full taxonomy of what a kernel must accept and reject. **43 of them are the invalid ones**, which is the figure this file previously carried — that count is unchanged; what was never stated was the 92 valid cases alongside them |
+
+**Live scores, 2026-08-01.** Sixteen registered entries. `zignodamus`,
+`nanobruijn` and `sokonanoda` score a perfect 57/57 on rejects, as does
+`official-nightly`; the released `official` `4.32.2` scores 56/57, failing
+`proj-of-imax-prop` (#14613 landed after the tag). `nanoda` is at 50/50 with nine
+harness errors, `lean4lean` 55/56. Note the denominator: **57 = the fourteen named
+attacks + the 43 invalid `tutorial/` cases**, not the attack table alone. It also
+varies per checker, because a test a checker errors out on leaves the ratio
+rather than failing it — which is why `nanoda`'s 50/50 is not comparable to
+`zignodamus`'s 57/57 without reading the error column beside it.
 
 ### 3.2 The `undecidability/` category — not anyone's bug
 
@@ -276,7 +387,8 @@ to one it rejects). Our independent measurements of the same phenomena are in
 
 `lean4lean` (Carneiro, Lean — *"derived directly from the C++ kernel, and as such
 likely shares some implementation bugs with it; it's not really an independent
-implementation"*), `nanoda`/`nanobruijn` (Rust), `sokonanoda`, `still-nanoda`,
+implementation"*; §3.0 records the first concrete instance of that caveat biting,
+#14576), `nanoda`/`nanobruijn` (Rust), `sokonanoda`, `still-nanoda`,
 `zignodamus` (Zig), `nyaya` (OCaml), `rpylean` (RPython), `mini` (deliberately
 naive, invites attacks), `vow-lean-kernel`, and `evmlean` — a Lean-kernel
 fragment as a **Solidity smart contract**. `lean4checker` was archived 2026-03-25
@@ -469,11 +581,26 @@ Ordered by value.
    made lean4#14616's exploit uncapturable as an arena export test. Black-box
    probing cannot reach it; instrumenting `replace_if_nested`/`restore_nested` in
    a source build can.
-2. **The Lean Kernel Arena corpus (§3).** Fourteen catalogued attacks, four of
-   which the official kernel has fallen for, plus the `undecidability/` category
-   that formalises what [`Audits/Lean/Metatheory/`](Audits/Lean/Metatheory/)
-   measured independently. This is the single largest gap, and it is now the
-   community's canonical artifact.
+   *Update 2026-08-01.* Two things reduce the urgency without removing it. The
+   arena now carries [`nested-nonuniform-param`](https://github.com/leanprover/lean-kernel-arena/blob/master/tests/nested-nonuniform-param.yaml),
+   a black-box export of exactly #14582's shape, scored `either`; and its stated
+   reason for that score — the storing variant *"is already rejected by the
+   kernel's positivity check (\"non valid occurrence\")"* — is the same conclusion
+   this repo reached independently by direct test (§5.1, last row), arrived at from
+   the other side. Two independent derivations of a negative result is as close to
+   confirmation as a negative result gets. The instrumentation is still what would
+   settle whether an *exploitable* shape exists; upstream has meanwhile chosen the
+   belt-and-braces route with #14621, which simply re-checks whatever the nested
+   code emits.
+2. **The Lean Kernel Arena corpus (§3).** Fourteen catalogued attacks, three of
+   which the official kernel has fallen for, plus the accept-side classes
+   (`proof-irrel`, the two export-robustness tests, `perf/`), the 135-test
+   `tutorial/` family, and the `undecidability/` category that formalises what
+   [`Audits/Lean/Metatheory/`](Audits/Lean/Metatheory/) measured independently.
+   This is the single largest gap, and it is now the community's canonical
+   artifact. The 08-01 pass found four tests and a whole outcome class this file
+   had not recorded, plus one row for a test that does not exist — so re-reading
+   the corpus directly, rather than from this summary, is part of the job.
 2. **Rocq's remaining proofs of `False` (§4).** Four of the 2026 sweep's eight
    are covered; #21690, #21694, #21702, #21736, #21797, #21839, #22021 and the
    whole pre-2026 history are `gap`. The two OPEN ones with a route to `False`,
@@ -549,6 +676,7 @@ generator never produces the reserved prefix.
 | [`lean4lean`](https://github.com/digama0/lean4lean) `bugs-found.md` and `divergences.md` | Bugs found by formalization, and the standing kernel assumptions that are not bugs — including the prelude assumption underlying all of §2.3. |
 | Tristan Stérin, [*In search of falsehood*](https://tristan.st/blog/in_search_of_falsehood) | The 2026 sweep: Opus 4.6 against both kernels, producing 7 proofs of `False` in Rocq plus 3 further bugs, 0 in the official Lean kernel with 4 other bugs, and proofs of `False` in `nanoda` (2) and `lean4lean` (1). |
 | Leonardo de Moura, [*Who Watches the Provers?*](https://leodemoura.github.io/blog/2026-3-16-who-watches-the-provers/) | The Lean FRO's position: multiple independent kernels are the defence. |
+| Leonardo de Moura, [*Postmortem for Kernel Soundness Bug #14576*](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/) (2026-08-01) | The follow-up, and the source for §3.0 — the timeline, the `nanoda` half of the story, the FRO's remediation list (#14582, #14607–#14616, #14621/#14631/#14632), and the position that removing metaprogramming would be a category error. Revised by Joachim Breitner and Sebastian Ullrich. |
 | Lawrence Paulson, [*Broken proofs and broken provers*](https://lawrencecpaulson.github.io/2026/01/15/Broken_proofs.html) | The view from outside both systems: Isabelle/HOL, HOL88, LCF, PVS. |
 | [`nielsvoss/lean-pitfalls`](https://github.com/nielsvoss/lean-pitfalls) | The realistic failure modes — mis-stated theorems, `autoImplicit`, junk values — which are far commoner than any kernel bug. |
 | Rocq stdlib `Logic/`: `Hurkens`, `Berardi`, `ClassicalFacts`, `Diaconescu`, `ChoiceFacts`, `Eqdep_dec` | The paradox library and the precise statements of §1.1. |
@@ -564,6 +692,13 @@ plus the #14609 module-system break), all found by AI-assisted auditing, all
 fixed within hours to days, and one of them exploitable *through* `comparator`.
 Three of the arena's independent checkers currently score a perfect 57/57 on the
 attack corpus where the official kernel scores 56/57.
+
+The August postmortem names the auditing. #14576 came out of an AI-assisted
+"disproof" of the Collatz conjecture; #14607–#14616 came from Daniel Selsam at
+OpenAI pointing a cybersecurity-specialised AI at the kernel on the FRO's behalf.
+The clause worth carrying forward is the one attached to that second batch:
+**all of them were caught by `nanoda`.** The differential-testing defence did its
+job on every bug of the wave except the one bug it was itself blind to (§3.0).
 
 The reasonable conclusion is not that one system is sounder than the other, nor
 that the situation has deteriorated. It is that the *rate of discovery* changed

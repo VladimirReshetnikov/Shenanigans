@@ -89,6 +89,38 @@ valid relation stays valid, so the union-find is an amplifier, not a bug source.
    union-find spreads it transitively across the whole declaration.
 4. The guard is a **32-bit** hash and collisions are cheap to search for.
 
+## Upstream movement, 2026-08-01
+
+[lean4#14631](https://github.com/leanprover/lean4/pull/14631) (merged 2026-08-01)
+edits `equiv_manager::is_equiv_core` — the same function whose hash guard is quoted
+under **Mechanism** — together with `type_checker::is_def_eq_core`. Both compared
+only a projection's index and its projected expression, ignoring `proj_sname`;
+both now compare the name.
+
+**It does not address anything in this report.** By inspection of the diff, the
+union-find, the accumulation of the transitive closure on every `is_def_eq`
+success, and the 32-bit `m_use_hash` lookup gate are all untouched. The witness
+above uses `Acc.rec` and proof irrelevance, not projections, so nothing in it is
+affected. Re-running it on a post-#14631 build is the outstanding check; this
+paragraph is source inspection, not a re-measurement.
+
+What is worth recording is that #14631 arrives at item 3 of the previous section
+independently, and in the same words. Its stated rationale: *"after #14577 closed
+the nested-inductive path that let unchecked projections into the environment
+(#14576), these comparisons were the remaining places where a future injection bug
+could have been amplified into a def-eq attack surface."* That is the amplifier
+argument, made upstream, as the justification for a change with no exploit behind
+it. [lean4#14632](https://github.com/leanprover/lean4/pull/14632) does the same for
+`reduce_proj_core`, which now takes the structure name and refuses a constructor
+belonging to any other inductive.
+
+Item 2 of the previous section also has a concrete instance now, and it cuts the
+other way. The #14576 postmortem records that the exploit passed both the official
+kernel and a week-old `nanoda`, because `nanoda` had its own unverified
+projection-node type name. Independent checkers diverging is the guarantee; the
+case where they agreed for unrelated reasons is [`../CATALOG.md`](../CATALOG.md)
+§3.0.
+
 ## Not usable to derive `False` as-is
 
 The `Acc` + proof-irrelevance pair `F () (p h) ≡ succ (F () h)` and `p h ≡ h` is
