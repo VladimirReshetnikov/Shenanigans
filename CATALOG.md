@@ -248,6 +248,7 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 | [#14621](https://github.com/leanprover/lean4/pull/14621) | The kernel re-checks the declarations it adds after eliminating a nested inductive. Redundant by construction; a backstop in case the nested-inductive code is still missing a validation. §5.1 records this repo's attempt to exercise it from inside Lean, and why that cannot be done. | 2026-07-31 |
 | [#14631](https://github.com/leanprover/lean4/pull/14631) | `type_checker::is_def_eq_core` and `equiv_manager::is_equiv_core` compared only the projection index and the projected expression, **ignoring `proj_sname`**. Not exploitable: `infer_proj` rejects a structure name disagreeing with the projected expression's type, and kernel-built projections always carry the right one, so two projections reaching def-eq can differ on the name only if one is ill-typed. Turns that global invariant into a local one. Two reasons it matters here — it edits the exact function analysed in [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md), and it is the *same omission* as the `nanoda` bug of §3.0. | 2026-08-01 |
 | [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part hardening pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
+| [#14633](https://github.com/leanprover/lean4/pull/14633) | `infer_lambda` and `infer_let` now check a binder's type — and for `let`, its value — *before* adding the declaration to the local context, which is what `infer_pi` already did. *"No valid declaration changes behavior."* **Not in the postmortem**, which was published earlier the same day; found by reading the log at the pinned [`Upstream/lean4`](Upstream/lean4) commit. Adjacent to the local-context anomaly in §5.1's closing paragraph, though not the same thing: that one is about a caller-supplied `_kernel_fresh.N` fvar being captured, not about the order of checking and extending. | 2026-08-01 |
 
 ### 2.6 Findings originating in this repository
 
@@ -667,6 +668,12 @@ generator never produces the reserved prefix.
 ---
 
 ## 6. Sources
+
+Three of these are pinned locally as submodules — see
+[`Upstream/`](Upstream/) for the commits and for the mapping from each recorded
+result back to the revision it was measured against. The source-level claims in
+§2.1, §2.5 and §3.0 have been checked against those pins; the checks are listed
+there rather than repeated here.
 
 | Source | What it contributes |
 | --- | --- |

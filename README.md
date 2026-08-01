@@ -34,6 +34,7 @@ designed; the fourth is a negative result.
 | [`KernelDefects/`](KernelDefects/) | Genuine implementation defects. Lean: the name-keyed `Nat`/`String`/`reduceBool` accelerator family, `Expr.proj` index truncation, definitional-equality history dependence, with controls and a `leanchecker` verdict for each. Rocq: four fixed guard-checker and module-system defects, kept as regression witnesses. |
 | [`Audits/`](Audits/) | Searches that came up empty, which is the useful part of their output. Level/def-eq/compiler fuzzers, the `Acc` and `Expr.proj` metatheory probes, and the string- and name-identity study. |
 | [`Reports/`](Reports/) | Write-ups suitable for upstream bug reports, each pinned to specific toolchain versions. |
+| [`Upstream/`](Upstream/) | Submodules pinning the three sources this catalog cites line by line: `leanprover/lean4`, `leanprover/comparator`, `ammkrn/nanoda_lib`. **Reference material, not dependencies** — nothing here builds or imports them, and every exhibit verifies with the directory absent. |
 | [`CATALOG.md`](CATALOG.md) | **The completeness ledger.** Every known route in both systems, whether or not this directory represents it, with upstream issue numbers, affected version ranges, and a coverage mark. |
 
 ## Reproducing

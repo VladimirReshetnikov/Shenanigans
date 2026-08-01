@@ -1,0 +1,9 @@
+[submodule "Upstream/comparator"]
+	path = Upstream/comparator
+	url = https://github.com/leanprover/comparator.git
+[submodule "Upstream/nanoda_lib"]
+	path = Upstream/nanoda_lib
+	url = https://github.com/ammkrn/nanoda_lib.git
+[submodule "Upstream/lean4"]
+	path = Upstream/lean4
+	url = https://github.com/leanprover/lean4.git

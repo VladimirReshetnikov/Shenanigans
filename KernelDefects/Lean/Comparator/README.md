@@ -18,7 +18,10 @@ outcome.
 
 ## Results
 
-Run on comparator `master` (2026-07-28) with Lean `v4.33.0-rc1`.
+Run on comparator `master` (2026-07-28) with Lean `v4.33.0-rc1`. That master was
+commit [`68a0641`](https://github.com/leanprover/comparator/commit/68a064109f01c08f47c8edc9f51d6a2bbffaa188)
+— comparator did not move between 2026-07-21 and 2026-07-30, so the date pins the
+commit unambiguously. It has moved since; see the 07-31 update below.
 
 | Project | Verdict | Message |
 | --- | --- | --- |
@@ -206,6 +209,51 @@ easily conflated:
 The relevant caution is §3.0 of [`../../../CATALOG.md`](../../../CATALOG.md):
 adding a second checker raises the bar by however much the two checkers' blind
 spots differ, which in the one case where it was measured was less than it looked.
+
+## Update 2026-07-31: upstream closed part of the gap in the list
+
+Found by pinning comparator as a submodule
+([`../../../Upstream/`](../../../Upstream/)) and reading the log since the run
+recorded above. Commit
+[`8c0e44e`](https://github.com/leanprover/comparator/commit/8c0e44e73c53a95b3d9075e0b0b5289ba46807b0)
+("fix: `Char.ofNat` redefinition", Henrik Böving, 2026-07-31) moves three names
+**out** of the `nanoda`-only `builtinTargets` and into `primitiveTargets`, where
+they are compared unconditionally:
+
+```lean
+     ``String.ofList,
++    ``Char.ofNat,
++    ``List,
++    ``eagerReduce,
+```
+
+That is three of the names listed as missing above — including `eagerReduce`,
+which this file had flagged as arguably outside the comment's stated `git grep`
+scope. Still absent from `primitiveTargets`: `Lean.reduceBool`, `Lean.reduceNat`,
+`List.cons`, `List.nil` and `String.mk`.
+
+It ships with a regression test, `tests/projects/char_ofnat_issue`, asserting
+`"exit_code": 1`. Its `Solution.lean` is worth reading: a full prelude
+replacement whose `Char` is `structure Char where mk :: n : False`, with
+
+> `-- THE MISSING CHECK: the kernel never verifies Char.ofNat : Nat → Char.`
+
+and a `Char.ofNat` returning an inhabited `Box` instead. It reaches `False`
+through `String.data "\x02"`, i.e. through `string_lit_to_constructor` handing a
+by-name-assembled term to a recursor rule unchecked. **That is the same kernel
+mechanism as [`../Accelerators/StringLitFabrication.lean`](../Accelerators/StringLitFabrication.lean)**,
+independently constructed, and it is now a comparator regression test.
+
+**What this does to `accepted/` is not yet measured, and must not be assumed.**
+The prediction from the analysis above is that it survives: upstream's test pairs
+a *normal* challenge (`theorem boom : False := sorry`, no `prelude`) with a
+prelude-replacing solution, so the two **disagree** on `Char.ofNat` and the wider
+target list catches the disagreement. `accepted/` makes challenge and solution
+**agree** byte-for-byte, which is exactly the case this file already argued a
+complete primitive list would not catch. But that is a prediction, not a result.
+Re-running `accepted/` against comparator at `Upstream/comparator`'s pinned commit
+is an outstanding item; until it is run, the verdict table above is pinned to
+comparator `68a0641` and says nothing about `5149123`.
 
 Upstream has meanwhile removed one adjacent foothold. Lean
 [#14632](https://github.com/leanprover/lean4/pull/14632) (merged 2026-08-01) makes
