@@ -1,0 +1,62 @@
+# Lake/mathlib build and dependency state
+.lake/
+
+# Rocq/Coq build artifacts
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+.*.aux
+.lia.cache
+.nia.cache
+.nra.cache
+*.cmi
+*.cmo
+*.cmx
+Makefile.coq
+Makefile.coq.conf
+.Makefile.coq.d
+
+# General build output
+[Bb]in/
+[Oo]bj/
+out/
+build/
+dist/
+
+# IDE and user-specific files
+.vs/
+.vscode/
+*.DotSettings.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Python proof-support tooling
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.venv/
+venv/
+
+# Logs and operating-system metadata
+*.log
+/tmp-pwsh-*.json
+.DS_Store
+Thumbs.db
+
+# LaTeX auxiliary files (rendered PDFs are tracked deliberately)
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg

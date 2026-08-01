@@ -12,9 +12,11 @@ Category (see [`../README.md`](../README.md)): the cost is visible in the
 
 ### Lean — the `TypeTheoryParadoxes` library
 
-Registered in the root [`lakefile.toml`](../../lakefile.toml) and imported by
-[`ProveIt.lean`](../../ProveIt.lean), because unlike the rest of this directory
-it is safe to build alongside ordinary mathematics: it asserts nothing.
+A standalone Lake package, [`Lean/lakefile.toml`](Lean/lakefile.toml). Unlike
+the rest of this repository it is safe to build alongside ordinary mathematics —
+it asserts nothing — and it was registered in ProveIt's root `lakefile.toml` and
+imported by `ProveIt.lean` for exactly that reason until this repository was
+split out.
 
 | Module | Hypothesis granted | Classical name |
 | --- | --- | --- |
@@ -32,7 +34,7 @@ it is safe to build alongside ordinary mathematics: it asserts nothing.
 ## Reproducing
 
 ```bash
-pwsh Shenanigans/Paradoxes/verify.ps1
+pwsh Paradoxes/verify.ps1
 ```
 
 Expected final line: `All 6 paradox exhibits behaved as documented.`

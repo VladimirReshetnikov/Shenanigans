@@ -96,7 +96,7 @@ inductive Bad where | mk : ((Bad → Prop) → Prop) → Bad
 
 /-! The bare negative occurrence — Curry's paradox, the shape that Rocq accepts
 under `Unset Positivity Checking` (see
-`Shenanigans/EscapeHatches/Coq/TypingFlags.v` section 2) — is refused by the same
+`EscapeHatches/Coq/TypingFlags.v` section 2) — is refused by the same
 check. -/
 
 /--

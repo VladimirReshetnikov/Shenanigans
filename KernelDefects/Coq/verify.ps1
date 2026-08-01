@@ -1,7 +1,7 @@
 # Asserts that every Coq exhibit in this directory behaves as its header
 # documents on the installed toolchain.
 #
-#   pwsh Shenanigans/KernelDefects/Coq/verify.ps1
+#   pwsh KernelDefects/Coq/verify.ps1
 #
 # Every exhibit here is a proof of False on an AFFECTED toolchain and is fixed
 # upstream, so each must be REJECTED on a current one: acceptance signals a

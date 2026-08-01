@@ -2,10 +2,10 @@
 
 > **Warning.** Every Lean module under `Accelerators/` and `Controls/` in this
 > directory is *deliberately unsound*. Four of them contain a machine-checked proof of `False`. They exist
-> to document soundness holes, not to be used. They are **not** registered in the
-> root `lakefile.toml`, are **not** imported by `ProveIt.lean`, and must never be.
+> to document soundness holes, not to be used. They belong to no Lake package,
+> are imported by nothing, and must never be.
 >
-> They cannot contaminate the rest of the repository: they are `prelude` modules,
+> They cannot contaminate anything that builds them: they are `prelude` modules,
 > so importing one into a module that also imports `Init` is impossible.
 
 Full write-up:
@@ -125,7 +125,7 @@ They are kept because they are reusable. Run any with plain `lean <file>` (they
 ## Reproducing
 
 ```bash
-pwsh Shenanigans/KernelDefects/Lean/verify.ps1
+pwsh KernelDefects/Lean/verify.ps1
 ```
 
 It builds each module in a scratch directory outside the Lake workspace, runs

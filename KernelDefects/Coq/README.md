@@ -10,8 +10,8 @@ Same ground rules as the rest of the directory (see
 never a mathematical fact.
 
 > **Warning.** Every file in this directory is a proof of `False` on an affected
-> toolchain. They are not part of any build: they are absent from
-> [`_CoqProject`](../../../_CoqProject) and nothing imports them.
+> toolchain. They are not part of any build: this repository ships no
+> `_CoqProject`, and nothing imports them.
 
 ## Contents
 
@@ -30,7 +30,7 @@ the flag-gated routes to `False` — including `Unset Guard Checking` and
 ## Reproducing
 
 ```powershell
-pwsh Shenanigans/KernelDefects/Coq/verify.ps1
+pwsh KernelDefects/Coq/verify.ps1
 ```
 
 Each exhibit is compiled in a scratch directory outside the repository, and the

@@ -1,6 +1,6 @@
 # Asserts that every paradox exhibit behaves as its header documents.
 #
-#   pwsh Shenanigans/Paradoxes/verify.ps1
+#   pwsh Paradoxes/verify.ps1
 #
 # Everything here must COMPILE: these are honest implications, and every one
 # carries an audit showing it assumes nothing.  The Lean modules assert their

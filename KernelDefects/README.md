@@ -29,10 +29,10 @@ in the statement.
 ## Reproducing
 
 ```bash
-pwsh Shenanigans/KernelDefects/Lean/verify.ps1
+pwsh KernelDefects/Lean/verify.ps1
 ```
 ```bash
-pwsh Shenanigans/KernelDefects/Coq/verify.ps1
+pwsh KernelDefects/Coq/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.` and

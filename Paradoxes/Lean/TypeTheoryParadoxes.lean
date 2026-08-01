@@ -18,7 +18,7 @@ hypothesised rule cannot be added — never as a defect in Lean.
 | `LargeElimination` | data-carrying elimination out of a proof-relevant `Prop` | the subsingleton-elimination barrier |
 | `Blockers` | *nothing* — records the exact judgment Lean refuses, machine-checked | — |
 
-The Rocq counterparts are in `Shenanigans/Paradoxes/Coq/`; the routes that need
+The Rocq counterparts are in `Paradoxes/Coq/`; the routes that need
 no hypothesis because a *flag* or an escape hatch grants it are in
-`Shenanigans/EscapeHatches/`.
+`EscapeHatches/`.
 -/

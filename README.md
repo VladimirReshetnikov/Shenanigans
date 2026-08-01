@@ -1,9 +1,8 @@
 # Shenanigans
 
-**Nothing in this directory is ordinary mathematics.**
+**Nothing in this repository is ordinary mathematics.**
 
-Everything else in this repository proves theorems in the ordinary sense. This
-directory does not. It is a catalog of the ways one can write
+This is a catalog of the ways one can write
 
 ```lean
 theorem Paradox : False
@@ -14,8 +13,13 @@ to do so*.
 
 A `False` derived here is a statement about a formal system or about a program.
 It is never a mathematical fact, and never grounds for doubting anything proved
-elsewhere in this repository. Nothing here is imported by the mathematical
-developments, and nothing outside this directory depends on any of it.
+by machine elsewhere.
+
+This work grew up inside
+[VladimirReshetnikov/ProveIt](https://github.com/VladimirReshetnikov/ProveIt),
+which does prove theorems in the ordinary sense, and was split out into its own
+repository — with its full history — precisely so that the two are not confused.
+Nothing here is imported by, or imports, the mathematical developments there.
 
 ## The organising question: what does the audit report?
 
@@ -49,12 +53,14 @@ designed; the fourth is a negative result.
 Each category verifies itself. Every script builds in a scratch directory
 outside the repository and **asserts** the documented verdict — exit code plus
 the exact audit output — rather than printing something for a human to read.
+Each locates its own sources from `$PSScriptRoot`, so the working directory does
+not matter.
 
 ```bash
-pwsh Shenanigans/Paradoxes/verify.ps1        # All 6 paradox exhibits behaved as documented.
-pwsh Shenanigans/EscapeHatches/verify.ps1    # All 14 escape-hatch exhibits behaved as documented.
-pwsh Shenanigans/KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
-pwsh Shenanigans/KernelDefects/Coq/verify.ps1    # All 4 Coq exhibits behaved as documented.
+pwsh Paradoxes/verify.ps1            # All 6 paradox exhibits behaved as documented.
+pwsh EscapeHatches/verify.ps1        # All 14 escape-hatch exhibits behaved as documented.
+pwsh KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
+pwsh KernelDefects/Coq/verify.ps1    # All 4 Coq exhibits behaved as documented.
 ```
 
 Verified on Lean `4.32.0` (`x86_64-w64-windows-gnu`, commit `8c9756b28d64`) and

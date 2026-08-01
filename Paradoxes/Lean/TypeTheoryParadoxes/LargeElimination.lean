@@ -85,7 +85,7 @@ the subsingleton criterion rather than bypass it:
 * `Acc r x` has one constructor, so proof irrelevance identifies inhabitants that
   the recursor was already going to treat alike; the proof slot is inert in the
   model. The residual anomaly this creates in the kernel's *decision procedure*
-  is measured in `Shenanigans/Audits/Lean/Metatheory/`.
+  is measured in `Audits/Lean/Metatheory/`.
 * `Quot r` at `u = 0` has at most one element, so `Quot.lift` is trivially
   well-defined.
 

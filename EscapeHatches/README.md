@@ -43,7 +43,7 @@ directory exists to draw.
 ## Reproducing
 
 ```bash
-pwsh Shenanigans/EscapeHatches/verify.ps1
+pwsh EscapeHatches/verify.ps1
 ```
 
 Expected final line: `All 14 escape-hatch exhibits behaved as documented.`

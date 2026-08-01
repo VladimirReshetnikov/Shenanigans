@@ -1,6 +1,6 @@
 # Asserts that every escape-hatch exhibit behaves as its header documents.
 #
-#   pwsh Shenanigans/EscapeHatches/verify.ps1
+#   pwsh EscapeHatches/verify.ps1
 #
 # Unlike ../KernelDefects/, these files are SUPPOSED to work: each one is a
 # sanctioned route to `False`, and the claim being checked is that the route is
