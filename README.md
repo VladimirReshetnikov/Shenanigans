@@ -9,12 +9,6 @@ theorem Paradox : False
 in Lean 4 and in Rocq/Coq, and get it accepted — organised by *what it costs you
 to do so*.
 
-This work grew up inside
-[VladimirReshetnikov/ProveIt](https://github.com/VladimirReshetnikov/ProveIt),
-which does prove theorems in the ordinary sense, and was split out into its own
-repository — with its full history — precisely so that the two are not confused.
-Nothing here is imported by, or imports, the mathematical developments there.
-
 ## The organising question: what does the audit report?
 
 Every route to `False` gives something up, and the four top-level directories
