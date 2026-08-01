@@ -1,7 +1,5 @@
 # Shenanigans
 
-**Nothing in this repository is ordinary mathematics.**
-
 This is a catalog of the ways one can write
 
 ```lean
@@ -10,10 +8,6 @@ theorem Paradox : False
 
 in Lean 4 and in Rocq/Coq, and get it accepted — organised by *what it costs you
 to do so*.
-
-A `False` derived here is a statement about a formal system or about a program.
-It is never a mathematical fact, and never grounds for doubting anything proved
-by machine elsewhere.
 
 This work grew up inside
 [VladimirReshetnikov/ProveIt](https://github.com/VladimirReshetnikov/ProveIt),
