@@ -31,7 +31,7 @@ designed; the fourth is a negative result.
 | --- | --- |
 | [`Paradoxes/`](Paradoxes/) | Girard/Hurkens, Coquand–Paulin, Cantor, and the subsingleton-elimination barrier, each stated as an implication from an ingredient the system withholds, each axiom-free. Plus `Blockers.lean`, which machine-checks the exact judgment Lean refuses in every case. Lean and Rocq. |
 | [`EscapeHatches/`](EscapeHatches/) | The sanctioned routes: `sorry`, `axiom`, `Admitted`, `native_decide` + `@[implemented_by]`, `Unset Guard/Positivity/Universe Checking`, rewrite rules, `-impredicative-set`, unchecked `addDecl` — and the two routes that defeat the audit rather than the kernel, `Spoofing.lean`/`Spoofing.v`. Lean and Rocq. |
-| [`KernelDefects/`](KernelDefects/) | Genuine implementation defects. Lean: the name-keyed `Nat`/`String`/`reduceBool` accelerator family, `Expr.proj` index truncation, definitional-equality history dependence, and the two defects that are **live on every released toolchain** — a universe spelling the kernel reads two ways, and a module boundary that loses `partial` — with controls and a `leanchecker` verdict for each. Rocq: four fixed guard-checker and module-system defects, kept as regression witnesses. |
+| [`KernelDefects/`](KernelDefects/) | Genuine implementation defects. Lean: the name-keyed `Nat`/`String`/`reduceBool` accelerator family, `Expr.proj` index truncation, definitional-equality history dependence, and the two defects that are **live on every released toolchain** — a universe spelling the kernel reads two ways, and a module boundary that loses `partial` — with controls and a `leanchecker` verdict for each. Rocq: four fixed guard-checker and module-system defects kept as regression witnesses, plus one **open** route ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)) that is accepted today with a clean `Print Assumptions`. |
 | [`Audits/`](Audits/) | Searches that came up empty, which is the useful part of their output. Level/def-eq/compiler fuzzers, the `Acc` and `Expr.proj` metatheory probes, and the string- and name-identity study. |
 | [`Reports/`](Reports/) | Write-ups suitable for upstream bug reports, each pinned to specific toolchain versions. Plus [`Counterexamples/`](Reports/Counterexamples/), a typeset edition of Stephen Dolan's *Counterexamples in Type Systems*, which is source material rather than a result — mining it for Lean analogues is what produced [`KernelDefects/Lean/ModuleSystem/`](KernelDefects/Lean/ModuleSystem/). |
 | [`Upstream/`](Upstream/) | Submodules pinning the three sources this catalog cites line by line: `leanprover/lean4`, `leanprover/comparator`, `ammkrn/nanoda_lib`. **Reference material, not dependencies** — nothing here builds or imports them, and every exhibit verifies with the directory absent. |
@@ -49,7 +49,7 @@ not matter.
 pwsh Paradoxes/verify.ps1            # All 6 paradox exhibits behaved as documented.
 pwsh EscapeHatches/verify.ps1        # All 14 escape-hatch exhibits behaved as documented.
 pwsh KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
-pwsh KernelDefects/Coq/verify.ps1    # All 4 Coq exhibits behaved as documented.
+pwsh KernelDefects/Coq/verify.ps1    # All 6 Coq exhibits behaved as documented.
 ```
 
 Verified on Lean `4.32.0` (`x86_64-w64-windows-gnu`, commit `8c9756b28d64`) and
