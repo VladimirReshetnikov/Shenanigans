@@ -1,0 +1,5 @@
+name = "paradox"
+defaultTargets = ["Paradox"]
+
+[[lean_lib]]
+name = "Paradox"
