@@ -23,7 +23,7 @@ in the statement.
 
 | Path | System | Substance |
 | --- | --- | --- |
-| [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal fabrication), `Expr.proj` index truncation, definitional-equality history dependence, and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
+| [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal fabrication), the universe-spelling defect in [`Universes/`](Lean/Universes/), `Expr.proj` index truncation, definitional-equality history dependence, and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
 | [`Coq/`](Coq/) | Rocq 9.2 | Four soundness defects from the 2026 sweep — three guard-checker, one module-system — all fixed upstream, kept as regression witnesses that must be *rejected*. |
 
 ## Reproducing
@@ -34,9 +34,17 @@ pwsh KernelDefects/Lean/verify.ps1
 ```bash
 pwsh KernelDefects/Coq/verify.ps1
 ```
+```bash
+pwsh KernelDefects/Lean/Universes/verify.ps1
+```
 
-Expected final lines: `All 6 modules behaved as documented.` and
-`All 4 Coq exhibits behaved as documented.`
+Expected final lines: `All 6 modules behaved as documented.`,
+`All 4 Coq exhibits behaved as documented.`, and
+`All universe-spelling artifacts behaved as documented.`
+
+The third has its own script because those modules are not `prelude`: they import
+`Lean.CoreM`, so `leanchecker --fresh` would re-check the whole Lean library once
+per module. It takes `-Toolchains` and `-SkipLeanChecker`.
 
 ## Why the two systems' defects cluster in different places
 
