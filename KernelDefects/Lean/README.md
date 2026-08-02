@@ -1,18 +1,19 @@
 # Lean kernel defects — deliberately unsound artifacts
 
-> **Warning.** Every Lean module under `Accelerators/`, `Universes/` and
-> `Controls/` in this directory is *deliberately unsound*. Five of them contain a
-> machine-checked proof of `False`. They exist to document soundness holes, not to
-> be used. They belong to no Lake package, are imported by nothing, and must never
-> be.
+> **Warning.** Every Lean module under `Accelerators/`, `Universes/`,
+> `ModuleSystem/` and `Controls/` in this directory is *deliberately unsound*.
+> Six of them contain a machine-checked proof of `False`. They exist to document
+> soundness holes, not to be used, and nothing in this repository imports them.
 >
 > The `Accelerators/` and `Controls/` modules cannot contaminate anything that
 > builds them: they are `prelude` modules, so importing one into a module that
-> also imports `Init` is impossible. **`Universes/` has no such fuse.**
-> `ImaxPropLaundering.lean` is an ordinary module — that is exactly what makes it
-> interesting, since the prelude-assumption policy of
+> also imports `Init` is impossible. **`Universes/` and `ModuleSystem/` have no
+> such fuse** — and that is exactly what makes them interesting, since the
+> prelude-assumption policy of
 > [lean4#13626](https://github.com/leanprover/lean4/issues/13626) does not reach
-> it — and importing it really does put `False` in scope. Do not.
+> them. `ImaxPropLaundering.lean` is an ordinary module and `ModuleSystem/` is a
+> self-contained Lake package of its own; importing either really does put `False`
+> in scope. Do not.
 
 Full write-up:
 [`Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md`](../../Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md).
@@ -108,6 +109,7 @@ it appears to be genuinely vacuous.
 | [`Accelerators/NatAddAccelerator.lean`](Accelerators/NatAddAccelerator.lean) | `theorem boom : False` via a module-local `Nat` and a non-standard `Nat.add`. | accepts |
 | [`Accelerators/NatBeqAccelerator.lean`](Accelerators/NatBeqAccelerator.lean) | The same, via `Nat.beq` (whose accelerator returns the constants named `Bool.true`/`Bool.false`). | accepts |
 | [`Accelerators/ReduceBoolFreeName.lean`](Accelerators/ReduceBoolFreeName.lean) | Different mechanism: the kernel's *native* hook. Defining the free name `Lean.reduceBool` makes the kernel run compiled code and believe it — with **no** `Lean.ofReduceBool`, no `native_decide`, no `@[implemented_by]`. `lean` exits 0 and `#print axioms` reports nothing, so this is an axiom-*tracking* hole. | **rejects** (the interpreter cannot replay `probe`) |
+| [`ModuleSystem/`](ModuleSystem/) | **Not `prelude`, not even a kernel defect, and live on every released toolchain.** A two-module Lake package: a `partial` definition of type `False` crosses a module boundary as a *safe* axiom stub (lean4#14609), so `public theorem Paradox : False` is accepted from a safe declaration. **`#print axioms` reports nothing** — the second Lean route invisible to the audit, and the first that needs no option. | **rejects** — and it is the only exhibit here that `leanchecker` catches, because the defect is in the frontend rather than in the kernel it shares |
 | [`Universes/ImaxPropLaundering.lean`](Universes/ImaxPropLaundering.lean) | **Not `prelude`, and live on every released toolchain.** `theorem Paradox : False` from lean4#14613: `is_prop` compares the sort spelling against `Sort 0` syntactically, so one inductive is a proposition for proof irrelevance and not one for `infer_proj`. Uses only genuine core constants, so §2.3's prelude policy does not cover it. Two spellings of zero (`imax 1 0` and `max 0 0`), each with its own `False`. | **accepts** — it shares Lean's kernel. `nanoda` rejects it. Verified by [`Universes/verify.ps1`](Universes/verify.ps1) |
 | [`Universes/MutualResultLevel.lean`](Universes/MutualResultLevel.lean) | The *laundering* step measured alone, with the order reversal as its control. `m_result_level` comes from the first type of a mutual block; that is how the payload above gets declared at all, and it is unchanged on `master`. No `False`. | n/a |
 | [`Controls/ImaxPropControl.lean`](Controls/ImaxPropControl.lean) | Control for the two above. The same construction with the sort spelled `Sort 0`; the kernel refuses the projection, `#guard_msgs`-asserted. | n/a |
@@ -152,6 +154,15 @@ pwsh KernelDefects/Lean/Universes/verify.ps1
 
 Expected final line: `All universe-spelling artifacts behaved as documented.`
 It takes `-Toolchains` and `-SkipLeanChecker`.
+
+[`ModuleSystem/`](ModuleSystem/) likewise, because the defect only exists *across*
+a module boundary and so needs a Lake package rather than a loose module:
+
+```bash
+pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
+```
+
+Expected final line: `The module-boundary artifact behaved as documented.`
 
 ## Verified on
 

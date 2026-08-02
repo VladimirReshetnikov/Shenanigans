@@ -88,7 +88,7 @@ The `False` is closed, but something discloses the cost.
 | `@[implemented_by]` + `native_decide` | Lean | a fresh per-use axiom `<thm>._native.native_decide.ax_N_M` (since `v4.29.0`, [RFC #12216](https://github.com/leanprover/lean4/issues/12216)) | **artifact** — [`NativeDecide.lean`](EscapeHatches/Lean/NativeDecide.lean) |
 | `@[extern]` + `native_decide` | Lean | same. Needs a shared library, so it is harder to exhibit in one file | **noted** |
 | `@[csimp]` + `native_decide` | Lean | **under-reports**: axioms used in the `csimp` proof are not propagated ([lean4#7463](https://github.com/leanprover/lean4/issues/7463), OPEN). Worse, an *honest* `rfl` csimp lemma pointing at an `@[implemented_by]`-replaced constant gives `False` with no extra axiom at all | **noted** |
-| `set_option debug.skipKernelTC true` + hand-built `addDecl` | Lean | **nothing** — the only Lean route invisible to `#print axioms`. `leanchecker` rejects it | **artifact** — [`Metaprogramming.lean`](EscapeHatches/Lean/Metaprogramming.lean), and used as the control in [`KernelDefects/Lean/Controls/`](KernelDefects/Lean/Controls/) |
+| `set_option debug.skipKernelTC true` + hand-built `addDecl` | Lean | **nothing.** One of *two* Lean routes invisible to `#print axioms` — the other is the module-boundary stub of §2.1/#14609, which needs no option at all. `leanchecker` rejects both | **artifact** — [`Metaprogramming.lean`](EscapeHatches/Lean/Metaprogramming.lean), and used as the control in [`KernelDefects/Lean/Controls/`](KernelDefects/Lean/Controls/) |
 | `Unset Guard Checking` / `#[bypass_check(guard)]` | Rocq | `loop is assumed to be guarded.` | **artifact** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) §1 |
 | `Unset Positivity Checking` / `#[bypass_check(positivity)]` | Rocq | `Curry is assumed to be positive.` | **artifact** — same file §2 |
 | `Unset Universe Checking` / `-type-in-type` / `#[bypass_check(universes)]` | Rocq | `… relies on an unsafe hierarchy.` plus, *while the flag is off*, `Theory: Type hierarchy is collapsed` | **artifact** — same file §3–4 |
@@ -135,11 +135,13 @@ fixed-width integer fields.
 ### 2.1 Live defects (not fixed as of the survey)
 
 "Live" means *no released toolchain carries the fix*, whether or not `master`
-does. Two of the July wave's fixes are `master`-only, and both of those rows are
-axiom-free proofs of `False` against the current release.
+does. **Three** of the July wave's fixes are `master`-only, and all three are
+axiom-free proofs of `False` against the current release. None is on
+`releases/v4.33.0` either.
 
 | Issue | Defect | Coverage |
 | --- | --- | --- |
+| [#14609](https://github.com/leanprover/lean4/pull/14609) | **`master`-only fix; live on every release.** A `module` publishes a definition whose body stays private as an axiom stub, and `addDeclCore` (`src/Lean/AddDecl.lean:118`) built it with `isUnsafe := defn.safety == .unsafe` — false for `.partial`. The kernel accepts a `partial` definition of type `False` (a `partial` mutual block has no inhabitance obligation), the boundary launders it into a *safe* axiom, and both of `infer_constant`'s gates miss: the first because `is_unsafe()` says false, the second because it inspects definitions and a stub is an axiom. **`#print axioms` reports nothing**; `leanchecker` rejects. Not a `src/kernel/` defect, which is why §5.2's first pass missed it. | **artifact** + **report** — [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/), [`Reports/2026-08-01-module-boundary-…`](Reports/2026-08-01-module-boundary-partial-stub.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected and `leanchecker` rejects on all of them |
 | [#14613](https://github.com/leanprover/lean4/pull/14613) | **`master`-only fix; live on every release.** `type_checker::is_prop` compares `whnf(infer_type(e))` against `Prop` syntactically, so `Sort (imax 1 0)` — which denotes `Prop` — is a proposition for proof irrelevance and not one for `infer_proj`'s field restriction. Projecting a `Bool` out of two proofs of it gives `false = true`. See §2.2 for the fix and §2.6 for the *second* weakness the reproducer needs. | **artifact** + **report** — [`Universes/ImaxPropLaundering.lean`](KernelDefects/Lean/Universes/ImaxPropLaundering.lean), [`Reports/2026-08-01-imax-prop-…`](Reports/2026-08-01-imax-prop-laundering.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected on all of them |
 | [#14616](https://github.com/leanprover/lean4/pull/14616) | **`master`-only fix; live on every release.** An inductive declaration may name one of the kernel's transient `_nested` auxiliary types, and `restore_nested` then rewrites the name back to a type in a different universe, leaving a stored constructor that is ill typed; `equiv_manager` closes the consequences transitively. Cannot be captured as an arena export test, so **no artifact exists anywhere**. | **gap** — the highest-value remaining item in §5 |
 | [#14582](https://github.com/leanprover/lean4/pull/14582) | **The live one.** Follow-up to #14577 by Arthur Adjedj: a datatype being declared can occur applied to arguments that are *not* the parameters of the mutual declaration, hidden in the parametric arguments of a nested inductive, which are dropped from the generated auxiliary declaration and so escape type checking. Adds `check_uniform_params`. The FRO's own framing: it makes the kernel *"check that the parameters of a nested occurrence actually behave as parameters, rather than only re-type-checking them"* (§6 postmortem). **OPEN as of 2026-08-01.** | **noted** — now an arena test, §3.1 `nested-nonuniform-param` |
@@ -167,7 +169,7 @@ Chronological. Every one of these was accepted by the *checked* kernel.
 | [#14616](https://github.com/leanprover/lean4/pull/14616) | A declaration naming one of the kernel's `_nested` auxiliary types: `restore_nested` can hand a stored constructor a type in a *different universe* than it was checked against. Notable because it **cannot be captured as an arena export test** — the exploit depends on transient `equiv_manager` state. | 2026-07-31 |
 | [#14607](https://github.com/leanprover/lean4/pull/14607) | Missing `check_no_metavar_no_fvar` in `inductive.cpp`: nested inductive declarations containing fvars/mvars. | 2026-07-30 |
 | [#14608](https://github.com/leanprover/lean4/pull/14608) | The kernel did not check that declarations in a `mutual` block use the same universe parameters. | 2026-07-30 |
-| [#14609](https://github.com/leanprover/lean4/pull/14609) | Module system: an exported definition's axiom stub computed `isUnsafe` as `defn.safety == .unsafe`, which is **false for `.partial`** — so a `partial def` crossed a module boundary as an ordinary *safe* axiom. | 2026-07-30 |
+| [#14609](https://github.com/leanprover/lean4/pull/14609) | Module system: an exported definition's axiom stub computed `isUnsafe` as `defn.safety == .unsafe`, which is **false for `.partial`** — so a `partial def` crossed a module boundary as an ordinary *safe* axiom. **Live on every released toolchain**; see §2.1. | 2026-07-30 (`master` only) |
 
 **Only two releases in Lean 4's history were cut specifically for kernel
 soundness: `v4.32.1` and `v4.32.2`, eight days apart in July 2026.**
@@ -277,6 +279,8 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 | `v4.33.0-rc1` backport gap, **twice** | The 4.33 branch was cut before #14484 and #14576 landed and neither was cherry-picked, so the release candidate accepts both proofs of `False`. Both were later cherry-picked onto `releases/v4.33.0` — and then the same thing happened again with #14613/#14615/#14616, which merged to `master` on 07-31, three days after that branch's HEAD, and are still not on it. A recurrence four days after the first was recorded as resolved. | **report** — [`Reports/2026-07-29-lean-4.33-…`](Reports/2026-07-29-lean-4.33-backport-gap.md) |
 | **Mutual-block result-level laundering** | `check_inductive_types` (inductive.cpp:248) sets `m_result_level` from the **first** type of a mutual block and requires the others only to be `is_equivalent`; every downstream gate reads that one spelling. So the data-field permission that `check_constructors` grants a syntactic `Sort 0` is inherited by a type whose own sort is spelled `Sort (imax 1 0)` or `Sort (max 0 0)`, purely by declaring it *second*. Reversing the two types rejects the same block, which is what pins it on "first" rather than "some". This is the step that gets #14613's payload past a released kernel at all, and upstream's fix and regression test do not mention it: **it is unchanged on `master`**, harmless there only because #14613/#14615 made every consumer of `m_result_level` semantic in the same wave. Refines §2.5's note on #14615 — the syntactic test erred restrictively *per block*, not per type. | **artifact** + **report** — [`Universes/MutualResultLevel.lean`](KernelDefects/Lean/Universes/MutualResultLevel.lean), [`Reports/2026-08-01-imax-prop-…`](Reports/2026-08-01-imax-prop-laundering.md) |
 | `Sort (max 0 0)` as a second member of the #14613 class | Upstream's commit message and its regression test `tests/elab/kernelImaxProp.lean` name only `imax 1 0`. `is_zero` is `kind() == Zero`, so the class is *every* spelling of zero that is not literally `Level.zero`; `max 0 0` gives its own axiom-free `False` by the same route. Does not affect the fix — `normalizes_to_zero` is semantic and closes the whole class at once. | **artifact** — second half of [`Universes/ImaxPropLaundering.lean`](KernelDefects/Lean/Universes/ImaxPropLaundering.lean) |
+| **A module boundary loses `partial`, and `#print axioms` cannot see it** | The exported-stub defect of #14609, reproduced as a two-module Lake package: a safe `theorem Paradox : False`, `#print axioms` clean, on every released toolchain. Two things beyond the upstream fix: the audit is **blind** to it, which makes it the second Lean route invisible to `#print axioms` after `debug.skipKernelTC` (§1.2) and the first that needs no option; and `leanchecker` **rejects** it, unlike every other exhibit in [`KernelDefects/Lean/`](KernelDefects/Lean/) — because this defect is in the frontend rather than in the kernel `leanchecker` shares. Found by mining [`Reports/Counterexamples/`](Reports/Counterexamples/) — it is that book's *Privacy violation* verbatim: a property checked against a local view, and a lossy summary across a boundary that drops it. | **artifact** + **report** — [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/), [`Reports/2026-08-01-module-boundary-…`](Reports/2026-08-01-module-boundary-partial-stub.md) |
+| **Correction to this file's own sweep method** | The 2026-08-01 pass scoped itself to `git diff v4.32.2..master -- src/kernel/`, on the theory that this gives the exact set of checks the shipped kernels lack. It does, and that is the flaw: #14609 is a `src/Lean/` fix, so the diff was structurally unable to see it, and §6 said two of the July wave's `False`s were unreleased when the answer is three. The corrected sweep searches the range by commit message with no path filter (§5.2). The general lesson is the one #14609 illustrates: **soundness is not a property of `src/kernel/`** — the kernel's gates were right throughout; the frontend's *summary* of a declaration was wrong. | **report** — [`Reports/2026-08-01-module-boundary-…`](Reports/2026-08-01-module-boundary-partial-stub.md) |
 | **`check_positivity`'s leading `whnf` erases occurrences it then does not check** | `check_positivity` (inductive.cpp:452) starts `t = whnf(t)` and returns at its first branch when the reduced form has no occurrence of the types being declared — but the kernel stores the **unreduced** type, and `restore_nested` rewrites `_nested` occurrences inside it. Hiding the auxiliary behind `def Ignore (_ : Prop) : Prop := True` therefore walks past the only gate on the safe path. Result: a **safe**, axiom-free module, `lean --trust=0` exit 0, `#print axioms` clean, that makes every released kernel store three constants its own `Kernel.check` rejects — `B.node`, `B.rec`, and `B.rec`'s computation rule. Not a `False`: `Ignore X` is definitionally `True` whichever argument it holds, so every use reduces past the ill-typed application. `master` rejects the declaration up front (#14616's `check_no_nested_aux`), so this is a route on the release line rather than a new `master` defect — and it is a concrete case where #14621's re-check, whose own comment calls it "not necessary", would fire. | **artifact** + **report** — [`Audits/Lean/Nested/IllTypedStoredConstructor.lean`](Audits/Lean/Nested/IllTypedStoredConstructor.lean), [`Reports/2026-08-01-positivity-whnf-…`](Reports/2026-08-01-positivity-whnf-erasure.md) |
 | `is_not_zero` differential sweep | `is_not_zero` is the one level predicate the July 2026 wave did **not** convert to a semantic test, and it is read *before* the "mutual ⟹ `Prop`-only" and "more than one constructor ⟹ `Prop`-only" branches of `elim_only_at_universe_zero` — so a false positive there hands an inductive predicate a data-eliminating recursor. Fuzzed through the observable channel (declare a 2-constructor inductive at the level, read whether the recursor gained an elimination universe) against the denotational "can this level be zero?". 360 level spellings to depth 3, 91 large-eliminating: **0 unsound**. | **negative result** — [`Audits/Lean/Fuzz/IsNotZeroFuzzer.lean`](Audits/Lean/Fuzz/IsNotZeroFuzzer.lean) |
 
@@ -688,7 +692,7 @@ Lean kernel surface against an explicit oracle; harnesses and counts are in
 | `Nat.rec` on literals, `0` through `2^100` | expected constructor branch | 0 divergence |
 | `Prop` inductives: subsingleton-elimination restriction | proof-relevance | 40 declarations, correctly restricted |
 | Kernel-internal fvar leaks into inferred types | `_kernel_fresh` scan + re-check | none (i.e. #10475 is fixed) |
-| Module boundary: `sorry`, private-in-public, section variables | `#print axioms`, visibility | all correctly guarded |
+| Module boundary: `sorry`, private-in-public, section variables | `#print axioms`, visibility | all correctly guarded — **but the sweep did not cover `partial` across the boundary, which is not guarded at all**: see §2.1/#14609 and [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/). The row stands for what it tested; the omission is recorded here rather than silently fixed |
 | `Expr.mdata` as a bypass: positivity, self-occurrence-in-index, `check_no_metavar_no_fvar` | the corresponding kernel check | every check strips `mdata`; all of `hasFVar`/`hasMVar`/`hasLooseBVars` propagate through it |
 | `Nat.sqrt`, `nextPowerOfTwo`, `lcm`, `min`, `max`, `testBit` | compiled implementation | 10,638 comparisons, 0 divergence |
 | Signed fixed-width arithmetic: `Int8`/`Int16`/`Int32`/`Int64`, ten ops each incl. `div`/`mod`/shifts at `minValue` | compiled implementation | 23,160 comparisons, 0 divergence |
@@ -718,15 +722,34 @@ generator never produces the reserved prefix.
 
 ### 5.2 What the 2026-08-01 released-toolchain pass found and ruled out
 
-Method: `git diff v4.32.2..master -- src/kernel/` against the pinned
-[`Upstream/lean4`](Upstream/) at `5fa71c9141`, giving the exact set of checks the
-shipped kernels lack, then black-box confirmation from inside Lean for each. This
-is a different question from §5.1's — not "is there an undiscovered hole" but
-"which discovered holes are still shipped".
+Method, **as corrected on the same day**. The first pass ran
+`git diff v4.32.2..master -- src/kernel/` against the pinned
+[`Upstream/lean4`](Upstream/) at `5fa71c9141`, on the theory that this gives the
+exact set of checks the shipped kernels lack. It does, and that is the flaw: a
+soundness fix outside `src/kernel/` is invisible to it, and one such fix —
+#14609 — is an axiom-free `False` on every release. The corrected sweep drops the
+path filter and searches by commit message:
+
+```bash
+git log v4.32.2..HEAD --format="%h %s" --grep=soundness --grep=unsound     --grep="proof of false" --grep="kernel bug" --grep=inconsisten -i
+```
+
+Ten commits, classifying as:
+
+| Class | Commits |
+| --- | --- |
+| **Unreleased proofs of `False`** | **#14609** (module stub, §2.1), **#14613** (`is_prop`, §2.1), **#14616** (`_nested`, §2.1) |
+| Already released | #14498/#14484 (`v4.32.1`), #14577/#14576 (`v4.32.2`) |
+| Widening / hardening, not soundness | #14615, #14621 |
+| Tactic bugs the kernel itself caught | #14618 (`grind` closes a goal with an ill-typed term; the kernel rejects it), #13587 (`lia`/`grind` `eq_def` kernel type mismatch), #14524, #14404 |
+
+Then black-box confirmation from inside Lean for each. This is a different
+question from §5.1's — not "is there an undiscovered hole" but "which discovered
+holes are still shipped".
 
 | Surface | Question | Result |
 | --- | --- | --- |
-| The whole `src/kernel/` diff, `v4.32.2` → `master` | Which of the July-wave fixes are in no released toolchain? | Twelve files. **Two are live proofs of `False`**: #14613 (`is_prop`) and #14616 (`_nested`). The rest are hardening (#14621, #14631, #14632's `add_quot`/`add_mutual`/`reduce_proj_core` guards, #14633's checking order) or widening (#14615) |
+| The whole `src/kernel/` diff, `v4.32.2` → `master` | Which of the July-wave fixes are in no released toolchain? | Twelve files, of which **two are live proofs of `False`**: #14613 (`is_prop`) and #14616 (`_nested`). The rest are hardening (#14621, #14631, #14632's `add_quot`/`add_mutual`/`reduce_proj_core` guards, #14633's checking order) or widening (#14615). **Incomplete by construction** — the path filter hides #14609, a `src/Lean/` fix that is a third live proof of `False`; see the corrected method above |
 | #14613, reachability on releases | Can the payload be declared at all, given that `check_constructors` at `v4.32.2` gates data fields on the *syntactic* `is_zero`? | **Only via a mutual block.** `Sort (imax 1 0)` alone with a `Bool` field is rejected; second in a block whose first type is `Sort 0`, accepted; reversed, rejected. This is §2.6's laundering finding and is the step that makes the exploit possible |
 | Spellings of zero other than `imax 1 0` | Is the class wider than the one level upstream's test names? | Yes — `max 0 0` gives its own `False` by the identical route. `is_zero` is `kind() == Zero`, so the class is every spelling that is not literally `Level.zero` |
 | Every syntactic `Prop`-hood test in `src/kernel/` on `master` | Did #14613/#14615 convert all of them? | Yes. Grepping `is_zero(` and `mk_Prop()` over `src/kernel/` leaves no site deciding `Prop`-hood: the surviving `mk_Prop()` uses build the type of `Quot`'s relation argument and the placeholder type of `local_ctx`'s dummy declaration, and the surviving `is_zero` uses are on `Nat` literals |
@@ -772,10 +795,12 @@ fixed within hours to days, and one of them exploitable *through* `comparator`.
 Three of the arena's independent checkers currently score a perfect 57/57 on the
 attack corpus where the official kernel scores 56/57.
 
-**"Fixed" there means fixed on `master`.** Of those five, #14613 and #14616 are
-in no released toolchain as of 2026-08-01, and each of them is an axiom-free
-`False` against `v4.33.0-rc1` — the first with an artifact here since 08-01
-([`Universes/`](KernelDefects/Lean/Universes/)), the second still a gap (§5).
+**"Fixed" there means fixed on `master`.** Of those five, **three** — #14609,
+#14613 and #14616 — are in no released toolchain as of 2026-08-01, and each is an
+axiom-free `False` against `v4.33.0-rc1`. Two now have artifacts here:
+[`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/) and
+[`Universes/`](KernelDefects/Lean/Universes/); #14616 is still a gap (§5). The
+count was two until the 08-01 sweep was re-run without a path filter — see §5.2.
 Only #14484 and #14576 got their own releases. #14609, #14613, #14615 and #14616
 all landed on `master` on 2026-07-30/31, after `v4.32.2` was tagged (07-28) and
 after `v4.33.0-rc1` (07-15); and as of the pin, **none of them has been
