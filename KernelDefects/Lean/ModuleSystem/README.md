@@ -82,8 +82,9 @@ This one was missed here for a structural reason worth recording. The 2026-08-01
 pass that found [`Universes/`](../Universes/) worked by diffing
 `git diff v4.32.2..master -- src/kernel/`. **#14609 is a `src/Lean/` fix**, so
 that diff could not see it, and CATALOG went on saying two of the July wave's
-`False`s were unreleased when the answer is three. The corrected sweep is to
-search *every* commit in the range by message —
+`False`s were unreleased when the answer is three.
+
+The obvious correction is to search *every* commit in the range by message —
 
 ```bash
 git log v4.32.2..HEAD --format="%h %s" --grep=soundness --grep=unsound -i
@@ -92,6 +93,14 @@ git log v4.32.2..HEAD --format="%h %s" --grep=soundness --grep=unsound -i
 — which turns up ten commits, of which #14609, #14613 and #14616 are the three
 unreleased proofs of `False`; #14615 and #14621 are widening and hardening, and
 #14618, #13587, #14524, #14404 are tactic bugs the kernel itself caught.
+
+**And that correction is itself incomplete.** It misses #14607 and #14608, whose
+messages do not use the word — and #14608 turns out to be a check no release
+enforces (see [`Audits/Lean/Nested/MutualLevelParams.lean`](../../../Audits/Lean/Nested/MutualLevelParams.lean)).
+Three enumerations, three misses. The only one that misses nothing is to take the
+PR numbers the postmortem itself names — #14607–#14616, #14621, #14631, #14632,
+#14633 — and check each against the release tags one at a time. That is now the
+procedure recorded in [`CATALOG.md`](../../../CATALOG.md) §5.2.
 
 ## Reproducing
 

@@ -85,11 +85,11 @@ The fix is one character of substance: `defn.safety != .safe`.
 
 ## Measured behaviour
 
-Each row builds the package and runs three modules plus `leanchecker`. Exit 0 is
+Each row builds the package and runs four modules plus `leanchecker`. Exit 0 is
 the assertion in every column: `Audit.lean`'s `#guard_msgs` demands *"does not
-depend on any axioms"* for all three theorems and raises an error if the imported
-`partialFalse` is not an axiom stub with `isUnsafe = false`; `Control.lean`'s
-demands the kernel rejection.
+depend on any axioms"* and raises an error if the imported `partialFalse` is not
+an axiom stub with `isUnsafe = false`; `Control.lean`'s and
+`ConsumerUnsafe.lean`'s each demand a specific kernel rejection.
 
 | Toolchain | build | Consumer | Audit | Control | axiom-free theorems | `leanchecker` |
 | --- | --- | --- | --- | --- | --- | --- |
