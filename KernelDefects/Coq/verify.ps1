@@ -3,9 +3,11 @@
 #
 #   pwsh KernelDefects/Coq/verify.ps1
 #
-# Every exhibit here is a proof of False on an AFFECTED toolchain and is fixed
-# upstream, so each must be REJECTED on a current one: acceptance signals a
-# regression.  The paradoxes moved to ../../Paradoxes/ and are checked by
+# Most exhibits here are proofs of False on an AFFECTED toolchain that are fixed
+# upstream, so they must be REJECTED on a current one: acceptance signals a
+# regression.  ModuleSystem/UniverseFlagDesync is the exception — rocq#22287 is
+# OPEN, so it must be ACCEPTED, and its companion Import case must be rejected.
+# The paradoxes moved to ../../Paradoxes/ and are checked by
 # ../../Paradoxes/verify.ps1.
 
 $ErrorActionPreference = 'Stop'
@@ -22,7 +24,12 @@ $cases = @(
   @{ Name = 'GuardChecker/HigherOrderFixpoint';  Path = 'GuardChecker/HigherOrderFixpoint.v';  Expect = 'reject'; Needle = 'Recursive definition of russell is ill-formed' },
   @{ Name = 'GuardChecker/NestedMutualCrossCall';Path = 'GuardChecker/NestedMutualCrossCall.v';Expect = 'reject'; Needle = 'Recursive definition of F is ill-formed' },
   @{ Name = 'GuardChecker/UniformArgsLet';       Path = 'GuardChecker/UniformArgsLet.v';       Expect = 'reject'; Needle = 'Recursive definition of F_let is ill-formed' },
-  @{ Name = 'ModuleSystem/AliasChainDeltaResolver'; Path = 'ModuleSystem/AliasChainDeltaResolver.v'; Expect = 'reject'; Needle = 'Unable to unify' }
+  @{ Name = 'ModuleSystem/AliasChainDeltaResolver'; Path = 'ModuleSystem/AliasChainDeltaResolver.v'; Expect = 'reject'; Needle = 'Unable to unify' },
+  # rocq#22287 is OPEN: this one must be ACCEPTED, with a clean audit, and coqchk
+  # must reject the .vo it produces.  Ordered before the Import case, which needs
+  # that .vo to exist.
+  @{ Name = 'ModuleSystem/UniverseFlagDesync';      Path = 'ModuleSystem/UniverseFlagDesync.v';      Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'reject' },
+  @{ Name = 'ModuleSystem/UniverseFlagDesyncImport';Path = 'ModuleSystem/UniverseFlagDesyncImport.v';Expect = 'reject'; Needle = 'Universe inconsistency' }
 )
 
 $failures = 0
@@ -41,8 +48,23 @@ foreach ($c in $cases) {
   $verdictOk = ($accepted -eq $wantAccept)
   $needleOk = $output -match [regex]::Escape($c.Needle)
 
-  if ($verdictOk -and $needleOk) {
-    Write-Host ("  OK    {0,-38} {1} (exit {2})" -f $c.Name, $c.Expect, $code)
+  # For the open case, the independent checker's verdict is half the finding.
+  $chkOk = $true
+  if ($c.ContainsKey('Coqchk')) {
+    Push-Location $work
+    $null = & coqchk -silent ([System.IO.Path]::GetFileNameWithoutExtension($c.Path)) 2>&1
+    $chkCode = $LASTEXITCODE
+    Pop-Location
+    $chkVerdict = if ($chkCode -eq 0) { 'accept' } else { 'reject' }
+    $chkOk = ($chkVerdict -eq $c.Coqchk)
+    if (-not $chkOk) {
+      Write-Host ("        coqchk expected {0}, got {1}" -f $c.Coqchk, $chkVerdict) -ForegroundColor Red
+    }
+  }
+
+  if ($verdictOk -and $needleOk -and $chkOk) {
+    $suffix = if ($c.ContainsKey('Coqchk')) { " (coqchk $($c.Coqchk)s)" } else { "" }
+    Write-Host ("  OK    {0,-38} {1} (exit {2}){3}" -f $c.Name, $c.Expect, $code, $suffix)
   } else {
     $failures++
     Write-Host ("  FAIL  {0,-38} expected {1}, exit {2}" -f $c.Name, $c.Expect, $code) -ForegroundColor Red

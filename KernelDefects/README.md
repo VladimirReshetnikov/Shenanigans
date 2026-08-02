@@ -24,7 +24,7 @@ in the statement.
 | Path | System | Substance |
 | --- | --- | --- |
 | [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal fabrication), the universe-spelling defect in [`Universes/`](Lean/Universes/), the module boundary that loses `partial` in [`ModuleSystem/`](Lean/ModuleSystem/), `Expr.proj` index truncation, definitional-equality history dependence, and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
-| [`Coq/`](Coq/) | Rocq 9.2 | Four soundness defects from the 2026 sweep — three guard-checker, one module-system — all fixed upstream, kept as regression witnesses that must be *rejected*. |
+| [`Coq/`](Coq/) | Rocq 9.2 | Four soundness defects from the 2026 sweep — three guard-checker, one module-system — all fixed upstream and kept as regression witnesses that must be *rejected*; plus [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v), which is **open** ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)) and must be *accepted*: a `False` with a clean `Print Assumptions`, from nine lines of ordinary source. |
 
 ## Reproducing
 
@@ -42,7 +42,7 @@ pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.`,
-`All 4 Coq exhibits behaved as documented.`,
+`All 6 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`, and
 `The module-boundary artifact behaved as documented.`
 

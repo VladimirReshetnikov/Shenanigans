@@ -1,9 +1,15 @@
-# Rocq kernel defects — regression witnesses
+# Rocq kernel defects — four regression witnesses and one live route
 
 Four soundness defects from the 2026 sweep, each a proof of `False` on an
-affected toolchain and each **fixed upstream**. That makes every file here a
-*regression witness*: it must be **rejected** by a current Rocq, and acceptance
-would signal a regression.
+affected toolchain and each **fixed upstream**. That makes those four
+*regression witnesses*: each must be **rejected** by a current Rocq, and
+acceptance would signal a regression.
+
+[`ModuleSystem/UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) is the
+exception and the reason this README changed. [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)
+is **OPEN**, so that one must be **accepted** — and it is the only route in this
+whole repository reachable from nine lines of ordinary source with no
+metaprogramming.
 
 Same ground rules as the rest of the directory (see
 [`../../README.md`](../../README.md)): a `False` here is a claim about a program,
@@ -21,6 +27,25 @@ never a mathematical fact.
 | [`GuardChecker/HigherOrderFixpoint.v`](GuardChecker/HigherOrderFixpoint.v) | [rocq#21683](https://github.com/rocq-prover/rocq/issues/21683) | rejected — `Recursive definition of russell is ill-formed` |
 | [`GuardChecker/UniformArgsLet.v`](GuardChecker/UniformArgsLet.v) | [rocq#21701](https://github.com/rocq-prover/rocq/issues/21701) | rejected — `Recursive definition of F_let is ill-formed` |
 | [`ModuleSystem/AliasChainDeltaResolver.v`](ModuleSystem/AliasChainDeltaResolver.v) | [rocq#21685](https://github.com/rocq-prover/rocq/issues/21685) | rejected — `Unable to unify` |
+| [`ModuleSystem/UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) | [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), **OPEN** | **accepted**, exit 0 — `Closed under the global context`. `coqchk` rejects the `.vo` |
+| [`ModuleSystem/UniverseFlagDesyncImport.v`](ModuleSystem/UniverseFlagDesyncImport.v) | the containment half | rejected at the `Require` — `Universe inconsistency` |
+
+**The live one in one paragraph.** `ugraph` keeps a *copy* of the
+universe-checking flag, so `Local Unset Universe Checking` inside a `Module`
+leaves it desynced when the module closes. `Type` is then an element of itself
+outside any flag scope, Hurkens goes through, and `Print Assumptions` reports
+`Closed under the global context` — because no flag is in scope where it looks.
+Two controls in the same file show the paradox refused before the module and
+after a module that does not touch the flag.
+
+It is **contained**: the inconsistency is written into the `.vo`'s universe
+graph, so `coqchk` refuses it and any `Require` of it fails at the `Require`
+line. What the bug costs is the *local* audit. Compare
+[`../../EscapeHatches/Coq/TypingFlags.v`](../../EscapeHatches/Coq/TypingFlags.v)
+§3, where the same paradox obtained honestly reports `relies on an unsafe
+hierarchy` — and [`../Lean/ModuleSystem/`](../Lean/ModuleSystem/), the same
+*shape* in Lean, where the `False` does escape into ordinary downstream code.
+Write-up: [`Reports/2026-08-01-rocq-universe-flag-desync.md`](../../Reports/2026-08-01-rocq-universe-flag-desync.md).
 
 The Rocq paradoxes moved to [`../../Paradoxes/Coq/`](../../Paradoxes/Coq/), and
 the flag-gated routes to `False` — including `Unset Guard Checking` and
@@ -35,7 +60,7 @@ pwsh KernelDefects/Coq/verify.ps1
 
 Each exhibit is compiled in a scratch directory outside the repository, and the
 script **asserts** both the verdict and a distinguishing substring of the output.
-Expected final line: `All 4 Coq exhibits behaved as documented.`
+Expected final line: `All 6 Coq exhibits behaved as documented.`
 Verified on **The Rocq Prover 9.2** (OCaml 4.14.2).
 
 ## Why these four, and why they cluster

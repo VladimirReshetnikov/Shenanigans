@@ -475,7 +475,7 @@ different ways, which is why they share a directory.
 | [#21685](https://github.com/rocq-prover/rocq/issues/21685) | Same, for **aliased** functors: a multi-step `Module Alias := M` chain corrupts the delta-resolver | kernel 8.5–9.1 | 9.2.0 | **artifact** — [`AliasChainDeltaResolver.v`](KernelDefects/Coq/ModuleSystem/AliasChainDeltaResolver.v) |
 | [#21702](https://github.com/rocq-prover/rocq/issues/21702) | `check_with_def` stored the with-body's *weaker* universes → `Type@{u} → Type@{v}` with no `u ≤ v` → Girard | 8.5–9.1 | 9.2.0 | **gap** |
 | [#21750](https://github.com/rocq-prover/rocq/issues/21750) | Subtyping ignored elimination constraints → unbox a `Box@{SProp}` → `true = false` | 9.2+rc1 | 9.2.0 | **gap** |
-| [#22287](https://github.com/rocq-prover/rocq/issues/22287) | `ugraph` keeps a *copy* of the universe-checking flag; `Local Unset Universe Checking` in a module leaves it desynced on close → effective type-in-type → Hurkens, reported as **"Closed under the global context"** | master | **OPEN** (2026-07-16) | **gap** |
+| [#22287](https://github.com/rocq-prover/rocq/issues/22287) | `ugraph` keeps a *copy* of the universe-checking flag; `Local Unset Universe Checking` in a module leaves it desynced on close → effective type-in-type → Hurkens, reported as **"Closed under the global context"** | master — **and 9.2, measured here** | **OPEN** (2026-07-16) | **artifact** + **report** — [`ModuleSystem/UniverseFlagDesync.v`](KernelDefects/Coq/ModuleSystem/UniverseFlagDesync.v), [`Reports/2026-08-01-rocq-universe-flag-…`](Reports/2026-08-01-rocq-universe-flag-desync.md). **Verified here** on Rocq 9.2: `coqc` exit 0, audit clean for both the `False` and a `1 = 2` derived from it, two in-file controls refused. **Contained**: `coqchk` rejects the `.vo` and a `Require` of it is rejected at the `Require` line, so what is lost is the *local* audit, not a library |
 | [#12155](https://github.com/rocq-prover/rocq/issues/12155), [#16646](https://github.com/rocq-prover/rocq/issues/16646) | `Print Assumptions` under-reports inconsistent flags through `Parameter Inline` and functor application | V8.6–now / V8.11–now | **OPEN** | **noted** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) |
 
 ### 4.3 Universes, template polymorphism, sorts
@@ -531,8 +531,8 @@ reachable without a flag.
 
 ### 4.6 Currently open, soundness-relevant
 
-Coverage: **gap** for all. #22287 and #22024 are the only ones with a known route
-to `False`.
+Coverage: **gap** for all except #22287, which now has an artifact (§4.2).
+#22287 and #22024 are the only ones with a known route to `False`.
 
 [#22287](https://github.com/rocq-prover/rocq/issues/22287) (universe-flag desync
 on module close) · [#22024](https://github.com/rocq-prover/rocq/issues/22024)
@@ -670,10 +670,14 @@ Ordered by value.
    artifact. The 08-01 pass found four tests and a whole outcome class this file
    had not recorded, plus one row for a test that does not exist — so re-reading
    the corpus directly, rather than from this summary, is part of the job.
-2. **Rocq's remaining proofs of `False` (§4).** Four of the 2026 sweep's eight
+2. **Rocq's remaining proofs of `False` (§4).** Five of the 2026 sweep's eight
    are covered; #21690, #21694, #21702, #21736, #21797, #21839, #22021 and the
-   whole pre-2026 history are `gap`. The two OPEN ones with a route to `False`,
-   #22287 and #22024, are the highest priority.
+   whole pre-2026 history are `gap`. Of the two OPEN ones with a route to
+   `False`, **#22287 is now an artifact** (§4.2) — the first *live* Coq exhibit
+   here, and the first route in this catalog reachable from nine lines of
+   ordinary source with no metaprogramming at all. **#22024** (guard rtree
+   mutation, relative inconsistency with univalence) is the remaining one and is
+   now the highest-priority Rocq item.
 3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute`,
    `Extraction`, and `Declare ML Module` are the three routes `Print Assumptions`
    cannot see at all, and none has an artifact.
