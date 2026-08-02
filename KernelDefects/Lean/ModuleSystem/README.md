@@ -37,6 +37,11 @@ checked. Here it stands for a `partial` body that was not.
 hand-built `addDecl` as *"the only Lean route invisible to `#print axioms`"*.
 This is a second one, and unlike that one it needs no debug option.
 
+**The `False` does not stay inside the module system.** `Audit.lean` is ordinary
+Lean — no `module`, no `public` — that merely imports the package, and it proves
+`downstream : (2 : Nat) = 3` with a clean audit of its own. Nothing downstream
+has to opt in to anything.
+
 **`leanchecker` catches it**, because it replays declarations against the real
 environment rather than the exported view:
 
@@ -57,6 +62,7 @@ the defect is in the frontend rather than in the kernel it shares.
 | [`paradox/Paradox/Consumer.lean`](paradox/Paradox/Consumer.lean) | `module`. `public theorem Paradox : False := partialFalse`, from a **safe** declaration. Also `oneEqTwo : (1 : Nat) = 2`, so there is no doubt the `False` is real. |
 | [`paradox/Paradox/Audit.lean`](paradox/Paradox/Audit.lean) | Not a `module`, so `#print axioms` is available on every toolchain. Asserts the clean audit with `#guard_msgs`, and asserts that the imported `partialFalse` really is an `axiomInfo` with `isUnsafe = false`. |
 | [`paradox/Paradox/Control.lean`](paradox/Paradox/Control.lean) | Control. The identical `partial` definition used from a safe theorem in the **same** module, so no stub is created: `(kernel) invalid declaration, safe declaration must not contain partial declaration`. |
+| [`paradox/Paradox/ProducerUnsafe.lean`](paradox/Paradox/ProducerUnsafe.lean), [`ConsumerUnsafe.lean`](paradox/Paradox/ConsumerUnsafe.lean) | **Differential control, and the sharpest one.** The identical construction across the identical boundary with `safety := .unsafe` instead of `.partial`. It is *blocked*: `(kernel) invalid declaration, it uses unsafe declaration 'unsafeFalse'`, because `.unsafe` satisfies `defn.safety == .unsafe` and the stub keeps its marking. The whole difference between accepted and rejected is that one token. |
 
 ## Status
 
@@ -68,7 +74,7 @@ the defect is in the frontend rather than in the kernel it shares.
 | `#print axioms` | **reports nothing** |
 | `leanchecker` | **rejects** (and did not exist before `v4.28.0`) |
 | Where the defect lives | `src/Lean/AddDecl.lean`, **not** `src/kernel/` |
-| Coverage before this directory | none. CATALOG filed #14609 under §2.2 "fixed", and §5.1's module-boundary sweep covered `sorry`, private-in-public and section variables — not `partial` |
+| Coverage before this directory | none. CATALOG filed #14609 under §2.2 "fixed", and §5.1's module-boundary sweep covered `sorry`, private-in-public and section variables — not `partial`. That row's `sorry` claim does hold: a `sorry`-backed definition crosses the boundary still reporting `sorryAx` |
 
 ## The methodology lesson
 

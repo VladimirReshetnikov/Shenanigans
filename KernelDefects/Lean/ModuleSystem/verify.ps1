@@ -16,6 +16,9 @@
 #             isUnsafe = false                                        (logError if not)
 #   Control   the same `partial` definition used from a safe theorem in the SAME
 #             module is REJECTED by the kernel                        (#guard_msgs)
+#   ConsumerUnsafe  the identical construction with `.unsafe` instead of `.partial`
+#             IS blocked at the same boundary                          (#guard_msgs)
+#             — this is what isolates the defect to one token
 #   leanchecker  rejects the built .olean — the audit is blind, the judge is not
 
 [CmdletBinding()]
@@ -48,7 +51,8 @@ foreach ($tc in $Toolchains) {
     foreach ($m in @(
         @{ f = 'Paradox/Consumer.lean'; why = 'a SAFE `theorem Paradox : False` is accepted' },
         @{ f = 'Paradox/Audit.lean';    why = '`#print axioms` reports nothing; stub is a safe axiom' },
-        @{ f = 'Paradox/Control.lean';  why = 'same-module use is REJECTED by the kernel' })) {
+        @{ f = 'Paradox/Control.lean';  why = 'same-module use is REJECTED by the kernel' },
+        @{ f = 'Paradox/ConsumerUnsafe.lean'; why = 'the `.unsafe` twin IS blocked at the same boundary' })) {
       $o = & elan run "leanprover/lean4:$tc" lake lean $m.f 2>&1
       $ex = $LASTEXITCODE
       Write-Output ("  {0,-22} exit {1}   ({2})" -f (Split-Path $m.f -Leaf), $ex, $m.why)

@@ -2,18 +2,23 @@ import Paradox.Consumer
 import Lean
 
 /-!
-The audit.  Deliberately NOT a `module`: `#print axioms` is refused inside one on
-toolchains before `v4.30`, and this file has to run on all of them.
+The audit, and the escape.  Deliberately NOT a `module`: `#print axioms` is
+refused inside one on toolchains before `v4.30`, and this file has to run on all
+of them.
 
-The point of this file is the second half of the defect.  `partialFalse` is, in
-this environment, literally an `axiomInfo` — and `#print axioms` reports
-**nothing**.  Module stubs are excluded from the axiom audit by design, because
-for an honest definition the stub stands for a body that was checked; here it
-stands for a `partial` body that was not.
+Two things are established here.
 
-CATALOG.md §1.2 records `debug.skipKernelTC` + a hand-built `addDecl` as "the only
-Lean route invisible to `#print axioms`".  This is a second one, and unlike that
-one it needs no debug option.
+**The audit is blind.**  `partialFalse` is, in this environment, literally an
+`axiomInfo` — and `#print axioms` reports nothing.  Module stubs are excluded
+from the axiom audit by design, because for an honest definition the stub stands
+for a body that *was* checked; here it stands for a `partial` body that was not.
+[`CATALOG.md`](../../../../../CATALOG.md) §1.2 records `debug.skipKernelTC` plus a
+hand-built `addDecl` as "the only Lean route invisible to `#print axioms`".  This
+is a second one, and unlike that one it needs no debug option.
+
+**The `False` does not stay inside the module system.**  This file is ordinary
+Lean that merely imports the package.  It gets `False` too, and its audit is
+clean as well — so nothing downstream has to opt in to anything.
 -/
 
 /-- info: 'partialBoom' does not depend on any axioms -/
@@ -27,6 +32,16 @@ one it needs no debug option.
 /-- info: 'Paradox' does not depend on any axioms -/
 #guard_msgs in
 #print axioms Paradox
+
+/-! ### The escape into plain Lean
+
+Nothing below is a `module`, uses `public`, or mentions the module system at all. -/
+
+theorem downstream : (2 : Nat) = 3 := Paradox.elim
+
+/-- info: 'downstream' does not depend on any axioms -/
+#guard_msgs in
+#print axioms downstream
 
 open Lean in
 run_cmd do

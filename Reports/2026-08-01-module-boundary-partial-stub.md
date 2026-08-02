@@ -104,6 +104,26 @@ demands the kernel rejection.
 The three theorems are `partialBoom : False`, `oneEqTwo : (1 : Nat) = 2` — so
 there is no doubt the `False` is real — and `Paradox : False`.
 
+Two further controls sharpen the result.
+
+**The `.unsafe` twin is blocked.** The identical construction across the identical
+boundary with `safety := .unsafe` gets
+`(kernel) invalid declaration, it uses unsafe declaration 'unsafeFalse'`, because
+`.unsafe` satisfies `defn.safety == .unsafe` and the stub keeps its marking. The
+entire difference between accepted and rejected is that one token — which is
+exactly the token #14609 changed.
+
+**`sorry` is not affected.** A `sorry`-backed definition crossing the same
+boundary still reports `sorryAx` downstream, so CATALOG §5.1's "Module boundary:
+`sorry` … correctly guarded" row holds as written. It is `partial` alone that the
+summary drops.
+
+**And the `False` escapes the module system.** `Audit.lean` is ordinary Lean —
+no `module`, no `public` — that merely imports the package, and it proves
+`downstream : (2 : Nat) = 3` with a clean audit of its own. Nothing downstream
+has to opt in to anything, which is what makes this an exposure rather than a
+curiosity.
+
 `v4.32.1` and `v4.32.2` are the only two releases Lean has ever cut specifically
 for kernel soundness. Both ship this.
 
