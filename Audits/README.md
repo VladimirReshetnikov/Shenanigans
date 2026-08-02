@@ -23,13 +23,14 @@ that Rocq has no analogous questions; see [`../CATALOG.md`](../CATALOG.md) §5.
 | [`Lean/Fuzz/DefEqFuzzer.lean`](Lean/Fuzz/DefEqFuzzer.lean) | Can `Kernel.isDefEq a b` hold when the kernel's own `whnf` gives `a` and `b` different `Bool` constants? | 3,354 differing pairs: **0 unsound** |
 | [`Lean/Fuzz/IsNotZeroFuzzer.lean`](Lean/Fuzz/IsNotZeroFuzzer.lean) | `is_not_zero` is the one level predicate the July-2026 wave did not make semantic, and `elim_only_at_universe_zero` reads it *before* the "mutual" and "2+ constructors" branches. Does it ever call a possibly-zero level nonzero, and so large-eliminate an inductive predicate? | 360 level spellings, 91 large-eliminating: **0 unsound** |
 | [`Lean/Fuzz/CompilerKernelDiff.lean`](Lean/Fuzz/CompilerKernelDiff.lean) | Does `Lean.Kernel.whnf` ever disagree with the compiler on closed terms over `String`/`Char`/`Nat`/`Int`/`UInt`/`BitVec`/`List`/`Array`? | 72 terms: **0 divergences** |
+| [`Lean/Positivity/`](Lean/Positivity/) | Dolan's *A little knowledge…* says exposing a hidden implementation should never change whether a program typechecks. Does Lean's strict positivity check depend on visibility? | **Yes.** `inductive Bad1 \| mk : IgnoreD (Bad1 → False) → Bad1` — the type being declared in a **negative** position — is accepted when the wrapper's body is visible and refused when it is `opaque`. Three lines of plain Lean, no metaprogramming. Not a paradox: the field is definitionally `True`. |
 | [`Lean/Nested/`](Lean/Nested/) | How far can a declaration reach into the kernel's transient `_nested` auxiliary environment — i.e. is [lean4#14616](https://github.com/leanprover/lean4/pull/14616), which no released toolchain fixes and which has no reproduction anywhere, reachable from a *safe* declaration? | **Yes.** [`IllTypedStoredConstructor.lean`](Lean/Nested/IllTypedStoredConstructor.lean) is a safe, axiom-free module that makes every released kernel store three constants its own `Kernel.check` rejects. No `False` — the ill-typedness is inert. [`AuxNameReachability.lean`](Lean/Nested/AuxNameReachability.lean) is the reconnaissance that located the route. |
 | [`Lean/Metatheory/`](Lean/Metatheory/) | Is the `Acc` + proof-irrelevance interaction exploitable? Is `Expr.proj` conservative over the recursor? | No, and no — but both produce sound anomalies worth recording. See [`Findings.md`](Lean/Metatheory/Findings.md). |
 | [`Lean/StringIdentity/`](Lean/StringIdentity/) | Do Lean's components disagree about when two strings — hence two `Name`s, hence two constants — are the same? | **No soundness loophole and no checker break.** Every disagreement found fails closed. One genuine machine-level defect: `Name.toString` is not injective. |
 
-## The two defects this directory has produced
+## The three defects this directory has produced
 
-Neither is a `False`; both are real, and both were found by a search whose
+None is a `False`; all three are real, and all three came out of a search whose
 headline answer was negative.
 
 ### `Nat.shiftLeft` aborts the kernel
@@ -50,6 +51,23 @@ The provenance is the useful part: the fuzzer capped `shiftLeft`'s exponent at
 4096 to avoid allocating gigabytes, and that cap is exactly what hid the defect
 on the first pass. A bound introduced for the harness's own safety is a place
 where the harness stops testing.
+
+### Strict positivity depends on what else is visible
+
+`check_positivity` begins `t = whnf(t)`, and `whnf` unfolds definitions — so an
+occurrence of the type being declared is invisible to positivity exactly when
+some enclosing definition's body is available to reduce it away.
+[`Lean/Positivity/VisibilityDependentPositivity.lean`](Lean/Positivity/VisibilityDependentPositivity.lean)
+puts the two halves side by side in one file: with a visible wrapper the kernel
+accepts a constructor carrying `Bad1 → False`, the negative occurrence positivity
+exists to refuse; with `opaque` it refuses the identical declaration.
+
+It is not a paradox, and the reason is the same one that makes the nested-inductive
+route below inert: for the occurrence to be hidden from positivity, `whnf` has to
+erase it, and an erased argument cannot mean anything. What it does establish is
+that **strict positivity is not a property of the declaration being checked** —
+it is a property of the declaration plus the ambient set of unfoldable bodies,
+and an abstraction boundary changes the answer.
 
 ### A safe declaration makes a released kernel store constants it rejects
 
