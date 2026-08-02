@@ -32,9 +32,25 @@ premise really is what holds the line — the blindness itself is total.
 WHY IT IS STILL NOT A ROUTE TO `False`.  The precondition is an ill-typed
 projection, and on a released kernel there is nowhere to put one:
 
-  * `infer_proj` (type_checker.cpp:239ff) tests `I_name != proj_sname(e)` against
-    the head of `whnf(infer_type(proj_expr(e)))` and throws.  Every projection in
-    a *checked* term therefore carries the right name.
+  * `infer_proj` (type_checker.cpp:221ff, the throw at :231) tests
+    `I_name != proj_sname(e)` against the head of
+    `whnf(infer_type(proj_expr(e)))` and throws.  Every projection in a *checked*
+    term therefore carries the right name.
+
+    But that guard has a precise coverage limit, and §4 measures it.
+    `infer_app` (type_checker.cpp:163) infers its argument **only** when
+    `infer_only` is false:
+
+        } else {                                   // infer_only == true
+            expr const & f = get_app_args(e, args);
+            expr f_type    = infer_type_core(f, true);
+            for (...) { /* walks f_type's binders; args are never inferred */ }
+
+    and `whnf` infers types in `infer_only` mode.  So the line holds for every
+    subterm of a declaration being checked, and does not run at all on a subterm
+    reached only through reduction.  That is why a supplier of *stored*
+    ill-typedness is the precondition: it is the one way a projection gets into a
+    position the guard never visits.
   * Within a *checked* `addDecl`, the one place a released kernel stores a term
     it never checks is the output of `restore_nested` (that is what lean4#14621 added a re-check for, and what
     [`../Nested/IllTypedStoredConstructor.lean`](../Nested/IllTypedStoredConstructor.lean)
@@ -49,8 +65,10 @@ projection, and on a released kernel there is nowhere to put one:
     [`../Nested/AuxNameReachability.lean`](../Nested/AuxNameReachability.lean) §4.
 
 So the three blind sites and the one place that stores unchecked terms are
-separated by declaration ordering.  That is a thinner margin than it looks —
-ordering is not a soundness check — and it is the reason lean4#14621's re-check
+separated by declaration ordering, and the guard between them runs only in
+`infer_only = false` mode.  That is a thinner margin than it looks — ordering is
+not a soundness check, and "we always infer this" is a property of one traversal
+mode rather than of the kernel — which is the reason lean4#14621's re-check
 matters on the release line.
 
 Run with plain `lean --trust=0 ProjSnameBlindness.lean`.
@@ -103,6 +121,19 @@ run_cmd liftTermElabM do
       | .ok t    => logInfo m!"  {tag}: type-checks as {t}"
       | .error x => logInfo m!"  {tag}: REJECTED — {← (x.toMessageData {}).toString}"
 
+  logInfo "== 4. exactly how far that line reaches =="
+  -- `Kernel.check` is infer_only = false, so it DOES descend into arguments.
+  let bad := Expr.proj `T 0 smk
+  let inArg := mkApp2 (.const `id [.succ .zero]) (.const `Nat []) bad
+  match Lean.Kernel.check (← getEnv) {} inArg with
+  | .ok t    => logError m!"  check (id Nat <bad proj>): ACCEPTED as {t} — the guard did not descend"
+  | .error x => logInfo m!"  check (id Nat <bad proj>): rejected — {← (x.toMessageData {}).toString}"
+  -- `whnf` infers in infer_only = true mode, where `infer_app` never infers an
+  -- argument at all, so the same term passes straight through and reduces.
+  match Lean.Kernel.whnf (← getEnv) {} inArg with
+  | .ok r    => logInfo m!"  whnf  (id Nat <bad proj>): reduced to {r}   <- guard never ran"
+  | .error x => logInfo m!"  whnf  (id Nat <bad proj>): error {← (x.toMessageData {}).toString}"
+
 /-
 Expected on every released toolchain through v4.33.0-rc1:
 
@@ -111,6 +142,10 @@ Expected on every released toolchain through v4.33.0-rc1:
   2. `proj S 0 c =?= proj T 0 c` is TRUE, both closed and open; only a differing
      INDEX is caught.
   3. `Kernel.check` rejects `proj T 0 (h : S)` with `(kernel) invalid projection`.
+  4. `Kernel.check` rejects the same projection in ARGUMENT position, because
+     that traversal is infer_only = false; `Kernel.whnf` reduces it to `5`
+     without ever invoking the guard, because its traversal is infer_only = true
+     and `infer_app` does not infer arguments there.
 
 On `master` all of 1 and 2 flip: reduce_proj_core declines, and both def-eq sites
 compare the name first.
