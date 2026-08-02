@@ -1,12 +1,18 @@
 # Lean kernel defects — deliberately unsound artifacts
 
-> **Warning.** Every Lean module under `Accelerators/` and `Controls/` in this
-> directory is *deliberately unsound*. Four of them contain a machine-checked proof of `False`. They exist
-> to document soundness holes, not to be used. They belong to no Lake package,
-> are imported by nothing, and must never be.
+> **Warning.** Every Lean module under `Accelerators/`, `Universes/` and
+> `Controls/` in this directory is *deliberately unsound*. Five of them contain a
+> machine-checked proof of `False`. They exist to document soundness holes, not to
+> be used. They belong to no Lake package, are imported by nothing, and must never
+> be.
 >
-> They cannot contaminate anything that builds them: they are `prelude` modules,
-> so importing one into a module that also imports `Init` is impossible.
+> The `Accelerators/` and `Controls/` modules cannot contaminate anything that
+> builds them: they are `prelude` modules, so importing one into a module that
+> also imports `Init` is impossible. **`Universes/` has no such fuse.**
+> `ImaxPropLaundering.lean` is an ordinary module — that is exactly what makes it
+> interesting, since the prelude-assumption policy of
+> [lean4#13626](https://github.com/leanprover/lean4/issues/13626) does not reach
+> it — and importing it really does put `False` in scope. Do not.
 
 Full write-up:
 [`Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md`](../../Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md).
@@ -102,6 +108,9 @@ it appears to be genuinely vacuous.
 | [`Accelerators/NatAddAccelerator.lean`](Accelerators/NatAddAccelerator.lean) | `theorem boom : False` via a module-local `Nat` and a non-standard `Nat.add`. | accepts |
 | [`Accelerators/NatBeqAccelerator.lean`](Accelerators/NatBeqAccelerator.lean) | The same, via `Nat.beq` (whose accelerator returns the constants named `Bool.true`/`Bool.false`). | accepts |
 | [`Accelerators/ReduceBoolFreeName.lean`](Accelerators/ReduceBoolFreeName.lean) | Different mechanism: the kernel's *native* hook. Defining the free name `Lean.reduceBool` makes the kernel run compiled code and believe it — with **no** `Lean.ofReduceBool`, no `native_decide`, no `@[implemented_by]`. `lean` exits 0 and `#print axioms` reports nothing, so this is an axiom-*tracking* hole. | **rejects** (the interpreter cannot replay `probe`) |
+| [`Universes/ImaxPropLaundering.lean`](Universes/ImaxPropLaundering.lean) | **Not `prelude`, and live on every released toolchain.** `theorem Paradox : False` from lean4#14613: `is_prop` compares the sort spelling against `Sort 0` syntactically, so one inductive is a proposition for proof irrelevance and not one for `infer_proj`. Uses only genuine core constants, so §2.3's prelude policy does not cover it. Two spellings of zero (`imax 1 0` and `max 0 0`), each with its own `False`. | **accepts** — it shares Lean's kernel. `nanoda` rejects it. Verified by [`Universes/verify.ps1`](Universes/verify.ps1) |
+| [`Universes/MutualResultLevel.lean`](Universes/MutualResultLevel.lean) | The *laundering* step measured alone, with the order reversal as its control. `m_result_level` comes from the first type of a mutual block; that is how the payload above gets declared at all, and it is unchanged on `master`. No `False`. | n/a |
+| [`Controls/ImaxPropControl.lean`](Controls/ImaxPropControl.lean) | Control for the two above. The same construction with the sort spelled `Sort 0`; the kernel refuses the projection, `#guard_msgs`-asserted. | n/a |
 | [`Projections/ProjIndexTruncation.lean`](Projections/ProjIndexTruncation.lean) | **Not `prelude`; now a regression witness.** `Expr.proj` indices are narrowed `size_t`→`unsigned` behind an `is_small()` guard, so index `2^32+k` becomes `k` and the kernel accepts projections out of range for the structure ([lean4#12746](https://github.com/leanprover/lean4/issues/12746)). Not a `False` on its own — truncation is consistent, and a collision needs 2^32 fields. **Fixed on `master` 2026-08-01 by [lean4#14632](https://github.com/leanprover/lean4/pull/14632)**; the issue is still open and no *released* toolchain carries the fix, so the `v4.32.0`/`v4.32.2`/`v4.33.0-rc1` matrix it ships still holds. | n/a (no `False`) |
 | [`Controls/NegativeControl.lean`](Controls/NegativeControl.lean) | Control. `set_option debug.skipKernelTC true` places a blatantly ill-typed `bogus : False` into an `.olean`. It too builds with exit 0 and reports no axioms. | **rejects** — which is what makes acceptance of the others meaningful |
 | [`Accelerators/FreeNameSurvey.lean`](Accelerators/FreeNameSurvey.lean) | `#check`s every kernel-special-cased name under `Init.Prelude` to show which are free. | n/a |
@@ -132,6 +141,17 @@ It builds each module in a scratch directory outside the Lake workspace, runs
 `leanchecker --fresh` on each, and **asserts the verdict in the table above**,
 including that the negative control is rejected. Expected final line:
 `All 5 modules behaved as documented.`
+
+[`Universes/`](Universes/) has its own script, because those modules are the only
+ones here that are *not* `prelude` — they import `Lean.CoreM`, so
+`leanchecker --fresh` would re-check the whole Lean library once per module:
+
+```bash
+pwsh KernelDefects/Lean/Universes/verify.ps1
+```
+
+Expected final line: `All universe-spelling artifacts behaved as documented.`
+It takes `-Toolchains` and `-SkipLeanChecker`.
 
 ## Verified on
 

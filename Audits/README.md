@@ -2,9 +2,10 @@
 
 The other three categories exhibit ways to derive `False`. This one exhibits the
 *absence* of one. Each subdirectory is a systematic search for a soundness hole
-in a specific mechanism, and in every case the headline result is negative —
+in a specific mechanism, and the headline result is almost always negative —
 which is the useful part of the output, and the reason the harnesses are kept
-rather than deleted.
+rather than deleted. Two searches did turn up genuine defects without turning up
+a `False`; they are below.
 
 Category (see [`../README.md`](../README.md)): none of these produces `False`.
 Where a search turned up something real but sound, it is recorded as an
@@ -20,13 +21,20 @@ that Rocq has no analogous questions; see [`../CATALOG.md`](../CATALOG.md) §5.
 | [`Lean/Fuzz/NatAcceleratorBoundaries.lean`](Lean/Fuzz/NatAcceleratorBoundaries.lean) | Do the kernel's fourteen name-keyed `Nat` accelerators agree with the compiled implementation at powers-of-two boundaries? | 39,510 applications: **0 divergences** — but the sweep's `shiftLeft` cap hid a kernel abort, see below |
 | [`Lean/Fuzz/LevelFuzzer.lean`](Lean/Fuzz/LevelFuzzer.lean) | Does the kernel's `Sort a ≡ Sort b` agree with denotational equality of the level expressions? | 880 random levels, 774,400 pairs: **0 unsound**, 162 incompleteness cases (very likely all instances of [lean4#12747](https://github.com/leanprover/lean4/issues/12747)) |
 | [`Lean/Fuzz/DefEqFuzzer.lean`](Lean/Fuzz/DefEqFuzzer.lean) | Can `Kernel.isDefEq a b` hold when the kernel's own `whnf` gives `a` and `b` different `Bool` constants? | 3,354 differing pairs: **0 unsound** |
+| [`Lean/Fuzz/IsNotZeroFuzzer.lean`](Lean/Fuzz/IsNotZeroFuzzer.lean) | `is_not_zero` is the one level predicate the July-2026 wave did not make semantic, and `elim_only_at_universe_zero` reads it *before* the "mutual" and "2+ constructors" branches. Does it ever call a possibly-zero level nonzero, and so large-eliminate an inductive predicate? | 360 level spellings, 91 large-eliminating: **0 unsound** |
 | [`Lean/Fuzz/CompilerKernelDiff.lean`](Lean/Fuzz/CompilerKernelDiff.lean) | Does `Lean.Kernel.whnf` ever disagree with the compiler on closed terms over `String`/`Char`/`Nat`/`Int`/`UInt`/`BitVec`/`List`/`Array`? | 72 terms: **0 divergences** |
+| [`Lean/Nested/`](Lean/Nested/) | How far can a declaration reach into the kernel's transient `_nested` auxiliary environment — i.e. is [lean4#14616](https://github.com/leanprover/lean4/pull/14616), which no released toolchain fixes and which has no reproduction anywhere, reachable from a *safe* declaration? | **Yes.** [`IllTypedStoredConstructor.lean`](Lean/Nested/IllTypedStoredConstructor.lean) is a safe, axiom-free module that makes every released kernel store three constants its own `Kernel.check` rejects. No `False` — the ill-typedness is inert. [`AuxNameReachability.lean`](Lean/Nested/AuxNameReachability.lean) is the reconnaissance that located the route. |
 | [`Lean/Metatheory/`](Lean/Metatheory/) | Is the `Acc` + proof-irrelevance interaction exploitable? Is `Expr.proj` conservative over the recursor? | No, and no — but both produce sound anomalies worth recording. See [`Findings.md`](Lean/Metatheory/Findings.md). |
 | [`Lean/StringIdentity/`](Lean/StringIdentity/) | Do Lean's components disagree about when two strings — hence two `Name`s, hence two constants — are the same? | **No soundness loophole and no checker break.** Every disagreement found fails closed. One genuine machine-level defect: `Name.toString` is not injective. |
 
-## The one defect this directory has produced
+## The two defects this directory has produced
 
-**`Nat.shiftLeft` aborts the kernel.** `example : (1 : Nat) <<< 4294967296 = 0 := rfl`
+Neither is a `False`; both are real, and both were found by a search whose
+headline answer was negative.
+
+### `Nat.shiftLeft` aborts the kernel
+
+`example : (1 : Nat) <<< 4294967296 = 0 := rfl`
 terminates the `lean` process with `INTERNAL PANIC: Nat.shiftl exponent is too
 big` on every toolchain from `v4.31.0` to `v4.33.0-rc1`, under `--trust=0`, from
 one line of ordinary source. `reduce_pow` bounds its exponent and declines
@@ -42,6 +50,39 @@ The provenance is the useful part: the fuzzer capped `shiftLeft`'s exponent at
 4096 to avoid allocating gigabytes, and that cap is exactly what hid the defect
 on the first pass. A bound introduced for the harness's own safety is a place
 where the harness stops testing.
+
+### A safe declaration makes a released kernel store constants it rejects
+
+**Every released Lean toolchain, `v4.27.0-rc1` through `v4.33.0-rc1`.**
+`lean --trust=0` exits 0, `#print axioms` is clean, `isUnsafe` is false — and
+`B.node`, `B.rec` and `B.rec`'s computation rule all fail `Kernel.check`.
+Write-up:
+[`../Reports/2026-08-01-positivity-whnf-erasure.md`](../Reports/2026-08-01-positivity-whnf-erasure.md);
+artifact [`Lean/Nested/IllTypedStoredConstructor.lean`](Lean/Nested/IllTypedStoredConstructor.lean).
+
+The route is the finding. `check_positivity` begins `t = whnf(t)` and returns
+immediately when the reduced form has no occurrence of the types being declared —
+but the kernel stores the *unreduced* type, and `restore_nested` rewrites
+`_nested` occurrences inside it. Hide the auxiliary behind `def Ignore (_ : Prop)
+: Prop := True` and the only gate on the safe path never sees it. Written without
+the eraser the identical field is rejected, which is the control.
+
+[`AuxNameReachability.lean`](Lean/Nested/AuxNameReachability.lean) is the
+reconnaissance that got there: it establishes that the auxiliary name is
+predictable, that a safe declaration naming it is accepted, and that the level and
+parameter levers both die in `is_valid_ind_app` — which compares the occurrence
+against `m_ind_cnsts[i]` with `expr` equality, so the universe levels are covered
+too — while the `Expr.proj` lever dies on declaration ordering.
+
+**It is not a `False`, and the reason is structural.** `Ignore X` is
+definitionally `True` whichever argument it holds, so every use reduces past the
+ill-typed application; and for the occurrence to survive `whnf` it would have to
+appear in the reduced type, where positivity would see it. The containment is
+also **incidental** — positivity is not a type-preservation check, and it is what
+stands between a released kernel and an ill-typed stored constructor, which is
+exactly why [#14621](https://github.com/leanprover/lean4/pull/14621) added a
+re-check of the restored declarations. That PR's own comment calls the re-check
+"not necessary"; here is a case on the release line where it fires.
 
 ## The two findings worth carrying forward
 
