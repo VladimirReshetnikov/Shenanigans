@@ -35,8 +35,8 @@ projection, and on a released kernel there is nowhere to put one:
   * `infer_proj` (type_checker.cpp:239ff) tests `I_name != proj_sname(e)` against
     the head of `whnf(infer_type(proj_expr(e)))` and throws.  Every projection in
     a *checked* term therefore carries the right name.
-  * The one place a released kernel stores a term it never checks is the output
-    of `restore_nested` (that is what lean4#14621 added a re-check for, and what
+  * Within a *checked* `addDecl`, the one place a released kernel stores a term
+    it never checks is the output of `restore_nested` (that is what lean4#14621 added a re-check for, and what
     [`../Nested/IllTypedStoredConstructor.lean`](../Nested/IllTypedStoredConstructor.lean)
     exploits).  A projection naming a transient `_nested` auxiliary type is
     exactly the shape that would land there — and it is why master's
