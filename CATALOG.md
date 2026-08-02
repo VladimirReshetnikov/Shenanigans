@@ -574,20 +574,36 @@ were disabled — precisely because coqchk reports rather than rejects them.
 Ordered by value.
 
 -1. **lean4#14616 — an axiom-free `False` on every released toolchain, with no
-   artifact anywhere.** The `master`-only fix (`check_no_nested_aux`,
-   `inductive.cpp`, commit `35f696862c`) rejects an inductive declaration whose
-   constructor type names a `_nested` auxiliary type, by `Expr.const` name or by
-   `Expr.proj` structure name. The postmortem records that this one **cannot be
-   captured as an arena export test** — the exploit turns on transient
-   `equiv_manager` state — so the arena's sixteen checkers do not test it and
-   nobody has published a reproduction. It is therefore the one live route that
-   is reachable *only* the way this repository works: a from-inside-Lean
-   metaprogram. The pieces are known: `elim_nested_inductive_fn` names its
-   auxiliaries `mk_unique_name(_nested ++ J)` (inductive.cpp:1014), which is
-   predictable, and `restore_nested` rewrites the prefix back to the nested type,
-   which may sit in a different universe. What is missing is the payload.
-   Upstream's own regression test `tests/elab/kernelNestedAuxName.lean` gives the
-   two *rejected* shapes at `master` and so gives the exact syntax to start from.
+   artifact anywhere. Surface now mapped; four levers measured; still no safe
+   payload.** The `master`-only fix (`check_no_nested_aux`, `inductive.cpp`,
+   commit `35f696862c`) rejects an inductive declaration whose constructor type
+   names a `_nested` auxiliary type, by `Expr.const` name or by `Expr.proj`
+   structure name. The postmortem records that this one **cannot be captured as
+   an arena export test** — the exploit turns on transient `equiv_manager`
+   state — so the arena's sixteen checkers do not test it and nobody has
+   published a reproduction.
+
+   [`Audits/Lean/Nested/AuxNameReachability.lean`](Audits/Lean/Nested/AuxNameReachability.lean)
+   is the reconnaissance, and it establishes four things on `v4.32.2`. The
+   auxiliary name is **predictable** — `mk_unique_name` appends `_1`, `_2`, … so
+   the first auxiliary for a nested `Wrap` is exactly `_nested.Wrap_1` — and a
+   safe declaration naming it **is accepted**. The **checked/stored divergence is
+   real and is demonstrated**: a field checked as `_nested.Wrap_1.{0} n`, whose
+   type is `Prop`, is stored as `Wrap (@B n)`, whose type is `Sort u`. But the
+   two levers that reach it from a *safe* declaration are closed by
+   `check_positivity`, because `is_valid_ind_app` compares the occurrence against
+   `m_ind_cnsts[i]` with `expr` equality, which covers **both** the arguments and
+   the universe levels; the `Expr.proj` lever is closed by ordering, since
+   `check_constructors` runs before `declare_constructors` and the auxiliary's
+   constructor does not exist yet; and the only path that does reach the
+   divergence is `isUnsafe`, which skips positivity and then loses to the safety
+   gate (`invalid declaration, it uses unsafe declaration`).
+
+   So what remains to find is a shape where the auxiliary is reached **without
+   the occurrence being a positivity-checked constructor field**. Everything else
+   is now instrumented. Upstream's regression test
+   `tests/elab/kernelNestedAuxName.lean` gives the two shapes `master` rejects,
+   and neither of them is that shape either — both are ordinary fields.
 
 0. **lean4#14582 needs an instrumented kernel build. The instrumentation is
    written and compiles; what remains is the bootstrap.**
@@ -716,6 +732,7 @@ is a different question from §5.1's — not "is there an undiscovered hole" but
 | `is_not_zero` — the one level predicate the wave did **not** make semantic, read *before* the "mutual" and "2+ constructors" branches of `elim_only_at_universe_zero` | Does it ever call a possibly-zero level nonzero, and so large-eliminate an inductive predicate? | 360 level spellings to depth 3, 91 large-eliminating: **0 unsound**. Harness [`Audits/Lean/Fuzz/IsNotZeroFuzzer.lean`](Audits/Lean/Fuzz/IsNotZeroFuzzer.lean) |
 | `infer_proj` vs `is_non_rec_structure` | `infer_proj` checks "exactly one constructor" and the arity but **not** `nindices == 0` nor non-recursiveness, while `is_non_rec_structure` — the gate for structure eta and unit-like eta — checks both. Is the asymmetry exploitable? | **No.** `Expr.proj` is accepted on indexed and on recursive one-constructor inductives, and it ignores the indices entirely: `(p : Pin false).0 : Nat` type-checks for `inductive Pin : Bool → Type \| mk : Nat → Pin true`, even though `Pin false` is empty. That is vacuous — a one-constructor type is inhabited only at the indices its constructor produces, so the projection has no argument to be wrong about. Structure eta was separately measured as refused for the recursive shape (`q =?= Rec1.mk q.0 q.1` is `false`), which is `is_non_rec_structure` doing its job. Worth recording because the acceptance looks alarming and is not |
 | `Expr.proj` index arithmetic on `master` | `reduce_proj_core` still computes `nparams + idx` in `unsigned`, and `to_proj_idx` admits up to `UINT_MAX`, so the sum can still wrap | **Source argument, not measured.** `infer_proj` iterates the constructor's Pi-telescope `idx` times and throws as soon as it runs out of binders, so `idx < nfields` on every accepted term and the sum cannot approach `UINT_MAX`. The #13618 family stays closed for the reason #12746 was, not by a bound on the sum — which means it reopens if a path ever reduces a projection that `infer_proj` did not see |
+| #14616's `_nested` auxiliary environment — is the checked/stored divergence reachable from a **safe** declaration? | The auxiliaries exist only in a temporary environment; `restore_nested` rewrites the names back afterwards, so a declaration naming one is checked against one type and stored with another | **Not by any of the four levers, but the divergence itself is demonstrated.** The name is predictable (`_nested.<Host>_1`) and a safe declaration naming it **is accepted**. A field checked as `_nested.Wrap_1.{0} n : Prop` is **stored** as `Wrap (@B n) : Sort u` — reproduced live. Levers: *level swap* and *parameter swap* are closed by `check_positivity`, since `is_valid_ind_app` compares against `m_ind_cnsts[i]` with `expr` equality (covering args **and** levels); *`Expr.proj`* is closed by ordering (`check_constructors` precedes `declare_constructors`, so the auxiliary's constructor is not yet declared — the control proves the rewrite happened); *`isUnsafe`* skips positivity and does reach the divergence, then loses to the safety gate. Harness [`Audits/Lean/Nested/AuxNameReachability.lean`](Audits/Lean/Nested/AuxNameReachability.lean) |
 | Kernel-special-cased names, re-enumerated at the pin | Is any name the kernel hard-wires undeclared in *core*, i.e. claimable from a non-`prelude` module? | No. The list is `dontcare`, `eagerReduce`, `Bool.true`, the fourteen `Nat.*`, `String.ofList`, `Char.ofNat`, `List.cons`/`nil`, `Lean.reduceBool`/`reduceNat`, `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind`, and the `_nested`/`_ind_fresh`/`_nested_fresh`/`_kernel_fresh` generator prefixes. `eagerReduce` is real (`Init/Core.lean`, `def eagerReduce {α : Sort u} (a : α) : α := a`) and only flips `m_eager_reduce`, a strategy flag; `dontcare` remains vacuous. §2.3's prelude precondition still bounds the whole family |
 
 ---
