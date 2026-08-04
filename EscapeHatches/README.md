@@ -39,6 +39,7 @@ directory exists to draw.
 | [`Coq/RewriteRules.v`](Coq/RewriteRules.v) | `Symbol` + `Rewrite Rule` — unchecked definitional equalities injected straight into kernel conversion | `-allow-rewrite-rules` | the symbols, plus `Theory: Rewrite rules are allowed` |
 | [`Coq/ImpredicativeSet.v`](Coq/ImpredicativeSet.v) | Chicli–Pottier–Simpson: impredicative `Set` is safe alone, fatal with decidability in `Set` | `-impredicative-set` | `Theory: Set is impredicative` |
 | [`Coq/Spoofing.v`](Coq/Spoofing.v) | Redefined names, redefined notations, redefined `=`, homoglyphs | — | `Closed under the global context`, correctly |
+| [`Lean/ArenaTrustedMetadata.lean`](Lean/ArenaTrustedMetadata.lean) | Overwrites a derived `ConstantInfo` in `Environment.checked.constants`, past the kernel. Three closed `theorem … : False`; the kernel runs on every declaration and is correct on the input it was given | needs `module` + `import all Lean.Environment` — a disclosure in the *source*, with none in the audit | **nothing at all**; `leanchecker` rejects |
 | [`Coq/ExtractConstant.v`](Coq/ExtractConstant.v) | `Extract Constant` splices arbitrary OCaml over a *verified* function. The refman's own words: the replacement text "is not checked at all by extraction, even for syntax errors" | — | **nothing** — and it is right to report nothing, because nothing happened *inside* Rocq | 
 | [`Coq/DeclareMLModule.v`](Coq/DeclareMLModule.v) | Loads native code into `coqc`'s address space, sharing the kernel's mutable environment — how `lia`, `firstorder`, `Derive` and extraction itself all arrive | — | **nothing**; `coqchk` does not read the plugin's name |
 
@@ -48,7 +49,7 @@ directory exists to draw.
 pwsh EscapeHatches/verify.ps1
 ```
 
-Expected final line: `All 31 escape-hatch exhibits behaved as documented.`
+Expected final line: `All 32 escape-hatch exhibits behaved as documented.`
 
 The last two rows are the only exhibits in this directory whose cost is invisible
 to **both** audit channels, so they are checked differently: not by what Rocq

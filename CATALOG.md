@@ -366,8 +366,8 @@ upstream fixes.
 | `nested-unused-param` | §2.2 / #14576. Payload is the malformed projection `C.0 (C.0 w)` applied to a `W`, disguised by the hash collision; the property under test is that the *parameter* is checked | **the official kernel** (4.28/4.29 accept) |
 | `constlevels` | §2.2 / #10577 | **the official kernel** (4.28/4.29 segfault) |
 | `large-elim-param` | If "is this level surely nonzero?" wrongly returns true for a *param*, `inductive MyBool.{u} : Sort u | tt | ff` gets a recursor that large-eliminates a `Prop`; proof irrelevance gives `tt = ff` | found by Anthony Wang using Aristotle |
-| `ctor-num-fields` | Lie about a constructor's `numFields` so a 1-field structure looks unit-like; definitional eta then equates all inhabitants | trusted-metadata class |
-| `rec-k-lie`, `nat-rec-k-lie` | Lie about `k` (K-like reduction) on a recursor | trusted-metadata class |
+| `ctor-num-fields` | Lie about a constructor's `numFields` so a 1-field structure looks unit-like; definitional eta then equates all inhabitants | trusted-metadata class — **artifact**, [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean) §1 |
+| `rec-k-lie`, `nat-rec-k-lie` | Lie about `k` (K-like reduction) on a recursor | trusted-metadata class — **artifact**, [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean) §2–§3 |
 | `proj-non-structure` | Project out of a 2-constructor type, hoping the checker infers from the *first* constructor | generic |
 | `k-rec-conv` | Broken K-like reduction makes `fun x => x ≡ fun _ => y` | regression test for a **sokonanoda** bug |
 | `bogus1` | `debug.skipKernelTC` calibration case | — |
@@ -670,6 +670,22 @@ Ordered by value.
    artifact. The 08-01 pass found four tests and a whole outcome class this file
    had not recorded, plus one row for a test that does not exist — so re-reading
    the corpus directly, rather than from this summary, is part of the job.
+
+   **Partly closed, and it corrected this catalog.**
+   [`Audits/Lean/Arena/RejectCorpus.lean`](Audits/Lean/Arena/RejectCorpus.lean)
+   re-runs every attack reachable from inside Lean against the official kernel:
+   all rejected, messages pinned, byte-identical across seven released pins. The
+   correction is to the *trusted-metadata* class above. This repository had read
+   `ctor-num-fields` and `rec-k-lie` as unreachable from Lean because `addDecl`
+   derives `numFields` and `k` itself and the wire format has nowhere to put a
+   lie. True of `addDecl` — and false of Lean, because the arena's own tests are
+   ordinary Lean modules that declare honestly and then **overwrite the stored
+   `ConstantInfo`**. That is
+   [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean):
+   three closed axiom-free `False`, filed as a hatch and not a defect because the
+   kernel's every decision is correct on the input it was handed. The general
+   lesson is that "the wire format cannot express the lie" is not the same claim
+   as "the system cannot be told the lie".
 2. **Rocq's remaining proofs of `False` (§4).** Five of the 2026 sweep's eight
    are covered; #21690, #21694, #21702, #21736, #21797, #21839, #22021 and the
    whole pre-2026 history are `gap`. Of the two OPEN ones with a route to

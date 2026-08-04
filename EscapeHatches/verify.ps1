@@ -48,7 +48,8 @@ function Test-Case {
 # --- Lean -------------------------------------------------------------------
 # Each file's own `#guard_msgs` blocks assert the messages; exit 0 is the verdict.
 $leanAccept = @(
-  'Sorry', 'Axioms', 'Unsafe', 'NativeDecide', 'Metaprogramming', 'Spoofing'
+  'Sorry', 'Axioms', 'Unsafe', 'NativeDecide', 'Metaprogramming', 'Spoofing',
+  'ArenaTrustedMetadata'
 )
 foreach ($m in $leanAccept) {
   Copy-Item (Join-Path $root "Lean/$m.lean") $work -Force
