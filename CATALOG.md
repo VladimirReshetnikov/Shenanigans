@@ -452,7 +452,7 @@ the direct output of the 2026 sweep.
 | [#21682](https://github.com/rocq-prover/rocq/issues/21682) | Cross-calls in nested mutual fixpoints ignored by uniform-parameter analysis | 8.20–9.1 | 9.2.0 | **artifact** — [`NestedMutualCrossCall.v`](KernelDefects/Coq/GuardChecker/NestedMutualCrossCall.v) |
 | [#21683](https://github.com/rocq-prover/rocq/issues/21683) | Fixpoint passed as a higher-order argument; axiom-free Russell paradox. **A regression introduced by the fix for #20555** | 9.0.1–9.1.1 | 9.2.0 | **artifact** — [`HigherOrderFixpoint.v`](KernelDefects/Coq/GuardChecker/HigherOrderFixpoint.v) |
 | [#21701](https://github.com/rocq-prover/rocq/issues/21701) | Argument-less recursive calls (`let`-bound aliases) don't restrict uniform-argument computation | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsLet.v`](KernelDefects/Coq/GuardChecker/UniformArgsLet.v) |
-| [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **gap** |
+| [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsHiddenSelfCall.v`](KernelDefects/Coq/GuardChecker/UniformArgsHiddenSelfCall.v). Completes PR #17986's set of four |
 | [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | 9.2.1 / 9.3 | **artifact** + **report** — [`GuardChecker/WrongEnvReduction.v`](KernelDefects/Coq/GuardChecker/WrongEnvReduction.v), [`Reports/2026-08-01-rocq-guard-…`](Reports/2026-08-01-rocq-guard-wrong-environment.md). **LIVE on the installed 9.2.0**, and the strongest route in this catalog: the only one where **both** `Print Assumptions` *and* `coqchk` report nothing **and** the `False` escapes through a plain `Require` into a downstream file whose own audit and `coqchk` are also clean. `coqchk` misses it because at 9.2.0 it type-checks bodies with `Typeops.infer` — the kernel's own guard checker — so it is not an independent implementation of the thing that failed |
 | [#22021](https://github.com/rocq-prover/rocq/issues/22021) | Lambda domains of unapplied nested fixpoints unchecked | 8.20–9.2.0 | 9.2.1 / 9.3 | **gap** |
 | [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 — **and 9.2, measured here** | **OPEN** | **artifact** — [`Paradoxes/Coq/GuardVsUnivalence.v`](Paradoxes/Coq/GuardVsUnivalence.v). Filed under `Paradoxes/` because the `False` is conditional (ground rule 1), though its subject is a defect; `KernelDefects/Coq/README.md` cross-references it. `coqchk` certifies `unsafe (co)fixpoints: <none>` on it, as it does for #21839 |
@@ -473,7 +473,7 @@ different ways, which is why they share a directory.
 | [#18503](https://github.com/rocq-prover/rocq/issues/18503) | `Primitive` in a Module Type bypasses subtyping conversion | 8.11.0–8.18.0 | 8.19.0 | **gap** |
 | [#21051](https://github.com/rocq-prover/rocq/issues/21051) | Missing substitution when strengthening functors; `Include` corrupts the delta-resolver → `true = false` | kernel 8.5–9.0.0 | 9.0.1 | **gap** |
 | [#21685](https://github.com/rocq-prover/rocq/issues/21685) | Same, for **aliased** functors: a multi-step `Module Alias := M` chain corrupts the delta-resolver | kernel 8.5–9.1 | 9.2.0 | **artifact** — [`AliasChainDeltaResolver.v`](KernelDefects/Coq/ModuleSystem/AliasChainDeltaResolver.v) |
-| [#21702](https://github.com/rocq-prover/rocq/issues/21702) | `check_with_def` stored the with-body's *weaker* universes → `Type@{u} → Type@{v}` with no `u ≤ v` → Girard | 8.5–9.1 | 9.2.0 | **gap** |
+| [#21702](https://github.com/rocq-prover/rocq/issues/21702) | `check_with_def` stored the with-body's *weaker* universes → `Type@{u} → Type@{v}` with no `u ≤ v` → Girard | 8.5–9.1 | 9.2.0 | **artifact** — [`WithDefUniverses.v`](KernelDefects/Coq/ModuleSystem/WithDefUniverses.v) |
 | [#21750](https://github.com/rocq-prover/rocq/issues/21750) | Subtyping ignored elimination constraints → unbox a `Box@{SProp}` → `true = false` | 9.2+rc1 | 9.2.0 | **gap** |
 | [#22287](https://github.com/rocq-prover/rocq/issues/22287) | `ugraph` keeps a *copy* of the universe-checking flag; `Local Unset Universe Checking` in a module leaves it desynced on close → effective type-in-type → Hurkens, reported as **"Closed under the global context"** | master — **and 9.2, measured here** | **OPEN** (2026-07-16) | **artifact** + **report** — [`ModuleSystem/UniverseFlagDesync.v`](KernelDefects/Coq/ModuleSystem/UniverseFlagDesync.v), [`Reports/2026-08-01-rocq-universe-flag-…`](Reports/2026-08-01-rocq-universe-flag-desync.md). **Verified here** on Rocq 9.2: `coqc` exit 0, audit clean for both the `False` and a `1 = 2` derived from it, two in-file controls refused. **Contained**: `coqchk` rejects the `.vo` and a `Require` of it is rejected at the `Require` line, so what is lost is the *local* audit, not a library |
 | [#12155](https://github.com/rocq-prover/rocq/issues/12155), [#16646](https://github.com/rocq-prover/rocq/issues/16646) | `Print Assumptions` under-reports inconsistent flags through `Parameter Inline` and functor application | V8.6–now / V8.11–now | **OPEN** | **noted** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) |
@@ -495,8 +495,10 @@ Coverage: **gap** for all.
 
 ### 4.4 Conversion machines (lazy / VM / native)
 
-Coverage: **gap** for all. The whole class has no Lean analogue, because Lean has
-no VM or native conversion machine in the kernel.
+Coverage: **gap** for all but #21736, which now has
+[`Conversion/RegisterInlineVM.v`](KernelDefects/Coq/Conversion/RegisterInlineVM.v).
+The whole class has no Lean analogue, because Lean has no VM or native
+conversion machine in the kernel.
 
 | Issue | Mechanism | Fixed |
 | --- | --- | --- |
@@ -507,7 +509,7 @@ no VM or native conversion machine in the kernel.
 | [#16831](https://github.com/rocq-prover/rocq/issues/16831), [#16829](https://github.com/rocq-prover/rocq/issues/16829) | η-expansion of cofixpoints in the wrong environment; conversion compared the *mutated* primitive array | 8.16.1 |
 | [#16957](https://github.com/rocq-prover/rocq/issues/16957) | Tactic code could mutate a global cache of section variables. `priority: blocker` | 8.17.0 |
 | [#21690](https://github.com/rocq-prover/rocq/issues/21690) | Missing stack conversion for irrelevant-to-relevant match; with `Definitional UIP`, `0 = 1` | 9.2.0 |
-| [#21736](https://github.com/rocq-prover/rocq/issues/21736) | `Register Inline` + universe polymorphism: `genlambda.ml` fails to substitute the universe instance → `vm_cast_no_check` proves `Type@{v} = Type@{u}` → Hurkens. **Affected every patch release from 8.5 to 9.1, and coqchk too** | 9.2.0 |
+| [#21736](https://github.com/rocq-prover/rocq/issues/21736) | `Register Inline` + universe polymorphism: `genlambda.ml` fails to substitute the universe instance → `vm_cast_no_check` proves `Type@{v} = Type@{u}` → Hurkens. **Affected every patch release from 8.5 to 9.1, and coqchk too** | 9.2.0 — **artifact**, [`Conversion/RegisterInlineVM.v`](KernelDefects/Coq/Conversion/RegisterInlineVM.v); rejection lands at `Qed`, where the deferred `vm_cast` is finally checked |
 | [#11321](https://github.com/rocq-prover/rocq/issues/11321) | Broken long multiplication in 32-bit primint emulation, **all three machines** | 8.11.0 |
 | [#12483](https://github.com/rocq-prover/rocq/issues/12483) | An **incorrect `PrimFloat.leb` axiom shipped** → `False` straight from the library. `priority: blocker` | 8.11.x |
 
@@ -686,9 +688,12 @@ Ordered by value.
    kernel's every decision is correct on the input it was handed. The general
    lesson is that "the wire format cannot express the lie" is not the same claim
    as "the system cannot be told the lie".
-2. **Rocq's remaining proofs of `False` (§4).** Five of the 2026 sweep's eight
-   are covered; #21690, #21694, #21702, #21736, #21797, #21839, #22021 and the
-   whole pre-2026 history are `gap`. Of the two OPEN ones with a route to
+2. **Rocq's remaining proofs of `False` (§4).** Of the 2026 sweep's eight,
+   #21702, #21736, #21797 and #21839 have since been added, leaving #21690,
+   #21694 and #22021; the whole pre-2026 history is still `gap`.
+   #21736 is the one worth taking next-to-last rather than last: it is the only
+   Rocq defect in this catalog that **`coqchk` shared**, which puts it in the
+   same class as lean4#14613. Of the two OPEN ones with a route to
    `False`, **#22287 is now an artifact** (§4.2) — the first *live* Coq exhibit
    here, and the first route in this catalog reachable from nine lines of
    ordinary source with no metaprogramming at all. **#22024** (guard rtree

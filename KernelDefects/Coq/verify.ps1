@@ -31,6 +31,9 @@ $cases = @(
   @{ Name = 'GuardChecker/NestedMutualCrossCall';Path = 'GuardChecker/NestedMutualCrossCall.v';Expect = 'reject'; Needle = 'Recursive definition of F is ill-formed' },
   @{ Name = 'GuardChecker/UniformArgsLet';       Path = 'GuardChecker/UniformArgsLet.v';       Expect = 'reject'; Needle = 'Recursive definition of F_let is ill-formed' },
   @{ Name = 'ModuleSystem/AliasChainDeltaResolver'; Path = 'ModuleSystem/AliasChainDeltaResolver.v'; Expect = 'reject'; Needle = 'Unable to unify' },
+  @{ Name = 'GuardChecker/UniformArgsHiddenSelfCall'; Path = 'GuardChecker/UniformArgsHiddenSelfCall.v'; Expect = 'reject'; Needle = 'Recursive definition of F2 is ill-formed' },
+  @{ Name = 'ModuleSystem/WithDefUniverses';       Path = 'ModuleSystem/WithDefUniverses.v';       Expect = 'reject'; Needle = 'universe inconsistency' },
+  @{ Name = 'Conversion/RegisterInlineVM';         Path = 'Conversion/RegisterInlineVM.v';         Expect = 'reject'; Needle = 'while it is expected to have type' },
   # rocq#22287 is OPEN: this one must be ACCEPTED, with a clean audit, and coqchk
   # must reject the .vo it produces.  Ordered before the Import case, which needs
   # that .vo to exist.
