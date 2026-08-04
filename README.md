@@ -47,7 +47,7 @@ not matter.
 
 ```bash
 pwsh Paradoxes/verify.ps1            # All 8 paradox exhibits behaved as documented.
-pwsh EscapeHatches/verify.ps1        # All 14 escape-hatch exhibits behaved as documented.
+pwsh EscapeHatches/verify.ps1        # All 15 escape-hatch exhibits behaved as documented.
 pwsh KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
 pwsh KernelDefects/Coq/verify.ps1    # All 8 Coq exhibits behaved as documented.
 ```

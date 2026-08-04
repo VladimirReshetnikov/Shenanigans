@@ -94,7 +94,7 @@ The `False` is closed, but something discloses the cost.
 | `Unset Universe Checking` / `-type-in-type` / `#[bypass_check(universes)]` | Rocq | `… relies on an unsafe hierarchy.` plus, *while the flag is off*, `Theory: Type hierarchy is collapsed` | **artifact** — same file §3–4 |
 | `Symbol` + `Rewrite Rule` | Rocq | the symbols, plus `Theory: Rewrite rules are allowed (subject reduction might be broken)`. Confluence and termination are **not checked at all** | **artifact** — [`RewriteRules.v`](EscapeHatches/Coq/RewriteRules.v) |
 | `-impredicative-set` + decidability in `Set` | Rocq | `Theory: Set is impredicative`, plus `classic` and `dependent_unique_choice` | **artifact** — [`ImpredicativeSet.v`](EscapeHatches/Coq/ImpredicativeSet.v) |
-| `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics; `native_compute` puts the OCaml toolchain in the TCB. Both ignore `Opaque` | **gap** |
+| `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics — they leave a `VMcast`/`NATIVEcast` the *kernel* re-runs at `Qed`, so the trusted base becomes `kernel/byterun/coq_interp.c` or the OCaml native compiler invoked at proof-checking time. **Correction, measured:** the row used to end "Both ignore `Opaque`", which is true of the machines and overstates the consequence. `Opaque` sets a `Conv_oracle` priority that the six reduction *tactics* honour and that conversion never consults, so the sealed goal is closable by plain `reflexivity` anyway. What `vm_compute` defeats is the *displayed* abstraction, not provability — and it is the only one of Rocq's three hiding mechanisms it defeats: `Qed`-opacity and signature ascription hold against it, at tactic and kernel level both, with `Fail` controls | **artifact** — [`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v) |
 | `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **gap** |
 | `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **gap** |
 | Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import | **noted** — [lean4#13615](https://github.com/leanprover/lean4/issues/13615) (closed as by-design); Rocq hardened its `coqchk` path in 8.19 |
@@ -678,7 +678,11 @@ Ordered by value.
    ordinary source with no metaprogramming at all. **#22024** (guard rtree
    mutation, relative inconsistency with univalence) is the remaining one and is
    now the highest-priority Rocq item.
-3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute`,
+3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute` is now
+   covered ([`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v)),
+   and correcting that row's "ignores `Opaque`" claim was the useful part.
+   `Extraction`/`Extract Constant` and `Declare ML Module` remain. Original item:
+   `vm_compute`/`native_compute`,
    `Extraction`, and `Declare ML Module` are the three routes `Print Assumptions`
    cannot see at all, and none has an artifact.
 4. ~~**Univalence + UIP (§1.1).**~~ **Done, in both systems**, and the two

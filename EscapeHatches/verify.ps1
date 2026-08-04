@@ -76,6 +76,8 @@ $coqCases = @(
                  'Rewrite rules are allowed (subject reduction might be broken)') },
   @{ Name = 'Coq/ImpredicativeSet'; File = 'ImpredicativeSet.v'; Flags = @('-impredicative-set');
      Needles = @('Set is impredicative', 'classic : forall P : Prop, P \/ ~ P') },
+  @{ Name = 'Coq/ComputeMachines'; File = 'ComputeMachines.v'; Flags = @();
+     Needles = @('Closed under the global context') },
   @{ Name = 'Coq/Spoofing'; File = 'Spoofing.v'; Flags = @();
      Needles = @('Closed under the global context',
                  'Relation.zero_is_one', 'Notated.looks_absurd') }
