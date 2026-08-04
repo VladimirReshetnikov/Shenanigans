@@ -46,7 +46,7 @@ Each locates its own sources from `$PSScriptRoot`, so the working directory does
 not matter.
 
 ```bash
-pwsh Paradoxes/verify.ps1            # All 8 paradox exhibits behaved as documented.
+pwsh Paradoxes/verify.ps1            # All 9 paradox exhibits behaved as documented.
 pwsh EscapeHatches/verify.ps1        # All 15 escape-hatch exhibits behaved as documented.
 pwsh KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
 pwsh KernelDefects/Coq/verify.ps1    # All 8 Coq exhibits behaved as documented.

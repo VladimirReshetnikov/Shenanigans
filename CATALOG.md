@@ -455,7 +455,7 @@ the direct output of the 2026 sweep.
 | [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **gap** |
 | [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | 9.2.1 / 9.3 | **artifact** + **report** — [`GuardChecker/WrongEnvReduction.v`](KernelDefects/Coq/GuardChecker/WrongEnvReduction.v), [`Reports/2026-08-01-rocq-guard-…`](Reports/2026-08-01-rocq-guard-wrong-environment.md). **LIVE on the installed 9.2.0**, and the strongest route in this catalog: the only one where **both** `Print Assumptions` *and* `coqchk` report nothing **and** the `False` escapes through a plain `Require` into a downstream file whose own audit and `coqchk` are also clean. `coqchk` misses it because at 9.2.0 it type-checks bodies with `Typeops.infer` — the kernel's own guard checker — so it is not an independent implementation of the thing that failed |
 | [#22021](https://github.com/rocq-prover/rocq/issues/22021) | Lambda domains of unapplied nested fixpoints unchecked | 8.20–9.2.0 | 9.2.1 / 9.3 | **gap** |
-| [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 | **OPEN** | **gap** |
+| [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 — **and 9.2, measured here** | **OPEN** | **artifact** — [`Paradoxes/Coq/GuardVsUnivalence.v`](Paradoxes/Coq/GuardVsUnivalence.v). Filed under `Paradoxes/` because the `False` is conditional (ground rule 1), though its subject is a defect; `KernelDefects/Coq/README.md` cross-references it. `coqchk` certifies `unsafe (co)fixpoints: <none>` on it, as it does for #21839 |
 
 The pattern is striking and worth stating plainly: **PR
 [#17986](https://github.com/rocq-prover/rocq/pull/17986) alone introduced four
@@ -676,8 +676,10 @@ Ordered by value.
    `False`, **#22287 is now an artifact** (§4.2) — the first *live* Coq exhibit
    here, and the first route in this catalog reachable from nine lines of
    ordinary source with no metaprogramming at all. **#22024** (guard rtree
-   mutation, relative inconsistency with univalence) is the remaining one and is
-   now the highest-priority Rocq item.
+   mutation, relative inconsistency with univalence) is now an artifact too
+   (`Paradoxes/Coq/GuardVsUnivalence.v`), so both OPEN routes are covered. The
+   remaining Rocq priority is the long pre-2026 tail of §4, of which #21839 is
+   now done and #21797/#21702 were staged but not landed.
 3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute` is now
    covered ([`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v)),
    and correcting that row's "ignores `Opaque`" claim was the useful part.

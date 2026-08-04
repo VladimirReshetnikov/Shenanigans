@@ -49,6 +49,13 @@ hierarchy` — and [`../Lean/ModuleSystem/`](../Lean/ModuleSystem/), the same
 *shape* in Lean, where the `False` does escape into ordinary downstream code.
 Write-up: [`Reports/2026-08-01-rocq-universe-flag-desync.md`](../../Reports/2026-08-01-rocq-universe-flag-desync.md).
 
+**Looking for [rocq#22024](https://github.com/rocq-prover/rocq/issues/22024)?**
+It is an open guard-checker defect and it belongs here by subject, but its `False`
+is *conditional* — the guard bug needs univalence to witness it — so ground rule 1
+puts it in [`../../Paradoxes/Coq/GuardVsUnivalence.v`](../../Paradoxes/Coq/GuardVsUnivalence.v)
+instead. That file says so in its own header. It is the only exhibit in this
+catalog whose category and whose subject-matter home disagree.
+
 The Rocq paradoxes moved to [`../../Paradoxes/Coq/`](../../Paradoxes/Coq/), and
 the flag-gated routes to `False` — including `Unset Guard Checking` and
 `Unset Positivity Checking`, which reach the same failures *by design* — are in

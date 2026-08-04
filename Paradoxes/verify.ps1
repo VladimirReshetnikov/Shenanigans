@@ -54,6 +54,8 @@ $coqCases = @(
   @{ Name = 'Coq/Hurkens'; File = 'Hurkens.v';
      Needles = @('Closed under the global context') },
   @{ Name = 'Coq/UnivalenceUIP'; File = 'UnivalenceUIP.v';
+     Needles = @('Closed under the global context') },
+  @{ Name = 'Coq/GuardVsUnivalence'; File = 'GuardVsUnivalence.v';
      Needles = @('Closed under the global context') }
 )
 foreach ($c in $coqCases) {
