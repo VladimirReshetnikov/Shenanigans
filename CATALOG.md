@@ -95,8 +95,8 @@ The `False` is closed, but something discloses the cost.
 | `Symbol` + `Rewrite Rule` | Rocq | the symbols, plus `Theory: Rewrite rules are allowed (subject reduction might be broken)`. Confluence and termination are **not checked at all** | **artifact** — [`RewriteRules.v`](EscapeHatches/Coq/RewriteRules.v) |
 | `-impredicative-set` + decidability in `Set` | Rocq | `Theory: Set is impredicative`, plus `classic` and `dependent_unique_choice` | **artifact** — [`ImpredicativeSet.v`](EscapeHatches/Coq/ImpredicativeSet.v) |
 | `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics — they leave a `VMcast`/`NATIVEcast` the *kernel* re-runs at `Qed`, so the trusted base becomes `kernel/byterun/coq_interp.c` or the OCaml native compiler invoked at proof-checking time. **Correction, measured:** the row used to end "Both ignore `Opaque`", which is true of the machines and overstates the consequence. `Opaque` sets a `Conv_oracle` priority that the six reduction *tactics* honour and that conversion never consults, so the sealed goal is closable by plain `reflexivity` anyway. What `vm_compute` defeats is the *displayed* abstraction, not provability — and it is the only one of Rocq's three hiding mechanisms it defeats: `Qed`-opacity and signature ascription hold against it, at tactic and kernel level both, with `Fail` controls | **artifact** — [`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v) |
-| `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **gap** |
-| `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **gap** |
+| `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **artifact** — [`EscapeHatches/Coq/ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v). Measured: `coqc` exit 0, `Print Assumptions` clean, `coqchk` clean, and the extracted binary disagrees with the Coq theorems 3 times out of 3. Syntactically invalid OCaml and an arity mismatch both survive `coqc` and are caught only by `ocamlc` |
+| `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **artifact** — [`EscapeHatches/Coq/DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v). Measured with shipped plugins; loading a plugin *we wrote* was not achieved on this machine (ABI mismatch with the opam switch's prebuilt binaries) and the file says so. No Lean row exists for this line |
 | Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import | **noted** — [lean4#13615](https://github.com/leanprover/lean4/issues/13615) (closed as by-design); Rocq hardened its `coqchk` path in 8.19 |
 | A statement that does not mean what it reads as | both | `Closed under the global context` / no axioms — **correctly** | **artifact** — [`Spoofing.lean`](EscapeHatches/Lean/Spoofing.lean), [`Spoofing.v`](EscapeHatches/Coq/Spoofing.v) |
 | An over-general statement (`autoImplicit`, a missing side condition, an instance argument quantifying over all structures) | Lean | nothing | **artifact** — [`Axioms.lean`](EscapeHatches/Lean/Axioms.lean) §4 |
@@ -680,13 +680,24 @@ Ordered by value.
    (`Paradoxes/Coq/GuardVsUnivalence.v`), so both OPEN routes are covered. The
    remaining Rocq priority is the long pre-2026 tail of §4, of which #21839 is
    now done and #21797/#21702 were staged but not landed.
-3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute` is now
-   covered ([`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v)),
-   and correcting that row's "ignores `Opaque`" claim was the useful part.
-   `Extraction`/`Extract Constant` and `Declare ML Module` remain. Original item:
-   `vm_compute`/`native_compute`,
-   `Extraction`, and `Declare ML Module` are the three routes `Print Assumptions`
-   cannot see at all, and none has an artifact.
+3. ~~**Rocq's untracked hatches (§1.2).**~~ **All three done.** The original item
+   read: *`vm_compute`/`native_compute`, `Extraction`, and `Declare ML Module` are
+   the three routes `Print Assumptions` cannot see at all, and none has an
+   artifact.* Each now has one —
+   [`ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v),
+   [`ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v),
+   [`DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v) — and two of them
+   corrected this catalog rather than confirming it: §1.2's "ignores `Opaque`"
+   claim about `vm_compute` was wrong, and the `Extract Constant` row understated
+   the reach (an *arity* mismatch survives `coqc` too, not just a syntax error).
+
+   The methodological lesson is worth keeping. These three are invisible to both
+   `Print Assumptions` and `coqchk`, so an exhibit checked the usual way — assert
+   what the audit reports — would assert nothing and pass vacuously.
+   `EscapeHatches/verify.ps1` instead compiles and *runs* the extracted OCaml and
+   asserts three named disagreements with the Coq theorems. An exhibit whose whole
+   content is "the audit is silent" needs a second observable, or it is not an
+   exhibit.
 4. ~~**Univalence + UIP (§1.1).**~~ **Done, in both systems**, and the two
    statements differ in a way worth having recorded: Lean needs *one* hypothesis
    because proof irrelevance makes UIP definitional, Rocq needs *two* because it

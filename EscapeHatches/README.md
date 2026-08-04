@@ -39,6 +39,8 @@ directory exists to draw.
 | [`Coq/RewriteRules.v`](Coq/RewriteRules.v) | `Symbol` + `Rewrite Rule` — unchecked definitional equalities injected straight into kernel conversion | `-allow-rewrite-rules` | the symbols, plus `Theory: Rewrite rules are allowed` |
 | [`Coq/ImpredicativeSet.v`](Coq/ImpredicativeSet.v) | Chicli–Pottier–Simpson: impredicative `Set` is safe alone, fatal with decidability in `Set` | `-impredicative-set` | `Theory: Set is impredicative` |
 | [`Coq/Spoofing.v`](Coq/Spoofing.v) | Redefined names, redefined notations, redefined `=`, homoglyphs | — | `Closed under the global context`, correctly |
+| [`Coq/ExtractConstant.v`](Coq/ExtractConstant.v) | `Extract Constant` splices arbitrary OCaml over a *verified* function. The refman's own words: the replacement text "is not checked at all by extraction, even for syntax errors" | — | **nothing** — and it is right to report nothing, because nothing happened *inside* Rocq | 
+| [`Coq/DeclareMLModule.v`](Coq/DeclareMLModule.v) | Loads native code into `coqc`'s address space, sharing the kernel's mutable environment — how `lia`, `firstorder`, `Derive` and extraction itself all arrive | — | **nothing**; `coqchk` does not read the plugin's name |
 
 ## Reproducing
 
@@ -46,7 +48,25 @@ directory exists to draw.
 pwsh EscapeHatches/verify.ps1
 ```
 
-Expected final line: `All 14 escape-hatch exhibits behaved as documented.`
+Expected final line: `All 31 escape-hatch exhibits behaved as documented.`
+
+The last two rows are the only exhibits in this directory whose cost is invisible
+to **both** audit channels, so they are checked differently: not by what Rocq
+*reports* but by what Rocq *writes out*. `verify.ps1` compiles the emitted OCaml,
+runs it, and asserts three specific disagreements between the extracted program
+and the theorems proved about the Coq functions — `secret = false` in Rocq,
+`true` in the binary. That is the honest form of the claim, and it means a future
+Rocq that started checking `Extract Constant` would fail this harness loudly
+instead of passing it silently.
+
+Neither is a defect: both are documented, and the cost is paid entirely outside
+the system by whoever runs the binary. `Declare ML Module` has no Lean row in
+[`../CATALOG.md`](../CATALOG.md) §1.2 at all — Lean has no supported way to load
+native code into `lean`'s process and let it edit the environment, which makes it
+the single largest structural difference between the two trusted computing bases.
+`DeclareMLModule.plugin.ml` ships as source and is **not** loaded by the harness;
+its header records exactly what was measured, what was not, and why (the `.cmxs`
+builds but is ABI-incompatible with this opam switch's prebuilt binaries).
 
 Every Lean file carries its own `#guard_msgs` assertions — including the exact
 `#print axioms` output and every expected error message — so `lean` exiting 0
