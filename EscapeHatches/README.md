@@ -38,6 +38,7 @@ directory exists to draw.
 | [`Coq/TypingFlags.v`](Coq/TypingFlags.v) | `Unset Guard Checking` (non-terminating fixpoint), `Unset Positivity Checking` (Curry), `Unset Universe Checking` (Hurkens), `#[bypass_check(...)]` | — | `loop is assumed to be guarded.` / `Curry is assumed to be positive.` / `… relies on an unsafe hierarchy.` |
 | [`Coq/RewriteRules.v`](Coq/RewriteRules.v) | `Symbol` + `Rewrite Rule` — unchecked definitional equalities injected straight into kernel conversion | `-allow-rewrite-rules` | the symbols, plus `Theory: Rewrite rules are allowed` |
 | [`Coq/ImpredicativeSet.v`](Coq/ImpredicativeSet.v) | Chicli–Pottier–Simpson: impredicative `Set` is safe alone, fatal with decidability in `Set` | `-impredicative-set` | `Theory: Set is impredicative` |
+| [`Coq/ComputeMachines.v`](Coq/ComputeMachines.v) | `vm_compute` / `native_compute` — kernel-level conversion machines, not tactics: the kernel re-runs them at `Qed`, so the trusted base becomes `coq_interp.c` or the OCaml native compiler invoked at proof-checking time | — | **nothing.** `Print Assumptions` clean, `Print Typing Flags` unchanged, `coqchk` says `Axioms: <none>`. Carries a **correction** to `CATALOG.md` §1.2: `Opaque` was never load-bearing against conversion, and is the only one of Rocq's three hiding mechanisms these defeat |
 | [`Coq/Spoofing.v`](Coq/Spoofing.v) | Redefined names, redefined notations, redefined `=`, homoglyphs | — | `Closed under the global context`, correctly |
 
 ## Reproducing
@@ -46,7 +47,7 @@ directory exists to draw.
 pwsh EscapeHatches/verify.ps1
 ```
 
-Expected final line: `All 14 escape-hatch exhibits behaved as documented.`
+Expected final line: `All 15 escape-hatch exhibits behaved as documented.`
 
 Every Lean file carries its own `#guard_msgs` assertions — including the exact
 `#print axioms` output and every expected error message — so `lean` exiting 0
