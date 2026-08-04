@@ -23,12 +23,15 @@ split out.
 | [`Girard.lean`](Lean/TypeTheoryParadoxes/Girard.lean) | `Type u` contains a code for every product of a `Type u`-indexed family (`pi`/`lam`/`app`/`beta`); and, separately, a Tarski-style decoding `El : V → Type u` with a section | Girard 1972, Hurkens 1995 |
 | [`CoquandPaulin.lean`](Lean/TypeTheoryParadoxes/CoquandPaulin.lean) | a retraction of `Phi α = (α → Prop) → Prop` into `α`; and the operator-free form, a retraction of the powerset of `A` onto `A` | Coquand–Paulin 1990; Cantor |
 | [`LargeElimination.lean`](Lean/TypeTheoryParadoxes/LargeElimination.lean) | any data-carrying eliminator for a `Prop` with two distinguishable constructors | the subsingleton-elimination barrier |
+| [`Univalence.lean`](Lean/TypeTheoryParadoxes/Univalence.lean) | a map from bijections to equalities whose transport computes — i.e. univalence, weakened | univalence + UIP; **Lean needs only the first**, because `Eq` is a `Prop` and proof irrelevance makes UIP definitional (§1 machine-checks it) |
 | [`Blockers.lean`](Lean/TypeTheoryParadoxes/Blockers.lean) | **nothing** — records the exact judgment Lean refuses in each of the above, with every error message captured by `#guard_msgs` | — |
 
 ### Rocq
 
 | File | Contents |
 | --- | --- |
+| [`Coq/GuardVsUnivalence.v`](Coq/GuardVsUnivalence.v) | **The one entry here that is not a fact about type theory.** [rocq#22024](https://github.com/rocq-prover/rocq/issues/22024), OPEN: Rocq's guard checker treats a transport as a structural subterm, so `Univalence_transport → False` — and univalence is a principle Rocq's own metatheory says is *consistent* with it. Ground rule 1 files it here (a `False` needing an assumption is a paradox), but unlike its neighbours the implication is a **defect witness** and will disappear when #22024 is fixed. `coqchk` certifies `unsafe (co)fixpoints: <none>` on it. Cross-referenced from [`KernelDefects/Coq/`](../KernelDefects/Coq/). |
+| [`Coq/UnivalenceUIP.v`](Coq/UnivalenceUIP.v) | The same paradox needing **two** hypotheses, because Rocq refuses all three judgments Lean accepts by `rfl` — §1 asserts each rejection with `Fail`. Neither hypothesis alone is refutable there: univalence alone is the HoTT model, UIP alone is Hedberg/`Eqdep_dec`. The sharpest single Lean/Rocq difference in this repository. |
 | [`Coq/Hurkens.v`](Coq/Hurkens.v) | Girard/Hurkens via the stdlib `Hurkens` module: `Type` is not one of its own elements, `Prop ≠ Type`, and a retract of `Type` into `Prop` collapses the logic. Plus §3, the historical loophole that once reached the hypothesis *for real* — and the universe constraint that closed it. |
 
 ## Reproducing
@@ -37,7 +40,7 @@ split out.
 pwsh Paradoxes/verify.ps1
 ```
 
-Expected final line: `All 6 paradox exhibits behaved as documented.`
+Expected final line: `All 9 paradox exhibits behaved as documented.`
 Verified on Lean `4.32.0` and The Rocq Prover `9.2`.
 
 ## Which ingredient each classical paradox is denied

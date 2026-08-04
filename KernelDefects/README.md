@@ -24,7 +24,7 @@ in the statement.
 | Path | System | Substance |
 | --- | --- | --- |
 | [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal fabrication), the universe-spelling defect in [`Universes/`](Lean/Universes/), the module boundary that loses `partial` in [`ModuleSystem/`](Lean/ModuleSystem/), `Expr.proj` index truncation, definitional-equality history dependence, and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
-| [`Coq/`](Coq/) | Rocq 9.2 | Four soundness defects from the 2026 sweep — three guard-checker, one module-system — all fixed upstream and kept as regression witnesses that must be *rejected*; plus [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v), which is **open** ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287)) and must be *accepted*: a `False` with a clean `Print Assumptions`, from nine lines of ordinary source. |
+| [`Coq/`](Coq/) | Rocq 9.2 | Seven fixed defects from the 2026 sweep kept as regression witnesses that must be *rejected* — including [`RegisterInlineVM.v`](Coq/Conversion/RegisterInlineVM.v) ([rocq#21736](https://github.com/rocq-prover/rocq/issues/21736)), the one Rocq defect here that **`coqchk` also had**, and whose rejection lands at `Qed` because `vm_cast_no_check` defers conversion to the kernel — and **two live ones that must be accepted**. [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v) ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), open) is a `False` with a clean `Print Assumptions` from nine lines of ordinary source — `coqchk` catches it, and it cannot escape a `Require`. [`WrongEnvReduction.v`](Coq/GuardChecker/WrongEnvReduction.v) ([rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), fixed in 9.2.1, installed toolchain is 9.2.0) is the strongest route in the whole catalog: **`coqchk` misses it too**, and the `False` escapes through a plain `Require`. |
 
 ## Reproducing
 
@@ -42,7 +42,7 @@ pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.`,
-`All 6 Coq exhibits behaved as documented.`,
+`All 11 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`, and
 `The module-boundary artifact behaved as documented.`
 

@@ -20,7 +20,7 @@ $failures = 0
 $env:LEAN_PATH = $work
 
 # --- Lean: build the library in dependency order, then check the root module --
-$leanModules = @('Girard', 'CoquandPaulin', 'LargeElimination', 'Blockers')
+$leanModules = @('Girard', 'CoquandPaulin', 'LargeElimination', 'Univalence', 'Blockers')
 foreach ($m in $leanModules) {
   Copy-Item (Join-Path $root "Lean/TypeTheoryParadoxes/$m.lean") (Join-Path $work 'TypeTheoryParadoxes') -Force
 }
@@ -52,6 +52,10 @@ Pop-Location
 # --- Rocq -------------------------------------------------------------------
 $coqCases = @(
   @{ Name = 'Coq/Hurkens'; File = 'Hurkens.v';
+     Needles = @('Closed under the global context') },
+  @{ Name = 'Coq/UnivalenceUIP'; File = 'UnivalenceUIP.v';
+     Needles = @('Closed under the global context') },
+  @{ Name = 'Coq/GuardVsUnivalence'; File = 'GuardVsUnivalence.v';
      Needles = @('Closed under the global context') }
 )
 foreach ($c in $coqCases) {

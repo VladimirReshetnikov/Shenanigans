@@ -67,7 +67,7 @@ clean. These are permanent facts about type theory.
 | Burali-Forti (ordinal of ordinals) | Mathlib `ZFSet.isOrdinal_notMem_univ` | `BuraliForti.v` | **gap** |
 | Berardi (EM ⟹ proof irrelevance) | harmless; Lean has definitional PI | stdlib `Berardi` — note its only hypothesis is **excluded middle**, not prop-ext | **noted** |
 | Diaconescu (choice ⟹ EM) | `Classical.em` in core — a *derivation*, not a paradox | stdlib `Diaconescu` | **noted** |
-| Univalence + UIP / Streicher K / `eq_rect_eq` / `JMeq_eq` | inconsistent: `Eq` is a singleton-eliminating `Prop`, so Lean has K outright | inconsistent for the *global* axiom; UIP on a decidable type is a theorem (Hedberg, `Eqdep_dec`) | **gap** |
+| Univalence + UIP / Streicher K / `eq_rect_eq` / `JMeq_eq` | inconsistent: `Eq` is a singleton-eliminating `Prop`, so Lean has K outright — and **definitionally**, so univalence alone is refuted, with no UIP hypothesis needed | inconsistent for the *global* axiom; UIP on a decidable type is a theorem (Hedberg, `Eqdep_dec`), so the Rocq statement genuinely needs **both** hypotheses | **artifact**, both systems — [`Univalence.lean`](Paradoxes/Lean/TypeTheoryParadoxes/Univalence.lean) (one hypothesis) and [`UnivalenceUIP.v`](Paradoxes/Coq/UnivalenceUIP.v) (two, with each of Lean's three `rfl`s asserted to *fail* in Rocq) |
 | Univalence + unrestricted `LEM∞ := ∀ A, A + ¬A` | — | inconsistent (HoTT book Cor. 3.2.7); LEM for h-props is *consistent* | **gap** |
 | Chicli–Pottier–Simpson (proof-relevant quotients + impredicativity) | blocked: `Quot` at `u = 0` is a subsingleton | reachable, see §1.2 | **artifact** (Rocq) |
 
@@ -88,15 +88,15 @@ The `False` is closed, but something discloses the cost.
 | `@[implemented_by]` + `native_decide` | Lean | a fresh per-use axiom `<thm>._native.native_decide.ax_N_M` (since `v4.29.0`, [RFC #12216](https://github.com/leanprover/lean4/issues/12216)) | **artifact** — [`NativeDecide.lean`](EscapeHatches/Lean/NativeDecide.lean) |
 | `@[extern]` + `native_decide` | Lean | same. Needs a shared library, so it is harder to exhibit in one file | **noted** |
 | `@[csimp]` + `native_decide` | Lean | **under-reports**: axioms used in the `csimp` proof are not propagated ([lean4#7463](https://github.com/leanprover/lean4/issues/7463), OPEN). Worse, an *honest* `rfl` csimp lemma pointing at an `@[implemented_by]`-replaced constant gives `False` with no extra axiom at all | **noted** |
-| `set_option debug.skipKernelTC true` + hand-built `addDecl` | Lean | **nothing.** One of *two* Lean routes invisible to `#print axioms` — the other is the module-boundary stub of §2.1/#14609, which needs no option at all. `leanchecker` rejects both | **artifact** — [`Metaprogramming.lean`](EscapeHatches/Lean/Metaprogramming.lean), and used as the control in [`KernelDefects/Lean/Controls/`](KernelDefects/Lean/Controls/) |
+| `set_option debug.skipKernelTC true` + hand-built `addDecl` | Lean | **nothing.** One of *two* Lean routes invisible to `#print axioms` — the other is the module-boundary stub of §2.1/#14609, which needs no option at all. `leanchecker` rejects both. On the Rocq side the equivalent blind spot is worse: §4.1/#21839 is invisible to `Print Assumptions` **and** to `coqchk`, and escapes through a `Require` | **artifact** — [`Metaprogramming.lean`](EscapeHatches/Lean/Metaprogramming.lean), and used as the control in [`KernelDefects/Lean/Controls/`](KernelDefects/Lean/Controls/) |
 | `Unset Guard Checking` / `#[bypass_check(guard)]` | Rocq | `loop is assumed to be guarded.` | **artifact** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) §1 |
 | `Unset Positivity Checking` / `#[bypass_check(positivity)]` | Rocq | `Curry is assumed to be positive.` | **artifact** — same file §2 |
 | `Unset Universe Checking` / `-type-in-type` / `#[bypass_check(universes)]` | Rocq | `… relies on an unsafe hierarchy.` plus, *while the flag is off*, `Theory: Type hierarchy is collapsed` | **artifact** — same file §3–4 |
 | `Symbol` + `Rewrite Rule` | Rocq | the symbols, plus `Theory: Rewrite rules are allowed (subject reduction might be broken)`. Confluence and termination are **not checked at all** | **artifact** — [`RewriteRules.v`](EscapeHatches/Coq/RewriteRules.v) |
 | `-impredicative-set` + decidability in `Set` | Rocq | `Theory: Set is impredicative`, plus `classic` and `dependent_unique_choice` | **artifact** — [`ImpredicativeSet.v`](EscapeHatches/Coq/ImpredicativeSet.v) |
-| `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics; `native_compute` puts the OCaml toolchain in the TCB. Both ignore `Opaque` | **gap** |
-| `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **gap** |
-| `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **gap** |
+| `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics — they leave a `VMcast`/`NATIVEcast` the *kernel* re-runs at `Qed`, so the trusted base becomes `kernel/byterun/coq_interp.c` or the OCaml native compiler invoked at proof-checking time. **Correction, measured:** the row used to end "Both ignore `Opaque`", which is true of the machines and overstates the consequence. `Opaque` sets a `Conv_oracle` priority that the six reduction *tactics* honour and that conversion never consults, so the sealed goal is closable by plain `reflexivity` anyway. What `vm_compute` defeats is the *displayed* abstraction, not provability — and it is the only one of Rocq's three hiding mechanisms it defeats: `Qed`-opacity and signature ascription hold against it, at tactic and kernel level both, with `Fail` controls | **artifact** — [`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v) |
+| `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **artifact** — [`EscapeHatches/Coq/ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v). Measured: `coqc` exit 0, `Print Assumptions` clean, `coqchk` clean, and the extracted binary disagrees with the Coq theorems 3 times out of 3. Syntactically invalid OCaml and an arity mismatch both survive `coqc` and are caught only by `ocamlc` |
+| `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **artifact** — [`EscapeHatches/Coq/DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v). Measured with shipped plugins; loading a plugin *we wrote* was not achieved on this machine (ABI mismatch with the opam switch's prebuilt binaries) and the file says so. No Lean row exists for this line |
 | Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import | **noted** — [lean4#13615](https://github.com/leanprover/lean4/issues/13615) (closed as by-design); Rocq hardened its `coqchk` path in 8.19 |
 | A statement that does not mean what it reads as | both | `Closed under the global context` / no axioms — **correctly** | **artifact** — [`Spoofing.lean`](EscapeHatches/Lean/Spoofing.lean), [`Spoofing.v`](EscapeHatches/Coq/Spoofing.v) |
 | An over-general statement (`autoImplicit`, a missing side condition, an instance argument quantifying over all structures) | Lean | nothing | **artifact** — [`Axioms.lean`](EscapeHatches/Lean/Axioms.lean) §4 |
@@ -261,7 +261,7 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 
 | PR | Substance | Merged |
 | --- | --- | --- |
-| [#14615](https://github.com/leanprover/lean4/pull/14615) | The inductive checker now tests a resulting universe for zero **up to normalization**, so `Sort (imax 1 0)` and `Sort 0` describe the same inductive type. The two spellings previously disagreed on whether a constructor field may carry data, on whether the recursor eliminates only into `Prop`, and on whether the type is a K-like reduction target. **Widens** what the kernel accepts and is explicitly *not* a soundness fix — every syntactic test erred in the restrictive direction. **Refinement measured here (§2.6):** restrictive *per mutual block*, not per type. `m_result_level` is the block's **first** type's spelling, so the permission a syntactic `Sort 0` earns is inherited by a later type spelled `Sort (imax 1 0)` — and that inheritance is what gets #14613's payload past a released kernel, which rejects the same type declared alone. Its actual content is a **kernel/`nanoda` divergence**: `nanoda` decides all three semantically and derives recursors rather than trusting the export, so it rejected exports the kernel accepted. Same `imax 1 0` surface as #14613, opposite direction. | 2026-07-31 |
+| [#14615](https://github.com/leanprover/lean4/pull/14615) | The inductive checker now tests a resulting universe for zero **up to normalization**, so `Sort (imax 1 0)` and `Sort 0` describe the same inductive type. The two spellings previously disagreed on whether a constructor field may carry data, on whether the recursor eliminates only into `Prop`, and on whether the type is a K-like reduction target. **Widens** what the kernel accepts and is explicitly *not* a soundness fix — every syntactic test erred in the restrictive direction. **Refinement measured here (§2.6):** restrictive *per mutual block*, not per type. `m_result_level` is the block's **first** type's spelling, so the permission a syntactic `Sort 0` earns is inherited by a later type spelled `Sort (imax 1 0)` — and that inheritance is what gets #14613's payload past a released kernel, which rejects the same type declared alone. Its actual content is a **kernel/`nanoda` divergence**: `nanoda` decides all three semantically and derives recursors rather than trusting the export, so it rejected exports the kernel accepted. **Measured here** ([`Audits/Lean/Checkers/`](Audits/Lean/Checkers/)) rather than cited: `nanoda` 0.4.10-beta rejects both the honest `Sort 0` and the laundered `Sort (imax 1 0)` spelling with the same `infer_proj prop`, while accepting a control — so the cross-check does hold on the construction §2.1/#14613 exploits. Same `imax 1 0` surface as #14613, opposite direction. | 2026-07-31 |
 | [#14621](https://github.com/leanprover/lean4/pull/14621) | The kernel re-checks the declarations it adds after eliminating a nested inductive. Redundant by construction; a backstop in case the nested-inductive code is still missing a validation. §5.1 records this repo's attempt to exercise it from inside Lean, and why that cannot be done. | 2026-07-31 |
 | [#14631](https://github.com/leanprover/lean4/pull/14631) | `type_checker::is_def_eq_core` and `equiv_manager::is_equiv_core` compared only the projection index and the projected expression, **ignoring `proj_sname`**. Not exploitable: `infer_proj` rejects a structure name disagreeing with the projected expression's type, and kernel-built projections always carry the right one, so two projections reaching def-eq can differ on the name only if one is ill-typed. Turns that global invariant into a local one. Two reasons it matters here — it edits the exact function analysed in [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md), and it is the *same omission* as the `nanoda` bug of §3.0. | 2026-08-01 |
 | [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part hardening pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
@@ -366,8 +366,8 @@ upstream fixes.
 | `nested-unused-param` | §2.2 / #14576. Payload is the malformed projection `C.0 (C.0 w)` applied to a `W`, disguised by the hash collision; the property under test is that the *parameter* is checked | **the official kernel** (4.28/4.29 accept) |
 | `constlevels` | §2.2 / #10577 | **the official kernel** (4.28/4.29 segfault) |
 | `large-elim-param` | If "is this level surely nonzero?" wrongly returns true for a *param*, `inductive MyBool.{u} : Sort u | tt | ff` gets a recursor that large-eliminates a `Prop`; proof irrelevance gives `tt = ff` | found by Anthony Wang using Aristotle |
-| `ctor-num-fields` | Lie about a constructor's `numFields` so a 1-field structure looks unit-like; definitional eta then equates all inhabitants | trusted-metadata class |
-| `rec-k-lie`, `nat-rec-k-lie` | Lie about `k` (K-like reduction) on a recursor | trusted-metadata class |
+| `ctor-num-fields` | Lie about a constructor's `numFields` so a 1-field structure looks unit-like; definitional eta then equates all inhabitants | trusted-metadata class — **artifact**, [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean) §1 |
+| `rec-k-lie`, `nat-rec-k-lie` | Lie about `k` (K-like reduction) on a recursor | trusted-metadata class — **artifact**, [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean) §2–§3 |
 | `proj-non-structure` | Project out of a 2-constructor type, hoping the checker infers from the *first* constructor | generic |
 | `k-rec-conv` | Broken K-like reduction makes `fun x => x ≡ fun _ => y` | regression test for a **sokonanoda** bug |
 | `bogus1` | `debug.skipKernelTC` calibration case | — |
@@ -452,10 +452,10 @@ the direct output of the 2026 sweep.
 | [#21682](https://github.com/rocq-prover/rocq/issues/21682) | Cross-calls in nested mutual fixpoints ignored by uniform-parameter analysis | 8.20–9.1 | 9.2.0 | **artifact** — [`NestedMutualCrossCall.v`](KernelDefects/Coq/GuardChecker/NestedMutualCrossCall.v) |
 | [#21683](https://github.com/rocq-prover/rocq/issues/21683) | Fixpoint passed as a higher-order argument; axiom-free Russell paradox. **A regression introduced by the fix for #20555** | 9.0.1–9.1.1 | 9.2.0 | **artifact** — [`HigherOrderFixpoint.v`](KernelDefects/Coq/GuardChecker/HigherOrderFixpoint.v) |
 | [#21701](https://github.com/rocq-prover/rocq/issues/21701) | Argument-less recursive calls (`let`-bound aliases) don't restrict uniform-argument computation | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsLet.v`](KernelDefects/Coq/GuardChecker/UniformArgsLet.v) |
-| [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **gap** |
-| [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | 9.2.1 / 9.3 | **gap** |
+| [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsHiddenSelfCall.v`](KernelDefects/Coq/GuardChecker/UniformArgsHiddenSelfCall.v). Completes PR #17986's set of four |
+| [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | 9.2.1 / 9.3 | **artifact** + **report** — [`GuardChecker/WrongEnvReduction.v`](KernelDefects/Coq/GuardChecker/WrongEnvReduction.v), [`Reports/2026-08-01-rocq-guard-…`](Reports/2026-08-01-rocq-guard-wrong-environment.md). **LIVE on the installed 9.2.0**, and the strongest route in this catalog: the only one where **both** `Print Assumptions` *and* `coqchk` report nothing **and** the `False` escapes through a plain `Require` into a downstream file whose own audit and `coqchk` are also clean. `coqchk` misses it because at 9.2.0 it type-checks bodies with `Typeops.infer` — the kernel's own guard checker — so it is not an independent implementation of the thing that failed |
 | [#22021](https://github.com/rocq-prover/rocq/issues/22021) | Lambda domains of unapplied nested fixpoints unchecked | 8.20–9.2.0 | 9.2.1 / 9.3 | **gap** |
-| [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 | **OPEN** | **gap** |
+| [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 — **and 9.2, measured here** | **OPEN** | **artifact** — [`Paradoxes/Coq/GuardVsUnivalence.v`](Paradoxes/Coq/GuardVsUnivalence.v). Filed under `Paradoxes/` because the `False` is conditional (ground rule 1), though its subject is a defect; `KernelDefects/Coq/README.md` cross-references it. `coqchk` certifies `unsafe (co)fixpoints: <none>` on it, as it does for #21839 |
 
 The pattern is striking and worth stating plainly: **PR
 [#17986](https://github.com/rocq-prover/rocq/pull/17986) alone introduced four
@@ -473,7 +473,7 @@ different ways, which is why they share a directory.
 | [#18503](https://github.com/rocq-prover/rocq/issues/18503) | `Primitive` in a Module Type bypasses subtyping conversion | 8.11.0–8.18.0 | 8.19.0 | **gap** |
 | [#21051](https://github.com/rocq-prover/rocq/issues/21051) | Missing substitution when strengthening functors; `Include` corrupts the delta-resolver → `true = false` | kernel 8.5–9.0.0 | 9.0.1 | **gap** |
 | [#21685](https://github.com/rocq-prover/rocq/issues/21685) | Same, for **aliased** functors: a multi-step `Module Alias := M` chain corrupts the delta-resolver | kernel 8.5–9.1 | 9.2.0 | **artifact** — [`AliasChainDeltaResolver.v`](KernelDefects/Coq/ModuleSystem/AliasChainDeltaResolver.v) |
-| [#21702](https://github.com/rocq-prover/rocq/issues/21702) | `check_with_def` stored the with-body's *weaker* universes → `Type@{u} → Type@{v}` with no `u ≤ v` → Girard | 8.5–9.1 | 9.2.0 | **gap** |
+| [#21702](https://github.com/rocq-prover/rocq/issues/21702) | `check_with_def` stored the with-body's *weaker* universes → `Type@{u} → Type@{v}` with no `u ≤ v` → Girard | 8.5–9.1 | 9.2.0 | **artifact** — [`WithDefUniverses.v`](KernelDefects/Coq/ModuleSystem/WithDefUniverses.v) |
 | [#21750](https://github.com/rocq-prover/rocq/issues/21750) | Subtyping ignored elimination constraints → unbox a `Box@{SProp}` → `true = false` | 9.2+rc1 | 9.2.0 | **gap** |
 | [#22287](https://github.com/rocq-prover/rocq/issues/22287) | `ugraph` keeps a *copy* of the universe-checking flag; `Local Unset Universe Checking` in a module leaves it desynced on close → effective type-in-type → Hurkens, reported as **"Closed under the global context"** | master — **and 9.2, measured here** | **OPEN** (2026-07-16) | **artifact** + **report** — [`ModuleSystem/UniverseFlagDesync.v`](KernelDefects/Coq/ModuleSystem/UniverseFlagDesync.v), [`Reports/2026-08-01-rocq-universe-flag-…`](Reports/2026-08-01-rocq-universe-flag-desync.md). **Verified here** on Rocq 9.2: `coqc` exit 0, audit clean for both the `False` and a `1 = 2` derived from it, two in-file controls refused. **Contained**: `coqchk` rejects the `.vo` and a `Require` of it is rejected at the `Require` line, so what is lost is the *local* audit, not a library |
 | [#12155](https://github.com/rocq-prover/rocq/issues/12155), [#16646](https://github.com/rocq-prover/rocq/issues/16646) | `Print Assumptions` under-reports inconsistent flags through `Parameter Inline` and functor application | V8.6–now / V8.11–now | **OPEN** | **noted** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) |
@@ -495,8 +495,10 @@ Coverage: **gap** for all.
 
 ### 4.4 Conversion machines (lazy / VM / native)
 
-Coverage: **gap** for all. The whole class has no Lean analogue, because Lean has
-no VM or native conversion machine in the kernel.
+Coverage: **gap** for all but #21736, which now has
+[`Conversion/RegisterInlineVM.v`](KernelDefects/Coq/Conversion/RegisterInlineVM.v).
+The whole class has no Lean analogue, because Lean has no VM or native
+conversion machine in the kernel.
 
 | Issue | Mechanism | Fixed |
 | --- | --- | --- |
@@ -507,7 +509,7 @@ no VM or native conversion machine in the kernel.
 | [#16831](https://github.com/rocq-prover/rocq/issues/16831), [#16829](https://github.com/rocq-prover/rocq/issues/16829) | η-expansion of cofixpoints in the wrong environment; conversion compared the *mutated* primitive array | 8.16.1 |
 | [#16957](https://github.com/rocq-prover/rocq/issues/16957) | Tactic code could mutate a global cache of section variables. `priority: blocker` | 8.17.0 |
 | [#21690](https://github.com/rocq-prover/rocq/issues/21690) | Missing stack conversion for irrelevant-to-relevant match; with `Definitional UIP`, `0 = 1` | 9.2.0 |
-| [#21736](https://github.com/rocq-prover/rocq/issues/21736) | `Register Inline` + universe polymorphism: `genlambda.ml` fails to substitute the universe instance → `vm_cast_no_check` proves `Type@{v} = Type@{u}` → Hurkens. **Affected every patch release from 8.5 to 9.1, and coqchk too** | 9.2.0 |
+| [#21736](https://github.com/rocq-prover/rocq/issues/21736) | `Register Inline` + universe polymorphism: `genlambda.ml` fails to substitute the universe instance → `vm_cast_no_check` proves `Type@{v} = Type@{u}` → Hurkens. **Affected every patch release from 8.5 to 9.1, and coqchk too** | 9.2.0 — **artifact**, [`Conversion/RegisterInlineVM.v`](KernelDefects/Coq/Conversion/RegisterInlineVM.v); rejection lands at `Qed`, where the deferred `vm_cast` is finally checked |
 | [#11321](https://github.com/rocq-prover/rocq/issues/11321) | Broken long multiplication in 32-bit primint emulation, **all three machines** | 8.11.0 |
 | [#12483](https://github.com/rocq-prover/rocq/issues/12483) | An **incorrect `PrimFloat.leb` axiom shipped** → `False` straight from the library. `priority: blocker` | 8.11.x |
 
@@ -670,19 +672,60 @@ Ordered by value.
    artifact. The 08-01 pass found four tests and a whole outcome class this file
    had not recorded, plus one row for a test that does not exist — so re-reading
    the corpus directly, rather than from this summary, is part of the job.
-2. **Rocq's remaining proofs of `False` (§4).** Five of the 2026 sweep's eight
-   are covered; #21690, #21694, #21702, #21736, #21797, #21839, #22021 and the
-   whole pre-2026 history are `gap`. Of the two OPEN ones with a route to
+
+   **Partly closed, and it corrected this catalog.**
+   [`Audits/Lean/Arena/RejectCorpus.lean`](Audits/Lean/Arena/RejectCorpus.lean)
+   re-runs every attack reachable from inside Lean against the official kernel:
+   all rejected, messages pinned, byte-identical across seven released pins. The
+   correction is to the *trusted-metadata* class above. This repository had read
+   `ctor-num-fields` and `rec-k-lie` as unreachable from Lean because `addDecl`
+   derives `numFields` and `k` itself and the wire format has nowhere to put a
+   lie. True of `addDecl` — and false of Lean, because the arena's own tests are
+   ordinary Lean modules that declare honestly and then **overwrite the stored
+   `ConstantInfo`**. That is
+   [`EscapeHatches/Lean/ArenaTrustedMetadata.lean`](EscapeHatches/Lean/ArenaTrustedMetadata.lean):
+   three closed axiom-free `False`, filed as a hatch and not a defect because the
+   kernel's every decision is correct on the input it was handed. The general
+   lesson is that "the wire format cannot express the lie" is not the same claim
+   as "the system cannot be told the lie".
+2. **Rocq's remaining proofs of `False` (§4).** Of the 2026 sweep's eight,
+   #21702, #21736, #21797 and #21839 have since been added, leaving #21690,
+   #21694 and #22021; the whole pre-2026 history is still `gap`.
+   #21736 is the one worth taking next-to-last rather than last: it is the only
+   Rocq defect in this catalog that **`coqchk` shared**, which puts it in the
+   same class as lean4#14613. Of the two OPEN ones with a route to
    `False`, **#22287 is now an artifact** (§4.2) — the first *live* Coq exhibit
    here, and the first route in this catalog reachable from nine lines of
    ordinary source with no metaprogramming at all. **#22024** (guard rtree
-   mutation, relative inconsistency with univalence) is the remaining one and is
-   now the highest-priority Rocq item.
-3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute`,
-   `Extraction`, and `Declare ML Module` are the three routes `Print Assumptions`
-   cannot see at all, and none has an artifact.
-4. **Univalence + UIP (§1.1).** The one classical inconsistency with no exhibit
-   in either system. Statable in both.
+   mutation, relative inconsistency with univalence) is now an artifact too
+   (`Paradoxes/Coq/GuardVsUnivalence.v`), so both OPEN routes are covered. The
+   remaining Rocq priority is the long pre-2026 tail of §4, of which #21839 is
+   now done and #21797/#21702 were staged but not landed.
+3. ~~**Rocq's untracked hatches (§1.2).**~~ **All three done.** The original item
+   read: *`vm_compute`/`native_compute`, `Extraction`, and `Declare ML Module` are
+   the three routes `Print Assumptions` cannot see at all, and none has an
+   artifact.* Each now has one —
+   [`ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v),
+   [`ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v),
+   [`DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v) — and two of them
+   corrected this catalog rather than confirming it: §1.2's "ignores `Opaque`"
+   claim about `vm_compute` was wrong, and the `Extract Constant` row understated
+   the reach (an *arity* mismatch survives `coqc` too, not just a syntax error).
+
+   The methodological lesson is worth keeping. These three are invisible to both
+   `Print Assumptions` and `coqchk`, so an exhibit checked the usual way — assert
+   what the audit reports — would assert nothing and pass vacuously.
+   `EscapeHatches/verify.ps1` instead compiles and *runs* the extracted OCaml and
+   asserts three named disagreements with the Coq theorems. An exhibit whose whole
+   content is "the audit is silent" needs a second observable, or it is not an
+   exhibit.
+4. ~~**Univalence + UIP (§1.1).**~~ **Done, in both systems**, and the two
+   statements differ in a way worth having recorded: Lean needs *one* hypothesis
+   because proof irrelevance makes UIP definitional, Rocq needs *two* because it
+   does not. `Paradoxes/Lean/TypeTheoryParadoxes/Univalence.lean` §1 and
+   `Paradoxes/Coq/UnivalenceUIP.v` §1 machine-check the same three judgments
+   succeeding and failing respectively. What remains open in §1.1 is the row
+   below it: univalence + unrestricted `LEM∞`.
 5. **Pair #12747 with `LevelFuzzer`.** Confirm case-by-case that the fuzzer's
    162 incompleteness cases are instances of the `imax`-to-`max` defect.
 6. **Re-survey cadence.** Both trackers move faster than any static catalog —
