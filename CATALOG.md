@@ -67,7 +67,7 @@ clean. These are permanent facts about type theory.
 | Burali-Forti (ordinal of ordinals) | Mathlib `ZFSet.isOrdinal_notMem_univ` | `BuraliForti.v` | **gap** |
 | Berardi (EM ⟹ proof irrelevance) | harmless; Lean has definitional PI | stdlib `Berardi` — note its only hypothesis is **excluded middle**, not prop-ext | **noted** |
 | Diaconescu (choice ⟹ EM) | `Classical.em` in core — a *derivation*, not a paradox | stdlib `Diaconescu` | **noted** |
-| Univalence + UIP / Streicher K / `eq_rect_eq` / `JMeq_eq` | inconsistent: `Eq` is a singleton-eliminating `Prop`, so Lean has K outright | inconsistent for the *global* axiom; UIP on a decidable type is a theorem (Hedberg, `Eqdep_dec`) | **gap** |
+| Univalence + UIP / Streicher K / `eq_rect_eq` / `JMeq_eq` | inconsistent: `Eq` is a singleton-eliminating `Prop`, so Lean has K outright — and **definitionally**, so univalence alone is refuted, with no UIP hypothesis needed | inconsistent for the *global* axiom; UIP on a decidable type is a theorem (Hedberg, `Eqdep_dec`), so the Rocq statement genuinely needs **both** hypotheses | **artifact**, both systems — [`Univalence.lean`](Paradoxes/Lean/TypeTheoryParadoxes/Univalence.lean) (one hypothesis) and [`UnivalenceUIP.v`](Paradoxes/Coq/UnivalenceUIP.v) (two, with each of Lean's three `rfl`s asserted to *fail* in Rocq) |
 | Univalence + unrestricted `LEM∞ := ∀ A, A + ¬A` | — | inconsistent (HoTT book Cor. 3.2.7); LEM for h-props is *consistent* | **gap** |
 | Chicli–Pottier–Simpson (proof-relevant quotients + impredicativity) | blocked: `Quot` at `u = 0` is a subsingleton | reachable, see §1.2 | **artifact** (Rocq) |
 
@@ -681,8 +681,13 @@ Ordered by value.
 3. **Rocq's untracked hatches (§1.2).** `vm_compute`/`native_compute`,
    `Extraction`, and `Declare ML Module` are the three routes `Print Assumptions`
    cannot see at all, and none has an artifact.
-4. **Univalence + UIP (§1.1).** The one classical inconsistency with no exhibit
-   in either system. Statable in both.
+4. ~~**Univalence + UIP (§1.1).**~~ **Done, in both systems**, and the two
+   statements differ in a way worth having recorded: Lean needs *one* hypothesis
+   because proof irrelevance makes UIP definitional, Rocq needs *two* because it
+   does not. `Paradoxes/Lean/TypeTheoryParadoxes/Univalence.lean` §1 and
+   `Paradoxes/Coq/UnivalenceUIP.v` §1 machine-check the same three judgments
+   succeeding and failing respectively. What remains open in §1.1 is the row
+   below it: univalence + unrestricted `LEM∞`.
 5. **Pair #12747 with `LevelFuzzer`.** Confirm case-by-case that the fuzzer's
    162 incompleteness cases are instances of the `imax`-to-`max` defect.
 6. **Re-survey cadence.** Both trackers move faster than any static catalog —
