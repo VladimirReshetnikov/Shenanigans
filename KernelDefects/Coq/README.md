@@ -27,6 +27,8 @@ never a mathematical fact.
 | [`GuardChecker/HigherOrderFixpoint.v`](GuardChecker/HigherOrderFixpoint.v) | [rocq#21683](https://github.com/rocq-prover/rocq/issues/21683) | rejected — `Recursive definition of russell is ill-formed` |
 | [`GuardChecker/UniformArgsLet.v`](GuardChecker/UniformArgsLet.v) | [rocq#21701](https://github.com/rocq-prover/rocq/issues/21701) | rejected — `Recursive definition of F_let is ill-formed` |
 | [`ModuleSystem/AliasChainDeltaResolver.v`](ModuleSystem/AliasChainDeltaResolver.v) | [rocq#21685](https://github.com/rocq-prover/rocq/issues/21685) | rejected — `Unable to unify` |
+| [`GuardChecker/WrongEnvReduction.v`](GuardChecker/WrongEnvReduction.v) | [rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), fixed in 9.2.1 — the installed toolchain is 9.2.**0** | **accepted**, exit 0 — and **`coqchk` accepts it too**. The only exhibit here that both audit channels miss |
+| [`GuardChecker/WrongEnvReductionEscape.v`](GuardChecker/WrongEnvReductionEscape.v) | the escape half | **accepted** — ordinary Rocq that merely `Require`s the exhibit and proves `2 + 2 = 5`, with its own clean audit and clean `coqchk` |
 | [`ModuleSystem/UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) | [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), **OPEN** | **accepted**, exit 0 — `Closed under the global context`. `coqchk` rejects the `.vo` |
 | [`ModuleSystem/UniverseFlagDesyncImport.v`](ModuleSystem/UniverseFlagDesyncImport.v) | the containment half | rejected at the `Require` — `Universe inconsistency` |
 
@@ -60,7 +62,7 @@ pwsh KernelDefects/Coq/verify.ps1
 
 Each exhibit is compiled in a scratch directory outside the repository, and the
 script **asserts** both the verdict and a distinguishing substring of the output.
-Expected final line: `All 6 Coq exhibits behaved as documented.`
+Expected final line: `All 8 Coq exhibits behaved as documented.`
 Verified on **The Rocq Prover 9.2** (OCaml 4.14.2).
 
 ## Why these four, and why they cluster

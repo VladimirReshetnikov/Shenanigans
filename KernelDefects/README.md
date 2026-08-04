@@ -42,7 +42,7 @@ pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.`,
-`All 6 Coq exhibits behaved as documented.`,
+`All 8 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`, and
 `The module-boundary artifact behaved as documented.`
 
