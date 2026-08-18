@@ -1214,6 +1214,26 @@ declaration**. What it ruled out:
 | Mode flags versus caches, beyond `equiv_manager` | `infer_only`, `cheap_rec`/`cheap_proj`, `m_eager_reduce`, `m_definition_safety` against the keys of `m_infer_type`, `m_whnf`, `m_whnf_core`, `m_failure`, `m_unfold` | one anomaly — `m_eager_reduce` is not part of `m_eqv_manager`'s key, so an eager-only verdict is consumable by a later non-eager query in the same declaration — and no route past it |
 | Every reduce-and-match site in the kernel (the #14807 class) | does the function *answer* about an unreducible input rather than rejecting it, and does any consumer read the negative as permission? | seven `is_sort(` hits; five assert or throw; `type_checker.cpp:351` is #14807 itself; **`inductive.h`'s `to_cnstr_when_structure` is the only other one, and it is the only site anywhere that reads the negative as permission to emit new terms** — §2.2 |
 
+**The quotient module, 2026-08-18** — the last kernel module this catalog had
+never probed. `quot_reduce_rec` (`src/kernel/quot.h`) locates the major premise
+positionally (`mk_pos = 5` for `Quot.lift`, `4` for `Quot.ind`) and fires only
+when it whnfs to a `Quot.mk` application of **exactly three arguments**.
+Measured on v4.33.0: a genuine `Quot.mk` reduces (`whnf = true`); an
+**over-applied** `Quot.mk` (arity 4) does **not** reduce and `Kernel.check`
+rejects the enclosing term with `(kernel) function expected`; an under-applied
+one does not reduce either. So the arity guard is real, and
+[lean4#14719](https://github.com/leanprover/lean4/issues/14719) — "crash on
+overapplication of `Quot.mk` or trivial structures", OPEN — is confirmed
+**compiler-only**: the kernel refuses the same term the LCNF monomorphiser
+mishandles. Two things `quot_reduce_rec` does *not* check are worth recording
+for a future survey: the head is matched **by name**, with no verification that
+the constant is the genuine `quot_val` of kind `Mk` (`add_quot`'s `check_name`
+is what keeps that honest, so it is a §2.3 prelude-policy matter, not a hole);
+and nothing compares the `α`/`r` of the `Quot.mk` against those of the
+`Quot.lift` — that consistency comes entirely from the enclosing application
+having been type-checked, which is the same "one traversal, not the kernel"
+property §2.6 records for `infer_proj`.
+
 **The module-boundary battery, 2026-08-18.** The #14609 class — *"soundness is
 not a property of `src/kernel/`"* — is the only class to have produced a Lean
 route needing no metaprogramming, and none of the six kernel surfaces above
