@@ -24,7 +24,7 @@ in the statement.
 | Path | System | Substance |
 | --- | --- | --- |
 | [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal fabrication), and **four defects live on every released toolchain**: the universe spelling in [`Universes/`](Lean/Universes/), the module boundary that loses `partial` in [`ModuleSystem/`](Lean/ModuleSystem/), and the two of 2026-08-17/18 in [`DefEq/`](Lean/DefEq/) — a definitional-equality *cache* whose transitive closure lets a recursor's type disagree with its computation rule, and an `is_prop` that answers "no" for a term it should reject. Plus `Expr.proj` index truncation and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
-| [`Coq/`](Coq/) | Rocq 9.2 | Seven fixed defects from the 2026 sweep kept as regression witnesses that must be *rejected* — including [`RegisterInlineVM.v`](Coq/Conversion/RegisterInlineVM.v) ([rocq#21736](https://github.com/rocq-prover/rocq/issues/21736)), the one Rocq defect here that **`coqchk` also had**, and whose rejection lands at `Qed` because `vm_cast_no_check` defers conversion to the kernel — and **two live ones that must be accepted**. [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v) ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), open) is a `False` with a clean `Print Assumptions` from nine lines of ordinary source — `coqchk` catches it, and it cannot escape a `Require`. [`WrongEnvReduction.v`](Coq/GuardChecker/WrongEnvReduction.v) ([rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), fixed in 9.2.1, installed toolchain is 9.2.0) is the strongest route in the whole catalog: **`coqchk` misses it too**, and the `False` escapes through a plain `Require`. |
+| [`Coq/`](Coq/) | Rocq 9.2 | Seven fixed defects from the 2026 sweep kept as regression witnesses that must be *rejected* — including [`RegisterInlineVM.v`](Coq/Conversion/RegisterInlineVM.v) ([rocq#21736](https://github.com/rocq-prover/rocq/issues/21736)), the one Rocq defect here that **`coqchk` also had**, and whose rejection lands at `Qed` because `vm_cast_no_check` defers conversion to the kernel — and **two live ones that must be accepted**. [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v) ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), open) is a `False` with a clean `Print Assumptions` from nine lines of ordinary source — `coqchk` catches it, and it cannot escape a `Require`. [`WrongEnvReduction.v`](Coq/GuardChecker/WrongEnvReduction.v) ([rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), fixed in 9.2.1, installed toolchain is 9.2.0) is the strongest route in the whole catalog: **`coqchk` misses it too**, and the `False` escapes through a plain `Require`. A third live route joined them on 2026-08-18: [`Checker/`](Coq/Checker/) ([rocq#22352](https://github.com/rocq-prover/rocq/issues/22352), open) is the first defect in this catalog that is in a **checker** rather than a kernel — `rocqchk -bytecode-compiler yes` reports `Modules were successfully checked` over a `False`, because it typechecks the bodies and then runs VM bytecode it read from the file instead of deriving it from them. Plain `rocqchk` rejects the same bytes, which makes it the only exhibit here where two modes of one tool disagree. |
 
 ## Reproducing
 
@@ -43,12 +43,16 @@ pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 ```bash
 pwsh KernelDefects/Lean/DefEq/verify.ps1
 ```
+```bash
+pwsh KernelDefects/Coq/Checker/verify.ps1
+```
 
 Expected final lines: `All 6 modules behaved as documented.`,
 `All 11 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`,
-`The module-boundary artifact behaved as documented.`, and
-`All non-transitive-def-eq artifacts behaved as documented.`
+`The module-boundary artifact behaved as documented.`,
+`All non-transitive-def-eq artifacts behaved as documented.`, and
+`The rocqchk VM-bytecode artifact behaved as documented.`
 
 The last three have their own scripts. `Universes/` and `DefEq/` because those
 modules are not `prelude`: they import `Lean.CoreM` / `Lean`, so

@@ -111,7 +111,7 @@ The `False` is closed, but something discloses the cost.
 | `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics — they leave a `VMcast`/`NATIVEcast` the *kernel* re-runs at `Qed`, so the trusted base becomes `kernel/byterun/coq_interp.c` or the OCaml native compiler invoked at proof-checking time. **Correction, measured:** the row used to end "Both ignore `Opaque`", which is true of the machines and overstates the consequence. `Opaque` sets a `Conv_oracle` priority that the six reduction *tactics* honour and that conversion never consults, so the sealed goal is closable by plain `reflexivity` anyway. What `vm_compute` defeats is the *displayed* abstraction, not provability — and it is the only one of Rocq's three hiding mechanisms it defeats: `Qed`-opacity and signature ascription hold against it, at tactic and kernel level both, with `Fail` controls | **artifact** — [`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v) |
 | `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **artifact** — [`EscapeHatches/Coq/ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v). Measured: `coqc` exit 0, `Print Assumptions` clean, `coqchk` clean, and the extracted binary disagrees with the Coq theorems 3 times out of 3. Syntactically invalid OCaml and an arity mismatch both survive `coqc` and are caught only by `ocamlc` |
 | `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process | **artifact** — [`EscapeHatches/Coq/DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v). Measured with shipped plugins; loading a plugin *we wrote* was not achieved on this machine (ABI mismatch with the opam switch's prebuilt binaries) and the file says so. No Lean row exists for this line |
-| Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import | **noted** — [lean4#13615](https://github.com/leanprover/lean4/issues/13615) (closed as by-design); Rocq hardened its `coqchk` path in 8.19 |
+| Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import — *the independent checker is the answer, and on the Rocq side that answer is now known to be incomplete* | **artifact** — [`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/). [lean4#13615](https://github.com/leanprover/lean4/issues/13615) closed as by-design; Rocq hardened its `coqchk` path in 8.19, and this row used to stop there. [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352) is a tampered `.vo` that `rocqchk` **does** re-typecheck and, with `-bytecode-compiler yes`, certifies — over a closed `False` with a clean `Print Assumptions` that escapes a plain `Require`. §4.7 |
 | A statement that does not mean what it reads as | both | `Closed under the global context` / no axioms — **correctly** | **artifact** — [`Spoofing.lean`](EscapeHatches/Lean/Spoofing.lean), [`Spoofing.v`](EscapeHatches/Coq/Spoofing.v) |
 | An over-general statement (`autoImplicit`, a missing side condition, an instance argument quantifying over all structures) | Lean | nothing | **artifact** — [`Axioms.lean`](EscapeHatches/Lean/Axioms.lean) §4 |
 
@@ -129,7 +129,7 @@ Worth recording so they are not chased again.
 | `partial def` alone gives `False` | No. The `Inhabited` obligation is real and is recorded in the opaque's *value*, so `#print axioms` reports it. |
 | `noncomputable` is a soundness device | No. It is a code-generation annotation. |
 | `Ltac`/`Ltac2` can produce an ill-typed term | No — `Qed` re-checks the whole term. Even `exact_no_check` and `change_no_check` are caught. |
-| `Print Assumptions` is unreliable | Mostly false, and better than its reputation: it reports every `bypass_check` flag by name. Its real blind spots are ML plugins, extraction, `vm_compute`/`native_compute`, notation, and `.vo` provenance — plus two open functor bugs, [#12155](https://github.com/rocq-prover/rocq/issues/12155) and [#16646](https://github.com/rocq-prover/rocq/issues/16646). |
+| `Print Assumptions` is unreliable | **This row was too kind, and is corrected 2026-08-18.** It used to read "it reports every `bypass_check` flag by name", which is false on the installed 9.2.0 and measured false here. The flag is reported when the tainted constant is reachable from the audited constant's **body**, and is silently dropped when it is reachable only through its **type** ([#21825](https://github.com/rocq-prover/rocq/pull/21825), live on every released Coq/Rocq; fixed only in the 9.3+rc1 prerelease). It is dropped again when the proof went through `abstract`, which builds its side-effect constant with the *global* typing flags rather than the declaration's ([#20550](https://github.com/rocq-prover/rocq/issues/20550), `kind: inconsistency`, live on 9.2.0). And `-impredicative-set` is reported or not depending on how the **reading session** was invoked, not on the file being audited ([#22164](https://github.com/rocq-prover/rocq/issues/22164)). The known blind spots are therefore: types of global definitions, `abstract` side-effect constants, cross-file `-impredicative-set`, `check_eliminations` on 9.3+ ([#22294](https://github.com/rocq-prover/rocq/pull/22294), open), ML plugins, extraction, `vm_compute`/`native_compute`, notation, and `.vo` provenance — plus two open functor bugs, [#12155](https://github.com/rocq-prover/rocq/issues/12155) and [#16646](https://github.com/rocq-prover/rocq/issues/16646). **artifact** — [`Audits/Coq/PrintAssumptions/`](Audits/Coq/PrintAssumptions/), which pairs each of the first three with a control the same procedure reports correctly. |
 | A sort disagreeing with a reference sort is a library bug | Not necessarily — and this bit during the sweep above. `Array.qsort` takes a **strict** `lt`; passing `≤` violates its precondition and silently yields unsorted output that looks exactly like a defect. `List.mergeSort` takes a non-strict `le`. Using each function's `autoParam` default avoids the trap. No proof depends on the output, so this is a correctness hazard for programs, not a soundness one. |
 | Berardi assumes propositional extensionality | No — its only hypothesis is excluded middle. The prop-ext ⟹ proof-irrelevance result is `ClassicalFacts.ext_prop_dep_proof_irrel_cic`. |
 | `JMeq_eq` is axiom-free in modern Rocq | No. It is a `Theorem` now, but the file still `Require`s `Eqdep`, so `Print Assumptions` reports `Eqdep.eq_rect_eq`. |
@@ -537,6 +537,20 @@ with no GitHub issue at all. The tracker label is **`kind: inconsistency`**
 `coq/coq` and `rocq-prover/rocq` are the same repository; issue numbers are
 continuous.
 
+**As of 2026-08-18 that file is behind this one, which is new and worth stating.**
+Its last commit is `1460dd3ad9`, 2026-07-15 — before this repository's own
+2026-08-01 survey — and grepping master's copy today returns **zero** hits for
+#22287, #22024, #22352, #22125, #20550 and #22141. "Not in `critical-bugs.md`" is
+therefore not evidence of absence for anything filed after that date, and the
+file's own scope line (*"critical bugs in stable releases"*) independently
+explains why #22125 will never appear there. A second methodological note from
+the same sweep: **the release notes document 3 of 9.2.0's 10 inconsistency
+fixes**, so changelog-first surveying is unsound as a method; and the tracker
+label is necessary but far from sufficient — #22125 carries `kind: regression` +
+`part: checker` + `kind: bug` and #22141 only `kind: bug` + `part: fixpoints`,
+neither of them `kind: inconsistency`. The query shape that actually finds these
+is "merged PR titled like a cleanup, with a `test-suite/bugs/*.v` addition".
+
 Coq historically saw roughly one soundness bug per year. **Rocq 9.2.0 fixed ten
 `kind: inconsistency` issues in a single release** — an unprecedented count, and
 the direct output of the 2026 sweep.
@@ -553,17 +567,96 @@ the direct output of the 2026 sweep.
 | [#21683](https://github.com/rocq-prover/rocq/issues/21683) | Fixpoint passed as a higher-order argument; axiom-free Russell paradox. **A regression introduced by the fix for #20555** | 9.0.1–9.1.1 | 9.2.0 | **artifact** — [`HigherOrderFixpoint.v`](KernelDefects/Coq/GuardChecker/HigherOrderFixpoint.v) |
 | [#21701](https://github.com/rocq-prover/rocq/issues/21701) | Argument-less recursive calls (`let`-bound aliases) don't restrict uniform-argument computation | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsLet.v`](KernelDefects/Coq/GuardChecker/UniformArgsLet.v) |
 | [#21797](https://github.com/rocq-prover/rocq/issues/21797) | `find_uniform_parameters` doesn't recurse into args of non-`fix` `Rel` applications | 8.20–9.1 | 9.2.0 | **artifact** — [`UniformArgsHiddenSelfCall.v`](KernelDefects/Coq/GuardChecker/UniformArgsHiddenSelfCall.v). Completes PR #17986's set of four |
-| [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | 9.2.1 / 9.3 | **artifact** + **report** — [`GuardChecker/WrongEnvReduction.v`](KernelDefects/Coq/GuardChecker/WrongEnvReduction.v), [`Reports/2026-08-01-rocq-guard-…`](Reports/2026-08-01-rocq-guard-wrong-environment.md). **LIVE on the installed 9.2.0**, and the strongest route in this catalog: the only one where **both** `Print Assumptions` *and* `coqchk` report nothing **and** the `False` escapes through a plain `Require` into a downstream file whose own audit and `coqchk` are also clean. `coqchk` misses it because at 9.2.0 it type-checks bodies with `Typeops.infer` — the kernel's own guard checker — so it is not an independent implementation of the thing that failed |
-| [#22021](https://github.com/rocq-prover/rocq/issues/22021) | Lambda domains of unapplied nested fixpoints unchecked | 8.20–9.2.0 | 9.2.1 / 9.3 | **gap** |
+| [#21839](https://github.com/rocq-prover/rocq/issues/21839) | Reduction performed in the wrong environment; direct `Definition oops : False` | 8.16–9.2.0 | **9.3 — see below; no 9.2.1 exists** | **artifact** + **report** — [`GuardChecker/WrongEnvReduction.v`](KernelDefects/Coq/GuardChecker/WrongEnvReduction.v), [`Reports/2026-08-01-rocq-guard-…`](Reports/2026-08-01-rocq-guard-wrong-environment.md). **LIVE on the installed 9.2.0**, and the strongest route in this catalog: the only one where **both** `Print Assumptions` *and* `coqchk` report nothing **and** the `False` escapes through a plain `Require` into a downstream file whose own audit and `coqchk` are also clean. `coqchk` misses it because at 9.2.0 it type-checks bodies with `Typeops.infer` — the kernel's own guard checker — so it is not an independent implementation of the thing that failed. **Version correction, 2026-08-18: this file said “fixed in 9.2.1 / 9.3” and there is no 9.2.1.** The tag list runs `V9.2.0` (2026-03-27), `V9.3+alpha`, `V9.3+rc1` (2026-07-22), `V9.4+alpha`; the `v9.2` branch is one commit ahead of `V9.2.0` and that commit is `eae147572 “Unset is_a_released_version”`. Upstream's own ledger says `fixed in: V9.3` and has since 2026-03-31 — only the GitHub milestone ever said 9.2.1. So the correct statement is **live on every released stable Rocq since 8.16 (bar 8.18), including the latest**, carried only by the 9.3+rc1 prerelease. This *strengthens* the row rather than weakening it |
+| [#22021](https://github.com/rocq-prover/rocq/issues/22021) | Lambda domains of unapplied nested fixpoints unchecked | 8.20–9.2.0 | **9.3 — no 9.2.1 exists** | **gap** |
 | [#22024](https://github.com/rocq-prover/rocq/issues/22024) | Fixpoints alter their arguments' rtrees and aren't rechecked; relative inconsistency with univalence | 9.1 — **and 9.2, measured here** | **OPEN** | **artifact** — [`Paradoxes/Coq/GuardVsUnivalence.v`](Paradoxes/Coq/GuardVsUnivalence.v). Filed under `Paradoxes/` because the `False` is conditional (ground rule 1), though its subject is a defect; `KernelDefects/Coq/README.md` cross-references it. `coqchk` certifies `unsafe (co)fixpoints: <none>` on it, as it does for #21839 |
+
+**One more guard-checker `False`, and the only one in this file that no tagged
+build ever carried.** [#22125](https://github.com/rocq-prover/rocq/issues/22125)
+(2026-06): a commit titled *"Reorder and cleanup"*
+([a46bbfb1ee](https://github.com/rocq-prover/rocq/commit/a46bbfb1ee), Yann
+Leray) moved a `push_rel` to *before* the `find_inductive` call in
+`inductive_of_mutfix.find_ind`, but the type being looked up is valid in the
+*pre-push* context, so every de Bruijn index inside it resolved one binder off.
+With let-bound type aliases in scope the checker reads a **different inductive's
+recursive-argument tree** for the structural argument, and a non-recursive
+constructor field counts as a structural subterm:
+
+```coq
+Definition rec (T2 := T) (T1 := Loop) := fix rec (x : T2) : False :=
+  match x with C f => rec (f _ x) | D x => rec x end.
+Definition false : False := rec (C idProp).
+```
+
+**No tagged build of any kind is affected**, which is why the coverage is
+`noted` rather than `gap`: `V9.3+alpha` (2026-01-20) predates the regression,
+and `V9.4+alpha` (2026-06-29) and `V9.3+rc1` (2026-07-22) both postdate the fix;
+it never touched the `v9.2` branch. Only a from-source build of `master` in the
+eleven-week window 2026-03-30 → 2026-06-15 has it. **Measured here on 9.2.0**:
+the exploit is *rejected*, at `Definition rec`, with *"Recursive call to rec has
+principal argument equal to `f T2 x` instead of a subterm of `x`"*; the same term
+under `Unset Guard Checking` typechecks and reports exactly
+`Axioms: rec is assumed to be guarded.` — so 9.2.0 is one guard-checker decision
+away, and makes that decision correctly. That is a **version-boundary control**,
+not a `False` on 9.2, and it is what this row records in place of an artifact.
+The audit column for buggy `master` is *inference, not measurement*: #22127's
+body says the bug made `rocq check` fail, so buggy `master`'s `rocqchk` would
+have accepted the bogus fixpoint, and `Print Assumptions false` there would have
+read `Closed under the global context` — neither was run upstream and neither can
+be run here.
+
+Attribution, since the pieces are scattered: the issue is Jason Gross's two-line
+`rocq check` failure on Coqprime; the mechanism is in
+[PR #22127](https://github.com/rocq-prover/rocq/pull/22127); the `False` is in
+[PR #22129](https://github.com/rocq-prover/rocq/pull/22129), titled literally
+*"Add proof of False"*; the **fix** is Gross's, not Leray's — Leray wrote the
+offending refactor and the follow-up `Fail` test. The merged reproducer is
+`test-suite/bugs/bug_22125.v`. Coverage: **noted** — the provenance is the
+reason to carry it. It joins "#17986 introduced four" and "the fix for #20555
+introduced #21683" as a third instance of the same pattern, and it was found
+only because the *same* misalignment in the benign direction made `rocqchk`
+false-reject legitimate Coqprime code. `rocqchk` as accidental detector, which
+also touches §4.7.
+
+**It is absent from `dev/doc/critical-bugs.md`, and correctly so** — that file's
+opening line scopes it to *"critical bugs in stable releases"*, and this one was
+never in one. §4 leans on that file as canonical, so the absence needs saying or
+a future survey will read it as a contradiction.
 
 The pattern is striking and worth stating plainly: **PR
 [#17986](https://github.com/rocq-prover/rocq/pull/17986) alone introduced four
-separate proofs of `False`** (#21682, #21701, #21797, #22021), PR #15434
+separate guard-checker defects** (#21682, #21701, #21797, #22021), PR #15434
 introduced three (#20413, #20455, #20555), and the *fix* for #20555 introduced
 #21683. All three of our guard-checker artifacts are failures of the *same*
 analysis — uniform arguments for nested mutual fixpoints — reached three
 different ways, which is why they share a directory.
+
+**Corrected 2026-08-18: three of #17986's four are proofs of `False` and the
+fourth is not.** Upstream's ledger records #22021 as
+*risk: low (no known way to exploit the issue)*, it is not labelled
+`kind: inconsistency`, and its reporter wrote *"I don't think this can lead to an
+inconsistency, but at least a SN failure."* The same caveat applies wherever
+#21970 is grouped with closed-`False` rows — no full exploit is known there
+either. Neither should be downgraded: a latent guard or conversion hole in a
+shipped kernel is not nothing. But they are not peers of #21683, and this
+paragraph read as though they were.
+
+**A second row of that kind, still open:**
+[#22141](https://github.com/rocq-prover/rocq/issues/22141) (Yann Leray,
+2026-06-18) — the guard checker accepts non-structurally-recursive fixpoints
+whose ill-guarded recursive call has its **result discarded**, costing strong
+normalization, which the consistency argument rests on. Fix PR
+[#22142](https://github.com/rocq-prover/rocq/pull/22142) has been stalled since
+2026-06-19 because it deletes 61 lines from `test-suite/success/Fixpoint.v` and
+some of that code does not, in fact, break SN. The moment the recursive call's
+result is *consumed* the checker refuses again — including at type `False`,
+which is the shape a `False` would need — so this is a real kernel defect with
+**no known route to `False`**, and it is this section's first such row. It is
+also not an audit hole: `coqchk` reports `unsafe (co)fixpoints: <none>` and
+there is nothing for it to hide. Coverage: **gap**. Anyone building it should
+know that `Eval lazy` on the accepted fixpoint aborts compilation with
+`Error: Stack overflow.` rather than looping, and that `Timeout` does not save
+you, so the divergence needs a companion file compiled as an expected failure.
 
 ### 4.2 Module system
 
@@ -590,7 +683,7 @@ Coverage: **gap** for all.
 | [#8341](https://github.com/rocq-prover/rocq/issues/8341) | Universe polymorphism can capture global universes | — |
 | [#15916](https://github.com/rocq-prover/rocq/issues/15916) | Variance inference for section universes ignored use in inductives | 8.16 |
 | [#21694](https://github.com/rocq-prover/rocq/issues/21694) | Incorrect discharge of squashing info for a sort-polymorphic inductive in a section | 9.2.0 |
-| [#21689](https://github.com/rocq-prover/rocq/issues/21689), [#21970](https://github.com/rocq-prover/rocq/issues/21970) | Double universe substitution in letins from match indices / constructor arguments | 9.2.0 / 9.2.1 |
+| [#21689](https://github.com/rocq-prover/rocq/issues/21689), [#21970](https://github.com/rocq-prover/rocq/issues/21970) | Double universe substitution in letins from match indices / constructor arguments | 9.2.0 / 9.3 |
 | — | `Prop ≤ Set` conversion bug, **found by Georgi Guninski** | 8.3 / 8.2 (2010) |
 
 ### 4.4 Conversion machines (lazy / VM / native)
@@ -637,7 +730,11 @@ Coverage: **gap** for all except #22287, which now has an artifact (§4.2).
 #22287, #22024 and #22352 are the ones with a known route to `False`.
 
 **New 2026-08-18, and it is a `coqchk` bug rather than a kernel one — the first
-in this file's Rocq ledger.**
+in this file's Rocq ledger *with a demonstrated proof of `False`*.** (Not the
+first coqchk-only defect recorded: #12439 below is OPEN, carries both
+`part: checker` and `kind: inconsistency`, and has no exploit; and upstream's
+ledger records a “deserialization of `.vo` data not properly checked” entry
+against `component: coqchk`, fixed in 8.19.)
 [#22352](https://github.com/rocq-prover/rocq/issues/22352) (Jason Gross): with
 `-bytecode-compiler yes`, `coqchk` typechecks each constant's body but takes the
 VM bytecode from the `.vo`'s **separately serialised `vmlibrary` segment**, with
@@ -665,8 +762,30 @@ it checked". The Lean analogue would be `leanchecker` trusting a compiled-code
 segment of an `.olean`; it has none, because the kernel's only native hook is
 `Lean.reduceBool`, which `leanchecker` cannot replay at all
 ([`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
-is this repo's measurement of exactly that). Coverage: **noted** — no artifact
-here, and Rocq was not otherwise re-surveyed on 08-18.
+is this repo's measurement of exactly that).
+
+Coverage: **artifact** + **report** —
+[`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/),
+[`Reports/2026-08-18-rocqchk-vm-bytecode.md`](Reports/2026-08-18-rocqchk-vm-bytecode.md).
+**Verified here on Rocq 9.2** (`vo_version 90299`), which upstream's issue does
+not name — it reports against `master` at 9.4+alpha and places the defect as
+present since 8.20. Measured beyond what the issue states: the `False` **escapes
+through a plain `Require`** into a downstream library whose own
+`Print Assumptions` is clean for every constant and which
+`rocqchk -bytecode-compiler yes` also certifies; and the spliced `.vo` is itself
+accepted by *both* checker modes, correctly, so the file that is tampered with is
+not the file that fails. Control: the same sources over an unspliced `.vo` are
+rejected at the VMcast.
+
+Its siblings from the same day are §4.7:
+[#22360](https://github.com/rocq-prover/rocq/issues/22360) (the `vm_caml_prim`
+validator accepts 6 constructors where the type has 12, so the mode *rejects*
+any `.vo` using primitive strings) and
+[#22362](https://github.com/rocq-prover/rocq/issues/22362) (which libraries get
+validated depends on the order of the `-norec` arguments). Both reproduce on 9.2
+— [`Audits/Coq/CheckerCoverage/`](Audits/Coq/CheckerCoverage/), which is the
+first entry in this repository's Rocq column of [`Audits/`](Audits/), a gap that
+file had recorded as genuine.
 
 [#22287](https://github.com/rocq-prover/rocq/issues/22287) (universe-flag desync
 on module close) · [#22024](https://github.com/rocq-prover/rocq/issues/22024)
@@ -676,13 +795,64 @@ on module close) · [#22024](https://github.com/rocq-prover/rocq/issues/22024)
 [#12439](https://github.com/rocq-prover/rocq/issues/12439) (coqchk under-checks
 primitive declarations) · [#12155](https://github.com/rocq-prover/rocq/issues/12155)
 and [#16646](https://github.com/rocq-prover/rocq/issues/16646) (`Print
-Assumptions` under-reporting) · [#21113](https://github.com/rocq-prover/rocq/issues/21113)
+Assumptions` under-reporting — and see §1.4, which now records three further
+blind spots in the same command, all measured live on 9.2.0) ·
+[#21113](https://github.com/rocq-prover/rocq/issues/21113)
 (`Private Inductive` check too weak) · [#21494](https://github.com/rocq-prover/rocq/issues/21494)
-(kernel accepts PrimRecords with indices) · [#20016](https://github.com/rocq-prover/rocq/issues/20016)
-(bad case inversion with `Set Definitional UIP`).
+(kernel accepts PrimRecords with indices).
 
-**Corrections to the previous survey.** Three issues this catalog previously
-listed as soundness-relevant are not: [#21733](https://github.com/rocq-prover/rocq/issues/21733)
+[#20016](https://github.com/rocq-prover/rocq/issues/20016) (bad case inversion
+with `Set Definitional UIP`) was listed here and **does not belong**: measured
+on 9.2.0, it is rejected. It joins the correction paragraph below.
+
+**Three `Print Assumptions` holes, all live on the installed 9.2.0, all measured
+here 2026-08-18.** None is a new route to `False`; each is a case where Rocq's
+own audit answers `Closed under the global context` about a constant whose
+honest answer names an axiom or a disabled kernel check. Artifact for all three,
+each with a control the same procedure reports correctly:
+[`Audits/Coq/PrintAssumptions/`](Audits/Coq/PrintAssumptions/). §1.4's row is
+corrected accordingly.
+
+| Issue | What is dropped | State |
+| --- | --- | --- |
+| [#21825](https://github.com/rocq-prover/rocq/pull/21825) | The **type** of a definition is not traversed, so an axiom — or a `bypass_check` flag — reachable only through it is silent. Measured: the same guard flag on the same constant reports `loop is assumed to be guarded.` through the body and nothing through the type. The gap is constants *with a body* only; bodiless ones were always traversed, which is how `Axiom ax : nat` was ever reported. | Merged 2026-03-26 from a branch point past `V9.2.0` — **live on every released Coq/Rocq**, carried only by the 9.3+rc1 prerelease. The fix's `match obj with` handles `ConstRef` only; `VarRef`/`IndRef`/`ConstructRef` fall through unchanged |
+| [#20550](https://github.com/rocq-prover/rocq/issues/20550) | `abstract` builds its side-effect constant with the **global** typing flags rather than the declaration's local ones, so `#[bypass_check(universes=no)]` + `abstract` yields a clean audit where the same lemma without `abstract` correctly reports `relies on an unsafe hierarchy.` `kind: inconsistency`; **absent from `critical-bugs.md` and, before now, from this file**. Contained — `rocqchk` rejects the `.vo`, the #22287 shape. | Closed 2026-04-24, fix on `master`/`v9.3` only — **live on 9.2.0** |
+| [#22164](https://github.com/rocq-prover/rocq/issues/22164) | `-impredicative-set` across a file boundary. The **same `.vo`s** report `Closed under the global context` to a predicative reader and `Theory: Set is impredicative` to an impredicative one — so the audit's answer is a function of the reading session rather than of the artifact. Upstream files it `kind: enhancement` + `part: printer`, not `kind: inconsistency`, and this file should adopt that: a missing feature, not a soundness bug. | Merged 2026-07-15, but the fix is **a flag that is off by default**, so 9.3+rc1's default `Print Assumptions` still has the blind spot |
+
+Narrowed as the verification pass insisted: of the four "theory assumptions",
+only impredicative `Set` is actually silent. Rewrite rules are not (the `Symbol`
+is named), type-in-type is not (the per-definition entry is environment-
+independent; only the banner is gated — §1.2's `TypingFlags.v` row already says
+this correctly), and *indices not mattering does not exist in 9.2.0* at all. The
+indices case also runs the opposite way: suppressed when the reader's
+environment already makes the assumption, which is conservative. Only #22164 is
+suppressed when the reader's environment does **not**, which is the dangerous
+direction.
+
+**A fourth kernel typing flag that nothing reports, from 9.3 on.**
+[#22294](https://github.com/rocq-prover/rocq/pull/22294) (open) — `check_eliminations`
+arrived with merged [#21531](https://github.com/rocq-prover/rocq/pull/21531),
+which split the old `Unset Universe Checking` behaviour in two;
+`kernel/declarations.mli` documents it as *"If `false` sort elimination
+constraints are not checked. Breaks the system"*. `vernac/assumptions.ml` has
+cases for `check_universes`, `check_guarded` and `check_positive` and none for
+it, and `checker/check_stat.ml` likewise. `check_universes` cannot stand proxy —
+the two are wired to different graphs and a declaration can have one false and
+the other true. **No stable release is affected**: 9.2.0's
+`kernel/declarations.mli` has no such field, and 9.2.0's `Print Typing Flags`
+emits only `check_guarded`/`check_positive`/`check_universes`/`definitional uip`,
+confirmed here. Coverage: **noted**, not artifact — reaching it needs a second
+opam switch on 9.3+rc1 plus an ML plugin, and §1.2's `Declare ML Module` row
+already records that building a plugin of our own was not achieved on this
+machine. A trap for a future survey: merged PR #21952's body says *"When
+`Unset Elimination Checking` is active…"* and **no such command exists**.
+`checker/checkFlags.ml` lists `check_eliminations` under "these flags may be
+overridden", so `rocqchk` re-checks the declaration *with the elimination check
+disabled* — not an independent check that happens to be quiet, but the same
+check turned off, quietly. That is the §4.7 framing.
+
+**Corrections to the previous survey.** Four issues this catalog previously
+listed as soundness-relevant are not — #20016 above, plus: [#21733](https://github.com/rocq-prover/rocq/issues/21733)
 (`imitate` is unsound *in elaboration*; the kernel still rejects),
 [#21497](https://github.com/rocq-prover/rocq/issues/21497) (wrong non-uniform
 parameter computation breaks *eliminator generation*), and
@@ -707,6 +877,34 @@ Its own escape hatches, from `--help`: `-admit module` (*"load module and
 dependencies **without checking**"*) and `-norec module`. CompCert's actual
 practice is to run `coqchk` *and separately confirm* that no guard conditions
 were disabled — precisely because coqchk reports rather than rejects them.
+
+**Three further rows, measured 2026-08-18 on Rocq 9.2**, from the cluster Jason
+Gross filed that day. The first is the sharpest entry this section has ever had,
+because it is not "the checker was not run" but "the checker ran, said
+`Modules were successfully checked`, and was wrong."
+
+| Input | `rocqchk` |
+| --- | --- |
+| a `.vo` whose `vmlibrary` disagrees with its `library`, consumed by a `<:` VMcast downstream ([#22352](https://github.com/rocq-prover/rocq/issues/22352)) | **`-bytecode-compiler yes`: exit 0, `Modules were successfully checked`, over a `False`.** Default mode: rejected. **artifact** — [`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/) |
+| two `-norec` arguments, in the two possible orders ([#22362](https://github.com/rocq-prover/rocq/issues/22362)) | **different verdicts on the same files.** A root interned first pulls its dependencies in as `Dep`, which reads them via `System.marshal_in` with no `Validate.validate`; the later explicit `-norec` for such a dependency is a no-op. The accepting run still prints `Checking library:` for the file it read raw. **artifact** — [`Audits/Coq/CheckerCoverage/`](Audits/Coq/CheckerCoverage/) |
+| a `.vo` whose recorded per-segment MD5 does not match its payload | **accepted in every mode.** Not unsoundness — the payload used to measure it is another honest compilation, so the checker typechecks something well typed and is right to accept. Recorded because it says where the line is: the digest is an accident detector, and re-typechecking the bodies is the whole defence. **artifact** (negative result) — same directory |
+
+Those three read as one argument, and it is worth stating as one sentence:
+`rocqchk`'s protection against a hand-edited `.vo` is *entirely* that it
+re-typechecks the bodies — not the checksum, not the file list it prints — and
+#22352 is a hand-edited `.vo` that lies in the one segment the re-typechecking
+does not derive its answers from.
+
+The Lean column of this table is empty for a structural reason rather than a
+lucky one. `leanchecker` is not a second implementation carrying a second copy of
+a serialised artefact; it is Lean's own kernel replaying declarations. The only
+compiled-code hook the Lean kernel has is `Lean.reduceBool`, and `leanchecker`
+cannot replay it at all — which is why
+[`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
+is the one exhibit in that directory `leanchecker` *rejects*. The failure mode in
+the first row needs the arrangement Rocq has and Lean does not.
+
+Write-up: [`Reports/2026-08-18-rocqchk-vm-bytecode.md`](Reports/2026-08-18-rocqchk-vm-bytecode.md).
 
 ---
 

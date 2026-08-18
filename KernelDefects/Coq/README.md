@@ -1,4 +1,4 @@
-# Rocq kernel defects — seven regression witnesses and two live routes
+# Rocq kernel defects — seven regression witnesses and three live routes
 
 Seven soundness defects from the 2026 sweep, each a proof of `False` on an
 affected toolchain and each **fixed upstream**. That makes those seven
@@ -34,6 +34,7 @@ never a mathematical fact.
 | [`GuardChecker/WrongEnvReductionEscape.v`](GuardChecker/WrongEnvReductionEscape.v) | the escape half | **accepted** — ordinary Rocq that merely `Require`s the exhibit and proves `2 + 2 = 5`, with its own clean audit and clean `coqchk` |
 | [`ModuleSystem/UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) | [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), **OPEN** | **accepted**, exit 0 — `Closed under the global context`. `coqchk` rejects the `.vo` |
 | [`ModuleSystem/UniverseFlagDesyncImport.v`](ModuleSystem/UniverseFlagDesyncImport.v) | the containment half | rejected at the `Require` — `Universe inconsistency` |
+| [`Checker/`](Checker/) | [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352), **OPEN** | **accepted**, exit 0 — `Closed under the global context`, and `rocqchk -bytecode-compiler yes` reports `Modules were successfully checked`. Default `rocqchk` rejects. Needs a hand-spliced `.vo`, so it is a build procedure rather than a `.v` file and has [its own harness](Checker/verify.ps1) |
 
 **The live one in one paragraph.** `ugraph` keeps a *copy* of the
 universe-checking flag, so `Local Unset Universe Checking` inside a `Module`
@@ -51,6 +52,29 @@ line. What the bug costs is the *local* audit. Compare
 hierarchy` — and [`../Lean/ModuleSystem/`](../Lean/ModuleSystem/), the same
 *shape* in Lean, where the `False` does escape into ordinary downstream code.
 Write-up: [`Reports/2026-08-01-rocq-universe-flag-desync.md`](../../Reports/2026-08-01-rocq-universe-flag-desync.md).
+
+**The third live one, and the first checker defect in this catalog.**
+[`Checker/`](Checker/) is [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352),
+filed 2026-08-18 and open. `rocqchk` typechecks each constant's body and then, in
+its `-bytecode-compiler yes` mode, performs VM conversions with bytecode read
+from the `.vo`'s separately serialised `vmlibrary` segment — with nothing tying
+the two together. Splice one honest compilation's body onto another's bytecode
+and a `<:` VMcast downstream cashes the lie.
+
+It is the only exhibit in this repository where **two modes of the same tool
+disagree about the same bytes**: `rocqchk -bytecode-compiler yes` certifies the
+`False`, plain `rocqchk` rejects it. It is also the only *artifact* here whose defect is in a
+checker rather than in a kernel, on either side of the catalog —
+[`../../CATALOG.md`](../../CATALOG.md) §4.6 notes
+[rocq#12439](https://github.com/rocq-prover/rocq/issues/12439) as a second,
+unreproduced member of that class. It does not
+displace `WrongEnvReduction.v` as the strongest route here — that one needs no
+hand-edited artefact and no channel catches it — but it is the one that refutes
+[`../../CATALOG.md`](../../CATALOG.md) §1.2's standing answer to a tampered
+`.vo`. Write-up:
+[`Reports/2026-08-18-rocqchk-vm-bytecode.md`](../../Reports/2026-08-18-rocqchk-vm-bytecode.md);
+companion measurements in
+[`../../Audits/Coq/CheckerCoverage/`](../../Audits/Coq/CheckerCoverage/).
 
 **Looking for [rocq#22024](https://github.com/rocq-prover/rocq/issues/22024)?**
 It is an open guard-checker defect and it belongs here by subject, but its `False`
