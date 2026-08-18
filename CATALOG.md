@@ -228,6 +228,44 @@ relation.
 | [#7463](https://github.com/leanprover/lean4/issues/7463) | `@[csimp]` does not propagate axioms used in its proof through `native_decide`. OPEN, `P-low`. | **noted** — §1.2 |
 | [#10760](https://github.com/leanprover/lean4/issues/10760) | Visibility of section variables not verified correctly under the module system. OPEN. | **gap** |
 
+**lean4#14807's fix is incomplete, and this is the most useful thing the
+2026-08-18 hunt found.** `type_checker::is_prop` is not the only place the kernel
+reduces a type and matches it against `Sort`. `to_cnstr_when_structure`
+(`src/kernel/inductive.h`, the eta-expansion helper used by recursor reduction)
+**hand-inlines the same predicate**:
+
+```cpp
+expr s = whnf(infer_type(e_type));
+// See `type_checker::is_prop`: zero must be tested up to normalization, e.g. `imax 1 0` is `Prop`.
+if (is_sort(s) && normalizes_to_zero(sort_level(s)))
+    return e;
+return expand_eta_struct(env, e_type, e);
+```
+
+The comment shows the author copied `normalizes_to_zero` here by hand when
+#14613 was fixed. The `is_sort(s) &&` came with it — and that conjunct is
+exactly #14807's defect: a **stuck** reduct answers "not a proposition". Here the
+negative answer is *permission*: control falls through to `expand_eta_struct`,
+which fabricates an `Expr.proj` for every field and hands them to the recursor's
+computation rule **without any of them passing through `infer_proj`**.
+
+**Verified here against both branches:** the function is byte-identical on
+`releases/v4.33.0` and on `master`. #14807 replaced the `whnf` with
+`ensure_sort` at `type_checker.cpp:346` and **did not touch this copy**, so the
+pattern survives the fix that was written for it. A `grep` for `is_sort(` over
+the whole v4.33.0 kernel returns seven hits, of which only two reduce-and-match
+rather than assert: `type_checker.cpp:351` (fixed on `master`) and this one —
+and only this one reads the negative as permission to emit new terms.
+
+Not a `False` on `v4.33.0`: reaching it needs #14807's own stuck sort, and the
+inductive it fires on there has a `Prop`-only recursor, so the eta route yields
+proofs and extracting data still needs `infer_proj` — which is what #14807
+closes. The value is forward-looking, and it is the reason this row exists:
+**after #14807 ships, this site is still open**, and unlike `infer_proj` it does
+not merely relax a check, it emits projections into a reduct. Coverage:
+**noted** — worth an upstream report against #14807 rather than an artifact
+here.
+
 ### 2.2 Fixed defects that yielded an axiom-free `False`
 
 Chronological. Every one of these was accepted by the *checked* kernel.

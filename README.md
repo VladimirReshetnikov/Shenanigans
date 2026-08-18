@@ -87,6 +87,20 @@ were verified on `4.33.0` and `4.34.0-rc1`.
    around it silently reports kernel rejections as acceptances — use
    `set_option Elab.async false`, or the synchronous
    `(← getEnv).toKernelEnv.addDecl {}` and `Lean.Kernel.isDefEq`.
+   **And in any sweep, pass `0` as `addDeclCore`'s `maxHeartbeats`.** That
+   argument is not a per-call allowance: it is a *threshold* compared against a
+   cumulative per-task counter, so a loop that submits many declarations in one
+   command crosses it partway through and every later submission comes back
+   `(kernel) deterministic timeout` — the same declaration the kernel accepted a
+   moment earlier. A harness that classifies `Except.error` as "the kernel
+   refused this" then reports a truncated corpus as a completed sweep.
+   **Measured on v4.33.0**: 3,000 identical trivial declarations in one command
+   give 133 accepted at budget 2000, 333 at 16000, 888 at 32000, 1992 at 64000,
+   and 3000 at either 800000 or 0. Lean core does this correctly — `Replay.lean`
+   and `Environment.lean` both call `addDeclCore 0 0`. See
+   [`Audits/Method/HeartbeatBudget.lean`](Audits/Method/HeartbeatBudget.lean),
+   which asserts the scaling, and note that this rule's own earlier wording
+   recommended a finite budget.
 6. **Give every defect a control.** Acceptance of an exhibit means something only
    if a deliberately-broken twin is rejected by the same procedure. See
    [`KernelDefects/Lean/Controls/`](KernelDefects/Lean/Controls/).
