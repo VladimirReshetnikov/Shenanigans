@@ -6,8 +6,9 @@ Category (see `../../../README.md`): **audit**. A search that comes up empty is
 the result. No `sorry`, no `axiom`; every verdict is `#guard_msgs`-checked and the
 file exits 0 under `lean --trust=0`.
 
-`CATALOG.md` §3.1 tabulates the arena's fourteen named attacks and §5 calls the
-corpus the single largest Lean-side gap. An arena test is an **export** test: it
+`CATALOG.md` §3.1 tabulates the arena's named attacks — fourteen when this file
+was written, eighteen since 2026-08-18 — and §5 calls the corpus the single
+largest Lean-side gap. An arena test is an **export** test: it
 hands a checker a serialized environment, so most of the corpus is a statement
 about a checker, not about a Lean source file. This file measures the part that
 *is* reachable from inside Lean — the attacks whose payload is a `Declaration`
@@ -41,6 +42,17 @@ Three measurement notes carried from `../../../README.md`:
 | `level-index-out-of-order`, `sparse-name-index` | **No.** These are properties of the NDJSON serialization — `lean4export` emits internalization-table references densely and in order but the spec permits any integers. There is no Lean term that expresses "referred to name #7 before defining it" |
 | `perf/`, `tutorial/` | Out of scope here: timing and a 135-case accept/reject taxonomy, neither of which is an attack |
 | `undecidability/` | Independently measured in `../Metatheory/` |
+| `extra-rec` (added 2026-08-18) | **No.** A second recursor named `rogue`, of type `False`, smuggled into `False`'s inductive group. The kernel derives an inductive group's recursors, so the wire format is again the only place the lie fits; the arena injects it with the kernel-bypassing `Environment.lakeAdd`. Same class as the `ctor-num-fields` row above |
+
+**Four attacks were added to the corpus on 2026-08-18, and three of them are
+reachable from inside Lean — which is why this file's verdict is not extended to
+them here.** `rec-missing-ih`, `proj-of-stuck-prop` and `proj-of-subst-prop` are
+lean4#14806 and lean4#14807: the kernel *accepts* all three on every released
+toolchain, so they are defects rather than negative results, and they live in
+`../../../KernelDefects/Lean/DefEq/` with their own control and verify script.
+The paragraph above — "the kernel rejects every reachable one" — was true of the
+fourteen-attack corpus and is not true of the eighteen-attack one. See
+`../../../Reports/2026-08-18-defeq-cache-and-stuck-sort.md`.
 -/
 
 open Lean Elab Command Meta

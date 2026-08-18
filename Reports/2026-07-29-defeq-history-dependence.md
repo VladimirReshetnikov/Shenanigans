@@ -1,10 +1,32 @@
 # Kernel definitional equality is history-dependent, gated by a 32-bit `Expr.hash` collision
 
-**Status: not unsoundness.** Every equivalence the kernel derives this way is
-semantically valid. The defect is that the kernel's *accept/reject verdict* for a
-definitional-equality query depends on which **unrelated** queries were performed
-earlier while checking the same declaration, plus a 32-bit hash coincidence an
-adversary can engineer cheaply.
+> ## Status corrected 2026-08-18: this **is** unsoundness
+>
+> This report was headed **"Status: not unsoundness"**. On 2026-08-17
+> [lean4#14806](https://github.com/leanprover/lean4/pull/14806) fixed exactly the
+> mechanism described below, as a soundness bug, with two axiom-free proofs of
+> `False` attached. The reasoning that follows in this report is right about the
+> cache and wrong about the consequence: nothing unsound is ever *stored* in the
+> union-find, but the closure changes the **verdict** `is_def_eq` returns, and
+> recursor construction reads that verdict to decide which constructor fields are
+> recursive — asking more than once and assuming a stable answer. Two calls, two
+> answers, and the recursor's type disagrees with its computation rule.
+>
+> The section *"Not usable to derive `False` as-is"* below searched for a `False`
+> **among the terms the cache relates**, and correctly found none. The exploits
+> export no equation at all; they let the cache change a decision *about a
+> declaration* and take the `False` from the malformed declaration. The search
+> was aimed one level below where the defect was.
+>
+> Everything else here — the mechanism, the hash gate, the witness, the six-row
+> order table — is unchanged and is what those exploits are built on. See
+> [`2026-08-18-defeq-cache-and-stuck-sort.md`](2026-08-18-defeq-cache-and-stuck-sort.md).
+
+**Original status, retained for the record: not unsoundness.** Every equivalence
+the kernel derives this way is semantically valid. The defect is that the
+kernel's *accept/reject verdict* for a definitional-equality query depends on
+which **unrelated** queries were performed earlier while checking the same
+declaration, plus a 32-bit hash coincidence an adversary can engineer cheaply.
 
 Reproduces identically on **v4.32.0 and v4.32.2** (the kernel patched for #14576),
 so this is independent of the recent nested-inductive and `opaqueDecl` defects.
@@ -87,7 +109,15 @@ valid relation stays valid, so the union-find is an amplifier, not a bug source.
    independent verification — the exact guarantee those tools exist to provide.
 3. **Amplification.** If any single unsound acceptance is ever found, the
    union-find spreads it transitively across the whole declaration.
+   *(2026-08-18: the operative word turned out to be* spreads. *No prior unsound
+   acceptance was needed — the closure alone, consulted by a client that asks
+   the same question twice, is sufficient. This item was the closest this report
+   came to the answer and it still understated the case.)*
 4. The guard is a **32-bit** hash and collisions are cheap to search for.
+   *(2026-08-18: confirmed by #14806's exploits, which engineer their own. The
+   colliding pair in `EquivManagerMissingIH.lean` measures
+   `h0 = h2 = 1470203867` at `_ind_fresh.3` — under 2^32, same width, found by
+   search over constant names and pad salts exactly as here.)*
 
 ## Upstream movement, 2026-08-01
 
@@ -122,6 +152,10 @@ case where they agreed for unrelated reasons is [`../CATALOG.md`](../CATALOG.md)
 §3.0.
 
 ## Not usable to derive `False` as-is
+
+**Superseded — see the box at the top.** This section is correct about what it
+asked and wrong about what it concluded: no *closed endpoints* can be exported
+from the bad equation, and none are needed.
 
 The `Acc` + proof-irrelevance pair `F () (p h) ≡ succ (F () h)` and `p h ≡ h` is
 jointly `n ≡ n+1`, but exists only between terms mentioning a hypothesis

@@ -6,10 +6,23 @@ consulted whenever two expressions happen to share a 32-bit `Expr.hash`.
 Consequence: whether the kernel accepts `X =?= Z` depends on which *unrelated*
 def-eq checks were performed earlier while checking the SAME declaration.
 
-This is NOT unsoundness: every link of the chain is an individually valid
-acceptance (proof irrelevance, iota), and transitively closing a semantically
-valid relation stays valid.  The theorem that is accepted, `cnt N2 hs = 2`,
-is true.  See ../../Reports/2026-07-29-defeq-history-dependence.md.
+>>> CLASSIFICATION CORRECTED 2026-08-18.  This header used to read "This is NOT
+>>> unsoundness", on the grounds that every link of the chain is an individually
+>>> valid acceptance and that transitively closing a semantically valid relation
+>>> stays valid.  Both of those statements are true; the conclusion is not.
+>>> lean4#14806 (merged to `master` 2026-08-17) fixes this as A SOUNDNESS BUG.
+>>> Nothing unsound is ever stored in the union-find — what the closure changes
+>>> is the VERDICT `is_def_eq` returns, and recursor construction reads that
+>>> verdict to decide which constructor fields are recursive, asks more than
+>>> once, and assumes a stable answer.  Two calls, two answers, and the recursor's
+>>> type disagrees with its computation rule.  See EquivManagerMissingIH.lean and
+>>> EquivManagerStuckSort.lean in this directory for the two `False`s, and
+>>> ../../../Reports/2026-08-18-defeq-cache-and-stuck-sort.md for what was wrong
+>>> with the original argument.
+
+The measurement below is unchanged and still holds: it is the mechanism the two
+exhibits are built on.  The theorem it gets accepted, `cnt N2 hs = 2`, is true —
+that was never the issue.  See ../../../Reports/2026-07-29-defeq-history-dependence.md.
 
 Reproduces identically on v4.32.0 and on v4.32.2 (patched for lean4 #14576).
 -/
