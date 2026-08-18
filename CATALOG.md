@@ -226,7 +226,7 @@ relation.
 | [#7637](https://github.com/leanprover/lean4/issues/7637) | Primitive projections are not conservative over recursors. OPEN. | **artifact** — [`Audits/Lean/Metatheory/ProjBeyondRecursor.lean`](Audits/Lean/Metatheory/ProjBeyondRecursor.lean), which reaches the same conclusion independently |
 | [#8982](https://github.com/leanprover/lean4/issues/8982) | An unsound `unif_hint` makes everything defeq and crashes Lean. Elaborator-level. OPEN; fix PR #8988 unmerged. | **gap** |
 | [#7463](https://github.com/leanprover/lean4/issues/7463) | `@[csimp]` does not propagate axioms used in its proof through `native_decide`. OPEN, `P-low`. | **noted** — §1.2 |
-| [#10760](https://github.com/leanprover/lean4/issues/10760) | Visibility of section variables not verified correctly under the module system. OPEN. | **gap** |
+| [#10760](https://github.com/leanprover/lean4/issues/10760) | Visibility of section variables not verified correctly under the module system. OPEN. **Measured here 2026-08-18 and it reproduces on `v4.33.0`**: with `private structure X` and `variable {n : X}`, a `public theorem privTypeThm : n = n` is accepted, and what crosses the boundary is `@privTypeThm : ∀ {n : X✝}, n = n` — a public signature quantifying over the private structure, with `#print axioms` clean. The direct form is correctly refused (*"A private declaration `defaultX` exists but would need to be public"*), so it is the section-variable route specifically. **Classified: a visibility leak, not a soundness route** — the escaped constant is exported as an inaccessible name, downstream knows strictly less about it than upstream, and no direction was found in which a consumer learns more than the producer. | **noted**, measured |
 
 **lean4#14807's fix is incomplete, and this is the most useful thing the
 2026-08-18 hunt found.** `type_checker::is_prop` is not the only place the kernel
@@ -1213,6 +1213,29 @@ declaration**. What it ruled out:
 | Universe parameters escaping their declaration | every `add_*` path, with types and bodies mentioning a `Level.param` outside `levelParams` | all rejected |
 | Mode flags versus caches, beyond `equiv_manager` | `infer_only`, `cheap_rec`/`cheap_proj`, `m_eager_reduce`, `m_definition_safety` against the keys of `m_infer_type`, `m_whnf`, `m_whnf_core`, `m_failure`, `m_unfold` | one anomaly — `m_eager_reduce` is not part of `m_eqv_manager`'s key, so an eager-only verdict is consumable by a later non-eager query in the same declaration — and no route past it |
 | Every reduce-and-match site in the kernel (the #14807 class) | does the function *answer* about an unreducible input rather than rejecting it, and does any consumer read the negative as permission? | seven `is_sort(` hits; five assert or throw; `type_checker.cpp:351` is #14807 itself; **`inductive.h`'s `to_cnstr_when_structure` is the only other one, and it is the only site anywhere that reads the negative as permission to emit new terms** — §2.2 |
+
+**The module-boundary battery, 2026-08-18.** The #14609 class — *"soundness is
+not a property of `src/kernel/`"* — is the only class to have produced a Lean
+route needing no metaprogramming, and none of the six kernel surfaces above
+touches it. `src/Lean/AddDecl.lean` publishes a non-exposed declaration as
+`.axiomInfo`, so the boundary's soundness rests entirely on the claim that the
+producer's dropped value really was a checked inhabitance witness. Every shape
+that could break that claim was built as a two-module Lake package on `v4.33.0`
+and audited downstream:
+
+| Shape crossing the boundary | Downstream `#print axioms` |
+| --- | --- |
+| `theorem` proved by `sorry` | `[sorryAx]` — honest |
+| `def` whose body is `sorry` | `[sorryAx]` — honest |
+| public theorem resting on a **private axiom** | `[privBad✝]` — honest, name inaccessible but reported |
+| public theorem resting on a **private def whose body is `sorry`** | `[sorryAx]` — honest |
+
+So the stub carries its axiom dependencies across, and none of these launders a
+`sorry` or an axiom into a clean audit. That is the question #14609 makes one ask
+of this code, and the answer here is that it holds. `.thmDecl` is stubbed
+unconditionally while `.defnDecl` and `.opaqueDecl` are stubbed only when not
+exporting — an asymmetry that is deliberate, since a proof never needs
+exporting.
 
 Two things did turn up, neither a `False`. `Nat.shiftLeft`'s missing magnitude
 guard is §2.6. And `Kernel.check` with a caller-supplied local context whose
