@@ -149,13 +149,63 @@ fixed-width integer fields.
 ### 2.1 Live defects (not fixed as of the survey)
 
 "Live" means *no released toolchain carries the fix*, whether or not `master`
-does. **Five** fixes are now `master`-only, and every one of them is an
-axiom-free proof of `False` against the current release: three from the July
-wave, and two merged on 2026-08-17/18, after `v4.33.0` and `v4.34.0-rc1` were
-both cut on 08-10. None is on `releases/v4.33.0` or `releases/v4.34.0` —
-checked directly: `src/kernel/equiv_manager.cpp` is still present on both
-branches, and `type_checker::is_prop` on both still reads
-`whnf(infer_type(e))` with an `is_sort(s) &&` guard.
+does.
+
+> ## Corrected 2026-08-18: the July wave shipped, and this section said otherwise
+>
+> This section was written on 2026-08-01, when `v4.33.0-rc1` was the newest tag,
+> and it recorded #14609, #14613 and #14616 as *"`master`-only; live on every
+> release"*. **`v4.33.0` was released on 2026-08-10 and carries the wave.**
+> Confirmed two ways, against `releases/v4.33.0`:
+>
+> * By source. `to_proj_idx` and the structure-name argument to
+>   `reduce_proj_core` (#14632), `normalizes_to_zero` (#14613/#14615),
+>   `check_no_nested_aux` (#14616), `check_no_metavar_no_fvar` in
+>   `inductive.cpp` (#14607), `add_quot`'s `check_name` calls (#14632) and
+>   #14633's *"Extend the local context only after `d` has been checked"* are
+>   all present in the v4.33.0 tree.
+> * By running this repository's own exhibits on it.
+>   [`Universes/ImaxPropLaundering.lean`](KernelDefects/Lean/Universes/ImaxPropLaundering.lean)
+>   is now **rejected** — `(kernel) invalid projection proof.1` — and
+>   [`Projections/ProjIndexTruncation.lean`](KernelDefects/Lean/Projections/ProjIndexTruncation.lean)
+>   reports the truncation gone: index `2^32+1` is refused where it used to be
+>   read as `1`. And [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/) — the
+>   #14609 `partial`-across-a-boundary route — now fails to build on v4.33.0
+>   with `(kernel) invalid declaration, it uses unsafe declaration
+>   'partialFalse'`, so **all three** of the rows this section called live are
+>   closed. Its `verify.ps1` still passes on its default `v4.32.2`, which is now
+>   the right way to read it: a regression witness pinned to an affected
+>   toolchain.
+>
+> So the two rows below for #14613 and #12746 are **regression witnesses now**,
+> not live defects, and their "Verified here on v4.27.0-rc1 … v4.33.0-rc1"
+> matrices should be read as ending at `v4.33.0-rc1`. The general lesson is the
+> one this file already draws in §5.2 and keeps having to re-learn: *a fix on
+> `master` is not a fix, and a fix in a release candidate is not a release.* The
+> corrected procedure is to re-run the exhibits against every new tag rather than
+> to re-read the tracker.
+>
+> **What is actually live on `v4.33.0` and `v4.34.0-rc1`** is the August pair
+> plus its hardening — [#14806](https://github.com/leanprover/lean4/pull/14806),
+> [#14807](https://github.com/leanprover/lean4/pull/14807) and
+> [#14808](https://github.com/leanprover/lean4/pull/14808) — checked directly:
+> `src/kernel/equiv_manager.cpp` is still present on both release branches, and
+> `type_checker::is_prop` on both still reads `whnf(infer_type(e))` with an
+> `is_sort(s) &&` guard. [#14582](https://github.com/leanprover/lean4/pull/14582)
+> is also still absent: `check_uniform_params` does not appear in v4.33.0's
+> `inductive.cpp`.
+>
+> One further correction that runs the other way, and matters for §5: the
+> reachability of #14806 does **not** require an engineered `Expr.hash`
+> collision. `quick_is_def_eq` is declared `bool use_hash = false`
+> (`type_checker.h:83`) and two of its three call sites take the default, so the
+> `equiv_manager` closure is consulted for any pair. Measured with plain
+> unpadded terms in
+> [`Audits/Lean/DefEq/HashGateBypass.lean`](Audits/Lean/DefEq/HashGateBypass.lean);
+> write-up in
+> [`Reports/2026-08-18-defeq-hash-gate-is-not-a-gate.md`](Reports/2026-08-18-defeq-hash-gate-is-not-a-gate.md).
+> That removes the stated reason §5's top item gives for #14616 being hard to
+> reconstruct.
 
 The August pair share a provenance and a root ingredient. Both were **reported
 by Daniel Selsam (OpenAI) using their internal models** — the same source as
