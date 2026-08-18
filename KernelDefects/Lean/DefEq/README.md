@@ -25,6 +25,16 @@ def c := run false 0 (Acc.inv seed (Nat.lt_succ_self 0))
 its own — because there the two `Acc` proofs have different types, so proof
 irrelevance does not apply and `a` never reduces.
 
+> **Correction, 2026-08-18.** Everything below, and every upstream account of
+> lean4#14806, presents an engineered `Expr.hash` collision as what makes the
+> transitive closure reachable. That is wrong: `quick_is_def_eq` is declared
+> `bool use_hash = false` (`type_checker.h:83`) and two of its three call sites
+> take the default, so the closure is consulted for any pair. The order
+> dependence reproduces with plain, unpadded terms whose hashes differ —
+> measured in [`../../../Audits/Lean/DefEq/HashGateBypass.lean`](../../../Audits/Lean/DefEq/HashGateBypass.lean).
+> The three exhibits here keep upstream's salts because they are ports of
+> upstream's regression tests, not because the salts are load-bearing.
+
 That much has been documented here since 2026-07-29, under the heading **"not
 unsoundness"**. On 2026-08-17 and 08-18 upstream fixed two soundness bugs that
 are exactly it, both reported by Daniel Selsam (OpenAI) using their internal

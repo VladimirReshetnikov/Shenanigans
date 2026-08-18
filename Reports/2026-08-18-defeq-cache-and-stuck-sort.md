@@ -96,7 +96,14 @@ types* (`Acc (·<·) 1` against `Acc (·<·) 0`), so proof irrelevance does not
 apply and `a` never reduces.
 
 `equiv_manager` merged every successful query and was consulted before any real
-work — but only for terms with equal hashes:
+work. Every account of this bug, including the first version of this report,
+adds "but only for terms with equal hashes" — **which is wrong, and is
+corrected in [`2026-08-18-defeq-hash-gate-is-not-a-gate.md`](2026-08-18-defeq-hash-gate-is-not-a-gate.md)**.
+The hash comparison below is performed at only one of `quick_is_def_eq`'s three
+call sites; the other two take the `use_hash = false` default and consult the
+closure for any pair. The exploits described in this report do engineer a
+collision, and the code below is what they are built against, but the
+*mechanism* does not need one:
 
 ```cpp
 if (is_eqp(a, b))                      return true;
@@ -107,12 +114,14 @@ node_ref r2 = find(to_node(b));
 if (r1 == r2) return true;
 ```
 
-So whether `a ≡ c` is answered from the closure depends on the hash of the
-surrounding term — which an adversary controls, because `Expr.hash` is computed
-bottom-up and a collision propagates through any identical one-hole context. It
-is the same 32-bit hash the 2026-07-29 report measured: the colliding pair in
-`EquivManagerMissingIH.lean` is `h0 = h2 = 1470203867` at `_ind_fresh.3`, found
-by search over constant names and pad salts. The
+At the one gated call site, whether `a ≡ c` is answered from the closure depends
+on the hash of the surrounding term — which an adversary controls, because
+`Expr.hash` is computed bottom-up and a collision propagates through any
+identical one-hole context. It is the same 32-bit hash the 2026-07-29 report
+measured: the colliding pair in `EquivManagerMissingIH.lean` is
+`h0 = h2 = 1470203867` at `_ind_fresh.3`, found by search over constant names
+and pad salts. At the two ungated sites no collision is needed at all, which is
+why the same order-dependence reproduces with plain terms. The
 constant names and pad salts in the witnesses are chosen so the hashes collide
 for the free variables the kernel creates while building a recursor's **minor
 premises** (`_ind_fresh.3`, `_ind_fresh.9`) and *not* for the pass that builds

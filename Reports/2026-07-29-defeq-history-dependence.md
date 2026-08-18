@@ -114,6 +114,16 @@ valid relation stays valid, so the union-find is an amplifier, not a bug source.
    the same question twice, is sufficient. This item was the closest this report
    came to the answer and it still understated the case.)*
 4. The guard is a **32-bit** hash and collisions are cheap to search for.
+   *(2026-08-18, TWICE corrected. First: confirmed by #14806's exploits, which
+   engineer their own — the colliding pair in `EquivManagerMissingIH.lean`
+   measures `h0 = h2 = 1470203867`. Then, later the same day, superseded
+   outright: **it is not a guard at all** at two of `quick_is_def_eq`'s three
+   call sites, which take the `use_hash = false` default declared at
+   `type_checker.h:83`. The table row above reading "same three, no hash
+   collision → rejected (collision essential)" is true of THAT witness's
+   arrangement and false as a general claim — the closure is reachable with
+   plain unpadded terms whose hashes differ. See
+   [`2026-08-18-defeq-hash-gate-is-not-a-gate.md`](2026-08-18-defeq-hash-gate-is-not-a-gate.md).)*
    *(2026-08-18: confirmed by #14806's exploits, which engineer their own. The
    colliding pair in `EquivManagerMissingIH.lean` measures
    `h0 = h2 = 1470203867` at `_ind_fresh.3` — under 2^32, same width, found by
