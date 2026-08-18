@@ -1214,6 +1214,50 @@ declaration**. What it ruled out:
 | Mode flags versus caches, beyond `equiv_manager` | `infer_only`, `cheap_rec`/`cheap_proj`, `m_eager_reduce`, `m_definition_safety` against the keys of `m_infer_type`, `m_whnf`, `m_whnf_core`, `m_failure`, `m_unfold` | one anomaly — `m_eager_reduce` is not part of `m_eqv_manager`'s key, so an eager-only verdict is consumable by a later non-eager query in the same declaration — and no route past it |
 | Every reduce-and-match site in the kernel (the #14807 class) | does the function *answer* about an unreducible input rather than rejecting it, and does any consumer read the negative as permission? | seven `is_sort(` hits; five assert or throw; `type_checker.cpp:351` is #14807 itself; **`inductive.h`'s `to_cnstr_when_structure` is the only other one, and it is the only site anywhere that reads the negative as permission to emit new terms** — §2.2 |
 
+**Why the #14806 class is bounded, and what that implies for the search.** The
+2026-08-18 hunt spent most of its effort on the one defect that is live on
+`v4.33.0`, and came out with an argument worth stating rather than another
+failed attempt.
+
+Every pair `equiv_manager` merges is one the kernel *validly* accepted — by
+proof irrelevance, by iota, by congruence. The union-find's transitive closure
+therefore contains only genuine definitional equalities, and **no false equation
+can be read out of it**. That is not a mitigation; it is the reason both of
+upstream's exploits take their `False` from a *malformed declaration* rather
+than from an exported equation, and it is the reason the 2026-07-29 report's
+search — which looked for a `False` among the terms the cache relates —
+correctly found none.
+
+So an exploit of this class needs a **client that makes a structural decision
+from a defeq verdict**, not merely one that accepts or rejects a term. The
+complete list of such clients in `v4.33.0`'s kernel, established by reading every
+`is_def_eq` call site in `inductive.cpp` and `type_checker.cpp`:
+
+1. **Recursor construction**, deciding which constructor fields are recursive —
+   upstream's `rec-missing-ih`, reproduced at
+   [`DefEq/EquivManagerMissingIH.lean`](KernelDefects/Lean/DefEq/EquivManagerMissingIH.lean).
+2. **An inductive family's result sort**, when a K-like reduction decides it —
+   upstream's `proj-of-stuck-prop`, at
+   [`DefEq/EquivManagerStuckSort.lean`](KernelDefects/Lean/DefEq/EquivManagerStuckSort.lean).
+3. **The parameter check** at `inductive.cpp:230` and `:430`, which substitutes
+   the inductive's parameter fvar whatever the verdict — and which is
+   **backstopped**: measured 2026-08-18, a primed constructor passes the type
+   check at `:426` and is then refused at `:430` by the same type_checker asking
+   the same question outside the primed context
+   ([`Audits/Lean/DefEq/HashGateBypass.lean`](Audits/Lean/DefEq/HashGateBypass.lean)).
+
+Everything else that looks like a candidate turns out to compare with
+*structural* equality rather than defeq — `is_valid_ind_app` against
+`m_ind_cnsts`, `check_positivity`, `is_rec` — or to be a reduction rather than a
+verdict. Two of the three are exploited by upstream and reproduced here; the
+third has a backstop. **The class is therefore closed as a source of new routes
+on this kernel**, which is why the 2026-08-18 hunt turned instead to the
+surfaces tabulated above, and why its answer is negative.
+
+The corollary worth carrying: a new route on `v4.33.0` has to come from
+somewhere other than #14806, and the surfaces this ledger records are the ones
+already looked at.
+
 **The quotient module, 2026-08-18** — the last kernel module this catalog had
 never probed. `quot_reduce_rec` (`src/kernel/quot.h`) locates the major premise
 positionally (`mk_pos = 5` for `Quot.lift`, `4` for `Quot.ind`) and fires only
