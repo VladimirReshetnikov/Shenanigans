@@ -31,7 +31,7 @@ designed; the fourth is a negative result.
 | --- | --- |
 | [`Paradoxes/`](Paradoxes/) | Girard/Hurkens, Coquand–Paulin, Cantor, the subsingleton-elimination barrier, and univalence, each stated as an implication from an ingredient the system withholds, each axiom-free. The univalence pair records the sharpest Lean/Rocq difference here: Lean needs one hypothesis where Rocq needs two, because proof irrelevance makes UIP definitional. Plus `Blockers.lean`, which machine-checks the exact judgment Lean refuses in every case. Lean and Rocq. |
 | [`EscapeHatches/`](EscapeHatches/) | The sanctioned routes: `sorry`, `axiom`, `Admitted`, `native_decide` + `@[implemented_by]`, `Unset Guard/Positivity/Universe Checking`, rewrite rules, `-impredicative-set`, unchecked `addDecl` — and the two routes that defeat the audit rather than the kernel, `Spoofing.lean`/`Spoofing.v`. Lean and Rocq. |
-| [`KernelDefects/`](KernelDefects/) | Genuine implementation defects. Lean: the name-keyed `Nat`/`String`/`reduceBool` accelerator family, `Expr.proj` index truncation, definitional-equality history dependence, and the two defects that are **live on every released toolchain** — a universe spelling the kernel reads two ways, and a module boundary that loses `partial` — with controls and a `leanchecker` verdict for each. Rocq: four fixed guard-checker and module-system defects kept as regression witnesses, plus **two live routes** — [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), a `False` with a clean `Print Assumptions` that `coqchk` still catches, and [rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), the only route here that **`Print Assumptions` and `coqchk` both miss** and that escapes through a plain `Require`. |
+| [`KernelDefects/`](KernelDefects/) | Genuine implementation defects. Lean: the name-keyed `Nat`/`String`/`reduceBool` accelerator family, `Expr.proj` index truncation, and the **four** defects that are live on every released toolchain — a universe spelling the kernel reads two ways, a module boundary that loses `partial`, a definitional-equality *cache* whose transitive closure lets a recursor's type disagree with its computation rule ([#14806](https://github.com/leanprover/lean4/pull/14806)), and an `is_prop` that answers "no" for a term it should reject, skipping the proof-irrelevance guard on projections ([#14807](https://github.com/leanprover/lean4/pull/14807)) — with controls and a `leanchecker` verdict for each. Rocq: four fixed guard-checker and module-system defects kept as regression witnesses, plus **two live routes** — [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), a `False` with a clean `Print Assumptions` that `coqchk` still catches, and [rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), the only route here that **`Print Assumptions` and `coqchk` both miss** and that escapes through a plain `Require`. |
 | [`Audits/`](Audits/) | Searches that came up empty, which is the useful part of their output. Level/def-eq/compiler fuzzers, the `Acc` and `Expr.proj` metatheory probes, and the string- and name-identity study. |
 | [`Reports/`](Reports/) | Write-ups suitable for upstream bug reports, each pinned to specific toolchain versions. Plus [`Counterexamples/`](Reports/Counterexamples/), a typeset edition of Stephen Dolan's *Counterexamples in Type Systems*, which is source material rather than a result — mining it for Lean analogues is what produced [`KernelDefects/Lean/ModuleSystem/`](KernelDefects/Lean/ModuleSystem/). |
 | [`Upstream/`](Upstream/) | Submodules pinning the three sources this catalog cites line by line: `leanprover/lean4`, `leanprover/comparator`, `ammkrn/nanoda_lib`. **Reference material, not dependencies** — nothing here builds or imports them, and every exhibit verifies with the directory absent. |
@@ -46,14 +46,17 @@ Each locates its own sources from `$PSScriptRoot`, so the working directory does
 not matter.
 
 ```bash
-pwsh Paradoxes/verify.ps1            # All 9 paradox exhibits behaved as documented.
-pwsh EscapeHatches/verify.ps1        # All 32 escape-hatch exhibits behaved as documented.
-pwsh KernelDefects/Lean/verify.ps1   # All 6 modules behaved as documented.
-pwsh KernelDefects/Coq/verify.ps1    # All 11 Coq exhibits behaved as documented.
+pwsh Paradoxes/verify.ps1                  # All 9 paradox exhibits behaved as documented.
+pwsh EscapeHatches/verify.ps1              # All 32 escape-hatch exhibits behaved as documented.
+pwsh KernelDefects/Lean/verify.ps1         # All 6 modules behaved as documented.
+pwsh KernelDefects/Lean/DefEq/verify.ps1   # All non-transitive-def-eq artifacts behaved as documented.
+pwsh KernelDefects/Coq/verify.ps1          # All 11 Coq exhibits behaved as documented.
 ```
 
 Verified on Lean `4.32.0` (`x86_64-w64-windows-gnu`, commit `8c9756b28d64`) and
-The Rocq Prover `9.2` (OCaml 4.14.2).
+The Rocq Prover `9.2` (OCaml 4.14.2). The `DefEq/` artifacts need `4.33.0` or
+later to elaborate — `Environment.addDeclCore` gained a parameter there — and
+were verified on `4.33.0` and `4.34.0-rc1`.
 
 ## Ground rules for anything added here
 
@@ -116,6 +119,25 @@ rejected outright, because the elaborator is untrusted by design and *"soundness
 cannot depend on an untrusted component refusing to build a bad term."* That is
 the same premise this directory is organised around: what the audit reports is
 the thing that matters, and the kernel is the only component whose verdict counts.
+
+**2026-08-18 brought two more, from the same reporter, and they sharpen the
+postmortem's argument rather than settling it.**
+[#14806](https://github.com/leanprover/lean4/pull/14806) — the definitional-
+equality *cache* was a union-find, so its transitive closure made `is_def_eq`'s
+answer depend on query order, and a recursor's type could disagree with its
+computation rule — and
+[#14807](https://github.com/leanprover/lean4/pull/14807) — `is_prop` answered
+"not a proposition" for a term whose type does not reduce to a sort, instead of
+rejecting it, so a data field could be projected out of a proof. Three axiom-free
+`False`s between them, all live on `v4.33.0` and `v4.34.0-rc1`, all reproduced
+here in [`KernelDefects/Lean/DefEq/`](KernelDefects/Lean/DefEq/). On two of the
+three, cross-checking worked as designed. On the third, **`nanoda` accepted the
+bogus proof too** — and unlike July's near-miss, which needed two unrelated bugs
+in two implementations, this is one omission present in both.
+[`Reports/2026-08-18-defeq-cache-and-stuck-sort.md`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md)
+works through it, including the correction it forces on this repository's own
+2026-07-29 finding, which classified exactly the #14806 mechanism as *"not
+unsoundness"*.
 
 Lawrence Paulson's [*Broken proofs and broken
 provers*](https://lawrencecpaulson.github.io/2026/01/15/Broken_proofs.html)

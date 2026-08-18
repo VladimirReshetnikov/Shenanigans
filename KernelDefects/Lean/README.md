@@ -1,19 +1,19 @@
 # Lean kernel defects — deliberately unsound artifacts
 
-> **Warning.** Every Lean module under `Accelerators/`, `Universes/`,
+> **Warning.** Every Lean module under `Accelerators/`, `Universes/`, `DefEq/`,
 > `ModuleSystem/` and `Controls/` in this directory is *deliberately unsound*.
-> Six of them contain a machine-checked proof of `False`. They exist to document
+> Nine of them contain a machine-checked proof of `False`. They exist to document
 > soundness holes, not to be used, and nothing in this repository imports them.
 >
-> The `Accelerators/` and `Controls/` modules cannot contaminate anything that
-> builds them: they are `prelude` modules, so importing one into a module that
-> also imports `Init` is impossible. **`Universes/` and `ModuleSystem/` have no
-> such fuse** — and that is exactly what makes them interesting, since the
+> The `Accelerators/` modules cannot contaminate anything that builds them: they
+> are `prelude` modules, so importing one into a module that also imports `Init`
+> is impossible. **`Universes/`, `DefEq/` and `ModuleSystem/` have no such
+> fuse** — and that is exactly what makes them interesting, since the
 > prelude-assumption policy of
 > [lean4#13626](https://github.com/leanprover/lean4/issues/13626) does not reach
-> them. `ImaxPropLaundering.lean` is an ordinary module and `ModuleSystem/` is a
-> self-contained Lake package of its own; importing either really does put `False`
-> in scope. Do not.
+> them. `ImaxPropLaundering.lean` and the three `DefEq/` exhibits are ordinary
+> modules and `ModuleSystem/` is a self-contained Lake package of its own;
+> importing any of them really does put `False` in scope. Do not.
 
 Full write-up:
 [`Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md`](../../Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md).
@@ -114,6 +114,8 @@ it appears to be genuinely vacuous.
 | [`Universes/MutualResultLevel.lean`](Universes/MutualResultLevel.lean) | The *laundering* step measured alone, with the order reversal as its control. `m_result_level` comes from the first type of a mutual block; that is how the payload above gets declared at all, and it is unchanged on `master`. No `False`. | n/a |
 | [`Controls/ImaxPropControl.lean`](Controls/ImaxPropControl.lean) | Control for the two above. The same construction with the sort spelled `Sort 0`; the kernel refuses the projection, `#guard_msgs`-asserted. | n/a |
 | [`Projections/ProjIndexTruncation.lean`](Projections/ProjIndexTruncation.lean) | **Not `prelude`; now a regression witness.** `Expr.proj` indices are narrowed `size_t`→`unsigned` behind an `is_small()` guard, so index `2^32+k` becomes `k` and the kernel accepts projections out of range for the structure ([lean4#12746](https://github.com/leanprover/lean4/issues/12746)). Not a `False` on its own — truncation is consistent, and a collision needs 2^32 fields. **Fixed on `master` 2026-08-01 by [lean4#14632](https://github.com/leanprover/lean4/pull/14632)**; the issue is still open and no *released* toolchain carries the fix, so the `v4.32.0`/`v4.32.2`/`v4.33.0-rc1` matrix it ships still holds. | n/a (no `False`) |
+| [`DefEq/`](DefEq/) | **Not `prelude`, and live on every released toolchain — three separate axiom-free `False`s.** [lean4#14806](https://github.com/leanprover/lean4/pull/14806): the def-eq *cache* was a union-find, so its transitive closure over a non-transitive relation made `is_def_eq`'s verdict depend on query order, and recursor construction — which asks twice — got a `step` minor premise taking four arguments against a rule supplying three. [lean4#14807](https://github.com/leanprover/lean4/pull/14807): `is_prop` returned `false` for a term whose type does not reduce to a sort, so `infer_proj` skipped its proof-irrelevance guard. **`#print axioms` clean for all three.** Reported by Daniel Selsam (OpenAI); fixed on `master` 2026-08-17/18, released nowhere. See [`DefEq/README.md`](DefEq/README.md). | **accepts** — it shares Lean's kernel. `nanoda` rejects two of the three and **accepts** the third |
+| [`Controls/DefEqCollisionControl.lean`](Controls/DefEqCollisionControl.lean) | Control for the three above. One pad salt changed in each of the first two, breaking the `Expr.hash` collision the union-find lookup is gated on; the third gives its substituted proof type `P` instead of the definitionally-equal `Q`. All three must be rejected, `#guard_msgs`-asserted. | n/a |
 | [`Controls/NegativeControl.lean`](Controls/NegativeControl.lean) | Control. `set_option debug.skipKernelTC true` places a blatantly ill-typed `bogus : False` into an `.olean`. It too builds with exit 0 and reports no axioms. | **rejects** — which is what makes acceptance of the others meaningful |
 | [`Accelerators/FreeNameSurvey.lean`](Accelerators/FreeNameSurvey.lean) | `#check`s every kernel-special-cased name under `Init.Prelude` to show which are free. | n/a |
 | [`../../EscapeHatches/Lean/NativeDecide.lean`](../../EscapeHatches/Lean/NativeDecide.lean) | For contrast: the *documented* `native_decide` / `@[implemented_by]` boundary. Unlike the above, it does show up in `#print axioms`. | n/a |
@@ -164,10 +166,22 @@ pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 
 Expected final line: `The module-boundary artifact behaved as documented.`
 
+[`DefEq/`](DefEq/) likewise, for the same reason as `Universes/` plus a version
+floor of `v4.33.0`:
+
+```bash
+pwsh KernelDefects/Lean/DefEq/verify.ps1
+```
+
+Expected final line: `All non-transitive-def-eq artifacts behaved as documented.`
+
 ## Verified on
 
 * Lean `4.32.0` (`x86_64-w64-windows-gnu`, commit `8c9756b28d64`)
 * Lean `4.31.0` — the toolchain this repository pins
+* Lean `4.33.0` and `4.34.0-rc1` — for [`DefEq/`](DefEq/), which needs `4.33.0`
+  or later to elaborate at all (`Environment.addDeclCore` gained a `maxRecDepth`
+  parameter there; an API change, not a change in the defect)
 
 ## Status and prior art
 

@@ -42,6 +42,20 @@ re-surveyed. Everything the postmortem asserts was checked against the upstream
 artifact rather than taken from the prose; where the two differ, the difference is
 recorded at the point of use.
 
+Third pass **2026-08-18**, on the two soundness fixes merged to `master` the day
+before and the day of ([#14806](https://github.com/leanprover/lean4/pull/14806),
+[#14807](https://github.com/leanprover/lean4/pull/14807)) plus the hardening PR
+that accompanies them ([#14808](https://github.com/leanprover/lean4/pull/14808)),
+and on the arena's corpus and checker roster, which have both grown
+substantially since 08-01. Scope: `leanprover/lean4` issues and PRs since 08-01,
+`leanprover/lean-kernel-arena` since 08-10, the two release branches, and a
+search of the public discussion — of which, for these two, **there is none**:
+no postmortem, no Zulip thread, nothing on X or Mathstodon. The whole public
+record is the two PR descriptions, their regression tests, and three arena tests.
+Both defects are **live on every released toolchain**, and one of them refutes
+this file's own classification of a 2026-07-29 finding (§2.6). Rocq (§4) was not
+re-surveyed. Local exhibits verified on Lean `4.33.0` and `4.34.0-rc1`.
+
 ---
 
 ## 1. The taxonomy: every mechanism, both systems
@@ -135,12 +149,24 @@ fixed-width integer fields.
 ### 2.1 Live defects (not fixed as of the survey)
 
 "Live" means *no released toolchain carries the fix*, whether or not `master`
-does. **Three** of the July wave's fixes are `master`-only, and all three are
-axiom-free proofs of `False` against the current release. None is on
-`releases/v4.33.0` either.
+does. **Five** fixes are now `master`-only, and every one of them is an
+axiom-free proof of `False` against the current release: three from the July
+wave, and two merged on 2026-08-17/18, after `v4.33.0` and `v4.34.0-rc1` were
+both cut on 08-10. None is on `releases/v4.33.0` or `releases/v4.34.0` —
+checked directly: `src/kernel/equiv_manager.cpp` is still present on both
+branches, and `type_checker::is_prop` on both still reads
+`whnf(infer_type(e))` with an `is_sort(s) &&` guard.
+
+The August pair share a provenance and a root ingredient. Both were **reported
+by Daniel Selsam (OpenAI) using their internal models** — the same source as
+#14607–#14616 in July — and both are built on the fact that Lean's `is_def_eq`
+is a *sound but incomplete*, hence non-transitive, approximation of a transitive
+relation.
 
 | Issue | Defect | Coverage |
 | --- | --- | --- |
+| [#14806](https://github.com/leanprover/lean4/pull/14806) | **`master`-only fix (2026-08-17); live on every release.** The kernel cached successful `is_def_eq` queries in a **union-find** (`equiv_manager`), consulted whenever two expressions share an `Expr.hash`. Since the implemented `is_def_eq` is incomplete and therefore not transitive, exposing the union-find's transitive closure makes a query's answer depend on which unrelated queries ran earlier. Recursor construction calls `is_def_eq` to decide which constructor fields are recursive, calls it more than once, and assumes a stable answer: a crafted collision makes a K-like reduction fire while the **minor premises** are built and not while the **rules** are, so `Owner.rec`'s `step` premise takes four arguments and its rule supplies three. A `Prop`-valued application then reduces to `Bool`. **`#print axioms` reports nothing.** Two distinct exploits, both produced by an OpenAI agent. This is §2.6's def-eq history dependence, reclassified. | **artifact** ×2 + **report** — [`DefEq/EquivManagerMissingIH.lean`](KernelDefects/Lean/DefEq/EquivManagerMissingIH.lean), [`DefEq/EquivManagerStuckSort.lean`](KernelDefects/Lean/DefEq/EquivManagerStuckSort.lean), [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md). **Verified here** on `v4.33.0` and `v4.34.0-rc1`; controls rejected on both |
+| [#14807](https://github.com/leanprover/lean4/pull/14807) | **`master`-only fix (2026-08-18); live on every release.** `type_checker::is_prop` computed `whnf(infer_type(e))` and returned `false` when the result was a **stuck term rather than a sort** — but `false` means "not a proposition", so `infer_proj` skipped its proof-irrelevance guard and let a data field out of a proof. A value whose type does not reduce to a sort is ill-formed and should be *rejected*, not answered about; the fix uses `ensure_sort`. **The second distinct way `is_prop` has been found wrong in three weeks**, after #14613's syntactic sort comparison — same six lines of code, one `False` each, and #14613 is *also* still live. The sharpest witness needs nothing from #14806's cache: `P := a = b` and `Q := a = c` are definitionally equal types whose proofs behave differently under K-like reduction, so an inductive family declared over `P` is a family of propositions while its instance at a proof of `Q` has a sort that does not reduce. **Also accepted by `nanoda`** — §3.0 happening a second time. `lean4lean` never had it: its `isProp` already used `ensureSortCore`. | **artifact** + **report** — [`DefEq/SubstStuckSort.lean`](KernelDefects/Lean/DefEq/SubstStuckSort.lean), [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md). **Verified here** on `v4.33.0` and `v4.34.0-rc1`; control rejected on both |
 | [#14609](https://github.com/leanprover/lean4/pull/14609) | **`master`-only fix; live on every release.** A `module` publishes a definition whose body stays private as an axiom stub, and `addDeclCore` (`src/Lean/AddDecl.lean:118`) built it with `isUnsafe := defn.safety == .unsafe` — false for `.partial`. The kernel accepts a `partial` definition of type `False` (a `partial` mutual block has no inhabitance obligation), the boundary launders it into a *safe* axiom, and both of `infer_constant`'s gates miss: the first because `is_unsafe()` says false, the second because it inspects definitions and a stub is an axiom. **`#print axioms` reports nothing**; `leanchecker` rejects. Not a `src/kernel/` defect, which is why §5.2's first pass missed it. | **artifact** + **report** — [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/), [`Reports/2026-08-01-module-boundary-…`](Reports/2026-08-01-module-boundary-partial-stub.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected and `leanchecker` rejects on all of them |
 | [#14613](https://github.com/leanprover/lean4/pull/14613) | **`master`-only fix; live on every release.** `type_checker::is_prop` compares `whnf(infer_type(e))` against `Prop` syntactically, so `Sort (imax 1 0)` — which denotes `Prop` — is a proposition for proof irrelevance and not one for `infer_proj`'s field restriction. Projecting a `Bool` out of two proofs of it gives `false = true`. See §2.2 for the fix and §2.6 for the *second* weakness the reproducer needs. | **artifact** + **report** — [`Universes/ImaxPropLaundering.lean`](KernelDefects/Lean/Universes/ImaxPropLaundering.lean), [`Reports/2026-08-01-imax-prop-…`](Reports/2026-08-01-imax-prop-laundering.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected on all of them |
 | [#14616](https://github.com/leanprover/lean4/pull/14616) | **`master`-only fix; live on every release.** An inductive declaration may name one of the kernel's transient `_nested` auxiliary types, and `restore_nested` then rewrites the name back to a type in a different universe, leaving a stored constructor that is ill typed; `equiv_manager` closes the consequences transitively. Cannot be captured as an arena export test, so **no artifact exists anywhere**. | **gap** — the highest-value remaining item in §5 |
@@ -267,6 +293,14 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 | [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part hardening pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
 | [#14633](https://github.com/leanprover/lean4/pull/14633) | `infer_lambda` and `infer_let` now check a binder's type — and for `let`, its value — *before* adding the declaration to the local context, which is what `infer_pi` already did. *"No valid declaration changes behavior."* **Not in the postmortem**, which was published earlier the same day; found by reading the log at the pinned [`Upstream/lean4`](Upstream/lean4) commit. Adjacent to the local-context anomaly in §5.1's closing paragraph, though not the same thing: that one is about a caller-supplied `_kernel_fresh.N` fvar being captured, not about the order of checking and extending. | 2026-08-01 |
 
+**August 2026**, alongside §2.1's #14806/#14807. One PR, and it belongs in this
+section rather than that one because it changes nothing about what the kernel
+accepts for well-formed input.
+
+| PR | Substance | Merged |
+| --- | --- | --- |
+| [#14808](https://github.com/leanprover/lean4/pull/14808) | When the kernel generates a recursor it installs it and its computation rules with `add_core`, which **does not re-check them** — the surrounding machinery was trusted to produce something consistent. This adds a verification pass: the recursor's type is type-checked, and each computation rule is checked to be *type-preserving*, by reducing the recursor applied to each constructor one step and comparing the reduct's type against the un-reduced application's. The commit message states the reason the weaker check would not do, and it is the interesting part: checking only that a rule's right-hand side *has some type* is insufficient, because an **under-applied minor premise is still a well-typed function term** — which is exactly the shape #14806's first exploit produces. Same family as [`Audits/Lean/Nested/IllTypedStoredConstructor.lean`](Audits/Lean/Nested/IllTypedStoredConstructor.lean) and as #14621: a declaration the kernel stores unchecked because whoever produced it was trusted. `master`-only; no released toolchain has it either. | 2026-08-18 |
+
 ### 2.6 Findings originating in this repository
 
 | Finding | Nature | Coverage |
@@ -274,7 +308,7 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 | `Nat` accelerator family (`Nat.add`, `Nat.beq`, and the nine free names under `Init.Prelude`) | Kernel normalizer extensions keyed on *names only*, tried before delta-reduction; two disagreeing reduction rules give `False`. Out of scope upstream per §2.3. | **artifact** + **report** — [`Reports/2026-07-28-…`](Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md) |
 | `StringLitFabrication` | Expanding a *string literal* makes the kernel assemble a term by name and hand it to a recursor rule **without type-checking it**, fabricating an inhabitant of `Empty`. The most severe failure mode of the family. | **artifact** |
 | Comparator `accepted/` | [`leanprover/comparator`](https://github.com/leanprover/comparator) checks only that challenge and solution *agree* on kernel primitives, never that the primitives are genuine; a challenge that does not import `Init` gets no protection. | **artifact** — [`Comparator/`](KernelDefects/Lean/Comparator/) |
-| Def-eq history dependence | `equiv_manager`'s union-find turns the non-transitive def-eq relation into its transitive closure, consulted whenever two expressions share a 32-bit `Expr.hash`. **Not unsoundness** — every link is individually valid. Notable in hindsight: this is exactly the mechanism #14576 and #14616 weaponise. | **artifact** + **report** — [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md) |
+| Def-eq history dependence — **classified wrongly here, corrected 2026-08-18** | `equiv_manager`'s union-find turns the non-transitive def-eq relation into its transitive closure, consulted whenever two expressions share a 32-bit `Expr.hash`. Filed 2026-07-29 as **"not unsoundness"**, on the argument that every link is individually valid and that closing a semantically valid relation stays valid. Both premises are true and the conclusion is false: [#14806](https://github.com/leanprover/lean4/pull/14806) fixes this mechanism as a soundness bug with two `False`s attached. What the closure changes is not what is *stored* but the **verdict** `is_def_eq` returns, and recursor construction reads that verdict to make a structural decision, twice, assuming stability. The report's closing section searched for a `False` among the terms the cache *relates* and correctly found none — the exploits export no equation at all, they let the cache change a decision about a *declaration*. The search was aimed one level below the defect. Both files now carry the correction, and the measurement itself is unchanged: it is what §2.1's two exhibits are built on. | **artifact** + **report** — [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md), superseded by [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md) |
 | `Nat.shiftLeft` kernel abort | `reduce_nat` bounds `Nat.pow`'s exponent (`ReducePowMaxExp`) and declines gracefully above it, but applies no bound to `Nat.shiftLeft`; `lean_nat_shiftl` calls `lean_internal_panic` above `UINT_MAX`. `example : (1 : Nat) <<< 4294967296 = 0 := rfl` aborts `lean` (exit 1, uncatchable) on `v4.31.0` through `v4.33.0-rc1`, under `--trust=0`, from one line of ordinary source. **Robustness, not unsoundness** — the process dies rather than continuing with a wrong value. | **report** — [`Reports/2026-07-31-kernel-shiftleft-panic.md`](Reports/2026-07-31-kernel-shiftleft-panic.md); harness [`Audits/Lean/Fuzz/NatAcceleratorBoundaries.lean`](Audits/Lean/Fuzz/NatAcceleratorBoundaries.lean) |
 | `v4.33.0-rc1` backport gap, **twice** | The 4.33 branch was cut before #14484 and #14576 landed and neither was cherry-picked, so the release candidate accepts both proofs of `False`. Both were later cherry-picked onto `releases/v4.33.0` — and then the same thing happened again with #14613/#14615/#14616, which merged to `master` on 07-31, three days after that branch's HEAD, and are still not on it. A recurrence four days after the first was recorded as resolved. | **report** — [`Reports/2026-07-29-lean-4.33-…`](Reports/2026-07-29-lean-4.33-backport-gap.md) |
 | **Mutual-block result-level laundering** | `check_inductive_types` (inductive.cpp:248) sets `m_result_level` from the **first** type of a mutual block and requires the others only to be `is_equivalent`; every downstream gate reads that one spelling. So the data-field permission that `check_constructors` grants a syntactic `Sort 0` is inherited by a type whose own sort is spelled `Sort (imax 1 0)` or `Sort (max 0 0)`, purely by declaring it *second*. Reversing the two types rejects the same block, which is what pins it on "first" rather than "some". This is the step that gets #14613's payload past a released kernel at all, and upstream's fix and regression test do not mention it: **it is unchanged on `master`**, harmless there only because #14613/#14615 made every consumer of `m_result_level` semantic in the same wave. Refines §2.5's note on #14615 — the syntactic test erred restrictively *per block*, not per type. | **artifact** + **report** — [`Universes/MutualResultLevel.lean`](KernelDefects/Lean/Universes/MutualResultLevel.lean), [`Reports/2026-08-01-imax-prop-…`](Reports/2026-08-01-imax-prop-laundering.md) |
@@ -354,6 +388,43 @@ default** (the standalone CLI's documented default is still `enable_nanoda: fals
 `nanoda` is tracked daily so that `lean-eval` and comparator do not drift behind
 upstream fixes.
 
+**It happened again on 2026-08-18, and this time "nearly" is the wrong word.**
+§2.1's #14807 has three witnesses in the arena. On two of them cross-checking
+worked exactly as designed — `rec-missing-ih` and `proj-of-stuck-prop` are
+rejected by `nanoda` and by `ind-models`, and the #14806 PR says so in its own
+description. On the third, `proj-of-subst-prop`, **`nanoda` accepts the bogus
+proof too**, as do `nanobruijn` and `still-nanoda`. So the official kernel and
+the main external checker agreed, and were both wrong.
+
+The difference from July is worth stating precisely, because it cuts against the
+comfort available last time. In July the agreement needed **two unrelated bugs**,
+one in each implementation — improbable, and the postmortem could reasonably call
+the defence intact. Here there is **one bug, present in both**: `is_prop`
+answering a question about a term whose type does not reduce to a sort, instead
+of rejecting it. That is the §3.0 moral — independence of implementations is not
+independence of blind spots — with the "unrelated provenance" mitigation removed.
+
+`lean4lean` is unaffected, and its reason is the strongest argument the project
+has: its `isProp` already used `ensureSortCore`, so it had the fix before there
+was a bug to fix. Note the reversal against the paragraph above, where `lean4lean`
+was the *worst* case for #14576 precisely because its inductive handling is a port
+of the C++. The two facts together are the actual lesson: a port inherits bugs
+where it is a port, and avoids them where the target language forced the
+obligation to be stated.
+
+**The `nanoda` row is a snapshot and is already stale**, which is itself the
+point: `nanoda` merged both fixes on 2026-08-18 —
+[`#26`](https://github.com/ammkrn/nanoda_lib/pull/26) *"add additional checks for
+underived recursors"* at 04:13 UTC, closing the `extra-rec` class, and
+[`#27`](https://github.com/ammkrn/nanoda_lib/pull/27) *"is_sort guards, disable
+union find eq"* at 17:58 UTC, which is #14807 and #14806 in one commit, reached
+independently. Its own summary of the second is the crispest statement of #14806
+in any source: the union-find is replaced by *"sorted pairs which do not try to
+exploit transitivity."* So the window in which the official kernel and the main
+external checker shared this blind spot was about fourteen hours; the official
+kernel's half of it is still open on every release, which is the asymmetry §2.1
+records.
+
 ### 3.1 The attack corpus
 
 | Test | Mechanism | Who fell for it |
@@ -371,12 +442,28 @@ upstream fixes.
 | `proj-non-structure` | Project out of a 2-constructor type, hoping the checker infers from the *first* constructor | generic |
 | `k-rec-conv` | Broken K-like reduction makes `fun x => x ≡ fun _ => y` | regression test for a **sokonanoda** bug |
 | `bogus1` | `debug.skipKernelTC` calibration case | — |
+| `rec-missing-ih` | §2.1 / #14806. The def-eq cache's transitive closure, gated on a hash collision, makes a K-like reduction fire while a recursor's minor premises are built and not while its rules are; the `step` premise then takes four arguments and its rule supplies three | **the official kernel** (4.28, 4.29.1, **4.33.0**, nightly-2026-08-01) — **artifact**, [`DefEq/EquivManagerMissingIH.lean`](KernelDefects/Lean/DefEq/EquivManagerMissingIH.lean) |
+| `proj-of-stuck-prop` | §2.1 / #14806 + #14807. The same comparison decides an inductive family's result sort, so it is a `Prop` under `_kernel_fresh.0` and a stuck sort closed; the projection guard is skipped | **the official kernel** (same four) — **artifact**, [`DefEq/EquivManagerStuckSort.lean`](KernelDefects/Lean/DefEq/EquivManagerStuckSort.lean) |
+| `proj-of-subst-prop` | §2.1 / #14807 alone. `P := a = b` and `Q := a = c` are definitionally equal types whose proofs behave differently under K-like reduction. **Needs no cache and no axioms** | **the official kernel** *and* **nanoda**, **nanobruijn**, **still-nanoda** — §3.0's second occurrence. **artifact**, [`DefEq/SubstStuckSort.lean`](KernelDefects/Lean/DefEq/SubstStuckSort.lean) |
+| `extra-rec` | A second recursor named `rogue`, of type `False` itself, smuggled into `False`'s inductive group with no motives, minors or rules. A checker must *derive* an inductive group's recursors and reject any exported one that is not among them; registering exported recursors as given yields an inhabitant of the genuine empty type. Distinct from `nat-rec-rules`, which perturbs the rules of a legitimate recursor | **mathgraph**, **sokonanoda**, **zignodamus**, **nanoclo**, **nanobruijn**, **still-nanoda**, **nyaya** |
 
-Fourteen tests, and that is the whole reject-corpus as of 2026-08-01. **#14616 is
-not among them** and has no arena test: its exploit depends on transient
-`equiv_manager` state and so cannot be captured as an export (§2.2). Of the
-fourteen, three have caught the official kernel — `constlevels`,
-`nested-unused-param`, `proj-of-imax-prop`.
+**Eighteen tests as of 2026-08-18**, up from fourteen on 08-01: the four new ones
+are the block above, three of them landing on 08-18 as
+[`lean-kernel-arena`#141](https://github.com/leanprover/lean-kernel-arena/pull/141).
+Of the eighteen, **six** have caught the official kernel — `constlevels`,
+`nested-unused-param`, `proj-of-imax-prop`, and now all three of the August wave.
+
+**One claim in this section was wrong and the corpus has now refuted it.** This
+file previously said #14616 "cannot be captured as an arena export test" because
+its exploit depends on transient `equiv_manager` state, and generalised that to
+the whole cache-dependent class. `rec-missing-ih` is exactly such an exploit and
+*is* in the corpus — by **freezing the kernel's output as a static `.ndjson`**
+rather than regenerating it, with the Lean reproducer kept alongside. The arena's
+own note gives the reason the obvious approach fails: regenerating the export with
+a fixed toolchain "would quietly produce a benign export". So the technique is
+available, and #14616 remains a gap for want of someone applying it, not for want
+of a way. (`extra-rec` is frozen for a different reason — it is injected with the
+kernel-bypassing `Environment.lakeAdd`.)
 
 The corpus is not only attacks. Several other outcome classes now carry weight,
 and a checker's score is the sum of all of them:
@@ -388,6 +475,16 @@ and a checker's score is the sum of all of them:
 | `level-index-out-of-order`, `sparse-name-index` | accept | Export-format robustness: `lean4export` emits internalization-table references densely and in order, but the spec only requires integers. A checker treating them as array indices fails. `nanoda` currently errors on both |
 | `perf/` (`app-lam`, `grind-ring-5`, `shift-cascade`) | accept + timed | Asymptotics, not correctness. `shift-cascade` separates de Bruijn kernels with deferred shifts (O(N²) on cascading `let`s) from locally-nameless ones (O(N)) |
 | `tutorial/` | mixed | **135 tests**, a full taxonomy of what a kernel must accept and reject. **43 of them are the invalid ones**, which is the figure this file previously carried — that count is unchanged; what was never stated was the 92 valid cases alongside them |
+
+**Live roster, 2026-08-18.** **Nineteen** registered entries, up from sixteen:
+`kiota` (added 08-14), `mathgraph` — "MathGraph Kernel A6" — (08-15), and
+`ind-models`, Joachim Breitner's
+[`lean-inductive-models`](https://github.com/leanprover/lean-kernel-arena/blob/main/checkers/ind-models.yaml)
+(08-16), which is the one to note: it was registered **two days before** the
+August wave landed and catches both of #14806's exploits. `nanoclo` was added
+08-10. The `official` track was repointed from `4.32.2` to **`4.33.0`** on
+08-10, so the scores below are no longer directly comparable to the ones beside
+them.
 
 **Live scores, 2026-08-01.** Sixteen registered entries. `zignodamus`,
 `nanobruijn` and `sokonanoda` score a perfect 57/57 on rejects, as does
@@ -416,7 +513,10 @@ likely shares some implementation bugs with it; it's not really an independent
 implementation"*; §3.0 records the first concrete instance of that caveat biting,
 #14576), `nanoda`/`nanobruijn` (Rust), `sokonanoda`, `still-nanoda`,
 `zignodamus` (Zig), `nyaya` (OCaml), `rpylean` (RPython), `mini` (deliberately
-naive, invites attacks), `vow-lean-kernel`, and `evmlean` — a Lean-kernel
+naive, invites attacks), `vow-lean-kernel`, `nanoclo`, `kiota`, `mathgraph`,
+`ind-models` (Breitner's `lean-inductive-models`, registered 2026-08-16; #14806's
+PR records that it catches both of that bug's exploits, which is what a checker
+registered two days before the wave is for), and `evmlean` — a Lean-kernel
 fragment as a **Solidity smart contract**. `lean4checker` was archived 2026-03-25
 and superseded by the `leanchecker` binary shipped in the toolchain since
 `v4.28.0`; note it **shares Lean's own kernel** and so is not an independent
@@ -534,7 +634,39 @@ reachable without a flag.
 ### 4.6 Currently open, soundness-relevant
 
 Coverage: **gap** for all except #22287, which now has an artifact (§4.2).
-#22287 and #22024 are the only ones with a known route to `False`.
+#22287, #22024 and #22352 are the ones with a known route to `False`.
+
+**New 2026-08-18, and it is a `coqchk` bug rather than a kernel one — the first
+in this file's Rocq ledger.**
+[#22352](https://github.com/rocq-prover/rocq/issues/22352) (Jason Gross): with
+`-bytecode-compiler yes`, `coqchk` typechecks each constant's body but takes the
+VM bytecode from the `.vo`'s **separately serialised `vmlibrary` segment**, with
+nothing tying the two together. Two honest compilations of a one-constant file
+differing only in that constant's value have byte-identical `opaques` and
+`summary` segments, so splicing one file's `library` onto the other's
+`vmlibrary` gives a well-formed `.vo` that proves `False` and passes the checker
+with **no axioms reported**. The reproducer needs no patched tool — stock `rocq`
+and `rocqchk`, plus a Python script that rewrites the object file.
+[#22353](https://github.com/rocq-prover/rocq/issues/22353) is the fix, and it
+stops reading the segment entirely rather than comparing against it: stored and
+recompiled bytecode legitimately differ in at least four ways (user vs canonical
+names in relocations, `get_alias` collapsing, the unused-argument mask, and
+inlining of `const_inline_code` bodies), so an equality-based fix false-rejects
+`Module N := M.` Its incidental finding is the more alarming half: the
+unused-argument **mask** is passed to `Conversion.eqappr`'s
+`convert_stacks ~mask`, so a lying mask makes *ordinary* conversion skip
+comparing arguments — reachable with the default `-bytecode-compiler no`, and
+closed by the same PR without an exploit being built for it.
+
+This lands squarely on §4.7's asymmetry and on §1.2's tampered-`.vo` row, and it
+is the sharper form of both: not "neither system re-typechecks on import", but
+"the checker *does* re-typecheck, and then runs code it did not derive from what
+it checked". The Lean analogue would be `leanchecker` trusting a compiled-code
+segment of an `.olean`; it has none, because the kernel's only native hook is
+`Lean.reduceBool`, which `leanchecker` cannot replay at all
+([`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
+is this repo's measurement of exactly that). Coverage: **noted** — no artifact
+here, and Rocq was not otherwise re-surveyed on 08-18.
 
 [#22287](https://github.com/rocq-prover/rocq/issues/22287) (universe-flag desync
 on module close) · [#22024](https://github.com/rocq-prover/rocq/issues/22024)
@@ -589,8 +721,18 @@ Ordered by value.
    names a `_nested` auxiliary type, by `Expr.const` name or by `Expr.proj`
    structure name. The postmortem records that this one **cannot be captured as
    an arena export test** — the exploit turns on transient `equiv_manager`
-   state — so the arena's sixteen checkers do not test it and nobody has
-   published a reproduction.
+   state — so the arena's checkers do not test it and nobody has published a
+   reproduction.
+
+   **That premise is now known to be too strong (2026-08-18).** `rec-missing-ih`
+   is an `equiv_manager`-dependent exploit and it *is* in the corpus, by freezing
+   the kernel's output as a static `.ndjson` instead of regenerating it, with the
+   Lean reproducer kept beside it (§3.1). Whatever else stands in the way here,
+   "cannot be captured as an export" no longer does, and the freezing technique is
+   the first thing to try. Note the arena's own caveat on why the naive approach
+   fails: regenerating with a fixed toolchain "would quietly produce a benign
+   export", so the frozen file has to be produced on an affected toolchain — for
+   #14616 that means `v4.32.2` or earlier, all of which are to hand.
 
    [`Audits/Lean/Nested/AuxNameReachability.lean`](Audits/Lean/Nested/AuxNameReachability.lean)
    is the reconnaissance, and it establishes four things on `v4.32.2`. The
@@ -890,7 +1032,31 @@ The clause worth carrying forward is the one attached to that second batch:
 **all of them were caught by `nanoda`.** The differential-testing defence did its
 job on every bug of the wave except the one bug it was itself blind to (§3.0).
 
+**Updated 2026-08-18, and the update matters more than the original paragraph.**
+The same reporter found two more — [#14806](https://github.com/leanprover/lean4/pull/14806)
+and [#14807](https://github.com/leanprover/lean4/pull/14807) — three weeks later,
+with three axiom-free `False`s between them, all live on `v4.33.0` and
+`v4.34.0-rc1`. So the running total for 2026 is **seven** distinct axiom-free
+proofs of `False` in the official Lean kernel, and the count of `master`-only
+fixes with no release behind them is **five** (§2.1). Two clauses above need
+qualifying:
+
+* *"all of them were caught by `nanoda`"* held for July's batch and does not hold
+  for August's: `nanoda` accepts `proj-of-subst-prop` (§3.0). The July agreement
+  needed two unrelated bugs; this one needs one bug present in both.
+* *"three of the arena's independent checkers score a perfect 57/57 where the
+  official kernel scores 56/57"* was measured on 08-01 against a fourteen-attack
+  corpus. The corpus is now eighteen and the `official` track is `4.33.0`; the
+  official kernel fails four of them, not one.
+
+There is no postmortem for the August pair, and as of this survey no public
+discussion of them at all — not on Zulip, X or Mathstodon. The primary sources
+are the two PR descriptions, which are unusually detailed and are cited directly
+in [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md).
+
 The reasonable conclusion is not that one system is sounder than the other, nor
 that the situation has deteriorated. It is that the *rate of discovery* changed
 in 2026, in both systems, for the same reason — and that a static catalog is now
-a snapshot. Hence the survey date, and hence §5's last item.
+a snapshot. Hence the survey date, and hence §5's last item. The August pair is
+the second confirmation of that in three weeks: this file was seventeen days old
+and already understated the count by two.
