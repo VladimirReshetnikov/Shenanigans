@@ -31,7 +31,7 @@ Two honest compilations of [`Defs.v`](Defs.v), differing only in whether
 `summary` segments. [`splice.py`](splice.py) writes a third object file taking
 the **body** from the first and the **bytecode** from the second. No patched tool
 is involved anywhere; `rocq compile`'s own output is fine, and the splice is the
-attack.
+probe.
 
 [`Evil.v`](Evil.v) cashes the lie with a `<:` VMcast — `poc_evil`'s body is
 `true`, its bytecode says `false` — and derives `boom : False`.

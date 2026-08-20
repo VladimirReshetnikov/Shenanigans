@@ -11,12 +11,12 @@ exhibit measures nothing.  verify.ps1 asserts that identity before writing, and
 this script re-asserts it.
 
 Container layout is `lib/objFile.ml`: a `Coq!` magic, a version word, an offset
-to the segment table, then the segment payloads, then the table itself — name,
-position, length and an MD5 of the payload per entry.  All integers big-endian.
+to the segment table, then the segment contents, then the table itself — name,
+position, length and an MD5 of the contents per entry.  All integers big-endian.
 Adapted from the reproducer in the issue; the assertions and the CLI are ours.
 
 No patched tool is involved anywhere in this exhibit.  Object files produced by
-`rocq compile` are not affected — this script is the attack, and the finding is
+`rocq compile` are not affected — this script is the probe, and the finding is
 what `rocqchk` says about its output.
 """
 
@@ -28,7 +28,7 @@ MAGIC = 0x436F7121  # "Coq!"
 
 
 def parse(path):
-    """Return (vo_version, {segment_name: payload_bytes})."""
+    """Return (vo_version, {segment_name: contents_bytes})."""
     blob = open(path, "rb").read()
     if struct.unpack_from(">I", blob, 0)[0] != MAGIC:
         raise SystemExit(f"{path}: not a Rocq object file (bad magic)")
@@ -52,12 +52,12 @@ def write(path, version, segments):
     out = bytearray(struct.pack(">IIQ", MAGIC, version, 0))
     table = []
     for name in sorted(segments):
-        payload = segments[name]
+        contents = segments[name]
         pos = len(out)
-        out += payload
-        digest = hashlib.md5(payload).digest()
+        out += contents
+        digest = hashlib.md5(contents).digest()
         out += digest
-        table.append((name, pos, len(payload), digest))
+        table.append((name, pos, len(contents), digest))
     table_pos = len(out)
     out += struct.pack(">I", len(table))
     for name, pos, length, digest in table:

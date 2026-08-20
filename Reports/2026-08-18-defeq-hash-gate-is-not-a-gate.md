@@ -10,7 +10,7 @@ report written in this repository earlier the same day:
 | Source | What it says |
 | --- | --- |
 | lean4#14806's PR body | describes the union-find as consulted per hash |
-| the arena's `rec-missing-ih`, `proj-of-stuck-prop`, `proj-of-subst-prop` | each quotes `if (m_use_hash && hash(a) != hash(b)) return false; // skips the union-find` and builds its exploit around an engineered collision |
+| the arena's `rec-missing-ih`, `proj-of-stuck-prop`, `proj-of-subst-prop` | each quotes `if (m_use_hash && hash(a) != hash(b)) return false; // skips the union-find` and builds its construction around an engineered collision |
 | [`2026-07-29-defeq-history-dependence.md`](2026-07-29-defeq-history-dependence.md) | *"same three, no hash collision → rejected (**collision essential**)"* — a measured row in its own table |
 | [`2026-08-18-defeq-cache-and-stuck-sort.md`](2026-08-18-defeq-cache-and-stuck-sort.md) | *"The union-find lookup is gated on `hash(a) == hash(b)`"* |
 
@@ -60,7 +60,7 @@ No padding, no salt, no search. Then, on v4.33.0:
 | the third ascription alone, in its own `Kernel.check` | rejected |
 | the same chain padded with deliberately **non-colliding** salts | **ACCEPTED** |
 
-The last row is the one that kills the received account: upstream's exploits pad
+The last row is the one that kills the received account: upstream's constructions pad
 their terms, the padding is described everywhere as the collision-engineering
 step, and padding with salts chosen so the hashes *differ* changes nothing.
 
@@ -82,18 +82,18 @@ declarations, that assertion is what would catch it.
 The bar for lean4#14806 drops from *"engineer a 32-bit collision, then place the
 comparisons where the kernel's fresh variables make it hold"* to *"write three
 ordinary definitional-equality comparisons inside one declaration"*. The
-upstream exploits' constants are named `Native64TwoHashA` and their salts were
+upstream constructions' constants are named `Native64TwoHashA` and their salts were
 found by a birthday search over 200k candidates; none of that apparatus is
 required for the mechanism.
 
-**One thing this does not claim.** Upstream's exploits use the collision for a
+**One thing this does not claim.** Upstream's constructions use the collision for a
 second purpose beyond reaching the closure: *selectivity*. `rec-missing-ih`
 needs a K-like reduction to fire while the recursor's minor premises are built
 and **not** while its rules are, and the collision is what makes the closure
 visible in one pass and invisible in the other. Removing the hash gate makes the
 closure reachable everywhere, which is the opposite of selective — so this
 finding lowers the bar for the *order-dependence*, not automatically for
-*those particular exploits*. Rebuilding them without a collision needs some other
+*those particular constructions*. Rebuilding them without a collision needs some other
 source of asymmetry between the two passes, and none is offered here.
 
 That is worth having on the record for three reasons. It makes the bug easier to
@@ -101,7 +101,7 @@ trip over **by accident** in ordinary code, which changes how one reads
 "non-reproducible checking" in the 2026-07-29 report. It means a regression test
 built around a specific collision is testing a narrower thing than its
 description claims. And it removes the main reason to think lean4#14616 —
-whose exploit "depends on transient `equiv_manager` state" and which this catalog
+whose construction "depends on transient `equiv_manager` state" and which this catalog
 still lists as its largest Lean-side gap — is hard to reconstruct.
 
 ## How close this gets to a `False`, and why it stops

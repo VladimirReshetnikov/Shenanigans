@@ -126,7 +126,7 @@ mechanism, opposite containment.
   is the artifact — CATALOG marked it a gap — the measurement that 9.2 is
   affected rather than only `master`, and the containment result, which the issue
   does not state.
-* **Contained.** This cannot poison a library. Anyone who `Require`s the file
+* **Contained.** This cannot misstate a library. Anyone who `Require`s the file
   gets an error, and `coqchk` refuses the `.vo`. The exposure is to whoever reads
   `Print Assumptions` in the file itself and believes it.
 * **Reachable from ordinary source.** Unlike every Lean route in this catalog, no

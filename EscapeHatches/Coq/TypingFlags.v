@@ -58,7 +58,7 @@ Print Assumptions positivity_false.
 
     Collapsing the hierarchy makes [Type] an element of itself, which is exactly
     the hypothesis of Hurkens' paradox.  The stdlib supplies the derivation, so
-    the exploit is one line: [TypeNeqSmallType.paradox] wants a small [A] with
+    the construction is one line: [TypeNeqSmallType.paradox] wants a small [A] with
     [Type = A], and with checking off, [Type] itself is such an [A]. *)
 
 Unset Universe Checking.

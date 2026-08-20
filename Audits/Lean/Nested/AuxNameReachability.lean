@@ -11,7 +11,7 @@ nested occurrences.  A declaration that names one of those auxiliaries is theref
 [lean4#14616](https://github.com/leanprover/lean4/pull/14616) closes this on
 `master` with `check_no_nested_aux`, which rejects the prefix in both `Expr.const`
 names and `Expr.proj` structure names.  No released toolchain has that check, and
-the postmortem records that the exploit **cannot be captured as an arena export
+the postmortem records that the construction **cannot be captured as an arena export
 test** because it turns on transient `equiv_manager` state — so no reproduction
 exists anywhere.
 

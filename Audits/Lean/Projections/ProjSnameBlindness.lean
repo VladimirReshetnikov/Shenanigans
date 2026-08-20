@@ -3,7 +3,7 @@ import Lean
 ANOMALY (no `False`).  On every released toolchain the kernel is blind to a
 projection's structure name in **three** places at once, and this file measures
 what each of them actually does.  Two of the three are the primitives
-lean4#14616's own commit message says its exploit is built from.
+lean4#14616's own commit message says its construction is built from.
 
 THE THREE SITES, all present on `v4.32.2` and all fixed on `master` only:
 
@@ -54,7 +54,7 @@ projection, and on a released kernel there is nowhere to put one:
   * Within a *checked* `addDecl`, the one place a released kernel stores a term
     it never checks is the output of `restore_nested` (that is what lean4#14621 added a re-check for, and what
     [`../Nested/IllTypedStoredConstructor.lean`](../Nested/IllTypedStoredConstructor.lean)
-    exploits).  A projection naming a transient `_nested` auxiliary type is
+    constructions).  A projection naming a transient `_nested` auxiliary type is
     exactly the shape that would land there — and it is why master's
     `check_no_nested_aux` covers `is_proj` separately from `Expr.const`.  But it
     cannot be *written*: `add_inductive_fn` runs `declare_inductive_types()`,

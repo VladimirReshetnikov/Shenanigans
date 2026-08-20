@@ -45,7 +45,7 @@ Verified with `elan run leanprover/lean4:<v> lean --trust=0` on this file:
 CONTROL (`smallOutOfRange`): the identical construction with a small
 out-of-range index is rejected by the kernel, which is what makes acceptance of
 the truncated index meaningful — the range check exists and works, and is
-defeated only by the narrowing.
+overridden only by the narrowing.
 
 All `addDecl` calls below use the SYNCHRONOUS kernel entry point
 `(← getEnv).toKernelEnv.addDecl {}`, not `Lean.addDecl`, because the latter is

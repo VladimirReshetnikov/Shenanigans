@@ -49,7 +49,7 @@ End Notated.
     sees [0 = 1]; the [=] is not Rocq's.
 
     Note the [: type_scope] annotation -- without it the stdlib [=] wins and the
-    trick silently fails, which is itself worth knowing. *)
+    device silently fails, which is itself worth knowing. *)
 
 Module Relation.
   Definition myeq (x y : nat) : Prop := True.

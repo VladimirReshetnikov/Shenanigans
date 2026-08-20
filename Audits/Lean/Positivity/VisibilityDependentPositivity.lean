@@ -33,7 +33,7 @@ no `_nested` name, and no reserved prefix** — and that what it is sensitive to
 an abstraction boundary.
 
 WHY IT IS NOT A PARADOX.  `IgnoreD X` is definitionally `True` whichever `X` it
-holds, so the negative occurrence smuggled past the check is inert: the field
+holds, so the negative occurrence inserted past the check is inert: the field
 really is `True`, and `Bad1` really is `Unit`.  The occurrence can only be hidden
 from positivity by being erased, and being erased is what makes it harmless — see
 that report's "Why it is inert".

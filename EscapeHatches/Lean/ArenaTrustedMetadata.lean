@@ -15,7 +15,7 @@ neither the audit nor a `set_option`: it is a `modifyEnv` that writes a
 ## Why this file exists
 
 `CATALOG.md` §3.1 lists `ctor-num-fields`, `rec-k-lie`/`nat-rec-k-lie` and
-`nat-rec-rules` in the Lean Kernel Arena's attack corpus and files them as a
+`nat-rec-rules` in the Lean Kernel Arena's rejection corpus and files them as a
 *trusted-metadata* class: the export lies to the checker about a declaration's
 derived metadata. The natural reading — and the one this repository worked from —
 is that such a test cannot be built from inside Lean, because
@@ -58,7 +58,7 @@ falsified by a caller with legitimate write access to the environment. Ground ru
 quiet the audit is about it.
 
 It is not a kernel bug and is not filed as one: overwriting the environment is the
-`.olean`-forgery threat model of
+`.olean`-fabrication trust model of
 [lean4#13615](https://github.com/leanprover/lean4/issues/13615) executed
 in-process, and the #14576 postmortem's position applies verbatim — the elaborator
 is untrusted by design. The finding is about the **audit**, which reports nothing,
@@ -68,7 +68,7 @@ and about the arena classification, which this file corrects.
 
 | Toolchain | `lean --trust=0 ArenaTrustedMetadata.lean` |
 | --- | --- |
-| `v4.27.0-rc1` | exit 1 — **but not because the attack failed**; see below |
+| `v4.27.0-rc1` | exit 1 — **but not because the probe failed**; see below |
 | `v4.30.0-rc2` | exit 0 |
 | `v4.31.0` | exit 0 |
 | `v4.32.0` | exit 0 |
@@ -93,8 +93,8 @@ Re-run with `../verify.ps1` after adding `'ArenaTrustedMetadata'` to its
 open Lean Elab Command
 
 /-- Overwrite a `ConstantInfo` in every map the environment answers from,
-including the kernel-side `checked` environment. This is the whole attack. -/
-private def poison (ci : ConstantInfo) : CommandElabM Unit :=
+including the kernel-side `checked` environment. This is the whole probe. -/
+private def misstate (ci : ConstantInfo) : CommandElabM Unit :=
   modifyEnv fun env => { env with
     base.public.constants.map₁ := env.base.public.constants.map₁.insert ci.name ci
     base.private.constants.map₁ := env.base.private.constants.map₁.insert ci.name ci
@@ -133,11 +133,11 @@ run_cmd kprobe "CONTROL, honest numFields" etaThm
 
 run_cmd do
   let .ctorInfo cv ← liftTermElabM (getConstInfo ``S.mk) | throwError "S.mk is not a constructor"
-  poison (.ctorInfo { cv with numFields := 0 })
+  misstate (.ctorInfo { cv with numFields := 0 })
 
-/-- info: POISONED, numFields := 0: ACCEPTED -/
+/-- info: MISSTATED, numFields := 0: ACCEPTED -/
 #guard_msgs in
-run_cmd kprobe "POISONED, numFields := 0" etaThm
+run_cmd kprobe "MISSTATED, numFields := 0" etaThm
 
 public theorem h : S.mk true = S.mk false := rfl
 
@@ -149,7 +149,7 @@ public theorem ParadoxCtorNumFields : False :=
 
 run_cmd do
   let .ctorInfo cv ← liftTermElabM (getConstInfo ``S.mk) | throwError "S.mk is not a constructor"
-  poison (.ctorInfo { cv with numFields := 1 })   -- withdraw the lie
+  misstate (.ctorInfo { cv with numFields := 1 })   -- withdraw the lie
 
 /--
 info: CONTROL, numFields restored: REJECTED -- (kernel) declaration type mismatch, 'etaProbe' has type
@@ -192,17 +192,17 @@ run_cmd kprobe "CONTROL, honest k" kThm
 
 run_cmd do
   let .recInfo rv ← liftTermElabM (getConstInfo ``MyBool.rec) | throwError "MyBool.rec is not a recursor"
-  poison (.recInfo { rv with k := true })
+  misstate (.recInfo { rv with k := true })
 
-/-- info: POISONED, k := true: ACCEPTED -/
+/-- info: MISSTATED, k := true: ACCEPTED -/
 #guard_msgs in
-run_cmd kprobe "POISONED, k := true" kThm
+run_cmd kprobe "MISSTATED, k := true" kThm
 
 public theorem bad : disc MyBool.tt := True.intro
 
 run_cmd do
   let .recInfo rv ← liftTermElabM (getConstInfo ``MyBool.rec) | throwError "MyBool.rec is not a recursor"
-  poison (.recInfo { rv with k := false })   -- withdraw the lie
+  misstate (.recInfo { rv with k := false })   -- withdraw the lie
 
 /--
 info: CONTROL, k restored: REJECTED -- (kernel) declaration type mismatch, 'kLieProbe' has type
@@ -243,7 +243,7 @@ withdraws the lie. -/
 private def swapRules : CommandElabM Unit := do
   let .recInfo rv ← liftTermElabM (getConstInfo ``NB.rec) | throwError "NB.rec is not a recursor"
   let [r0, r1] := rv.rules | throwError "expected exactly two computation rules"
-  poison (.recInfo { rv with rules := [{ r0 with rhs := r1.rhs }, { r1 with rhs := r0.rhs }] })
+  misstate (.recInfo { rv with rules := [{ r0 with rhs := r1.rhs }, { r1 with rhs := r0.rhs }] })
 
 /--
 info: CONTROL, honest rules: REJECTED -- (kernel) declaration type mismatch, 'ruleLieProbe' has type
@@ -256,9 +256,9 @@ run_cmd kprobe "CONTROL, honest rules" rThm
 
 run_cmd swapRules
 
-/-- info: POISONED, rules swapped: ACCEPTED -/
+/-- info: MISSTATED, rules swapped: ACCEPTED -/
 #guard_msgs in
-run_cmd kprobe "POISONED, rules swapped" rThm
+run_cmd kprobe "MISSTATED, rules swapped" rThm
 
 public theorem bad2 : disc2 NB.tt := True.intro
 
@@ -345,7 +345,7 @@ $ LEAN_PATH=. lean --trust=0 Consumer.lean                                 # exi
 ```
 
 **The corruption does not — because §1–§3 withdrew it.** The importer sees honest
-metadata, so it cannot repeat the trick:
+metadata, so it cannot repeat the device:
 
 ```
 $ cat Consumer2.lean

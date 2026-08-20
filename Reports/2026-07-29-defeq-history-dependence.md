@@ -13,20 +13,20 @@
 > answers, and the recursor's type disagrees with its computation rule.
 >
 > The section *"Not usable to derive `False` as-is"* below searched for a `False`
-> **among the terms the cache relates**, and correctly found none. The exploits
+> **among the terms the cache relates**, and correctly found none. The [constructions]
 > export no equation at all; they let the cache change a decision *about a
 > declaration* and take the `False` from the malformed declaration. The search
 > was aimed one level below where the defect was.
 >
 > Everything else here — the mechanism, the hash gate, the witness, the six-row
-> order table — is unchanged and is what those exploits are built on. See
+> order table — is unchanged and is what those [constructions] are built on. See
 > [`2026-08-18-defeq-cache-and-stuck-sort.md`](2026-08-18-defeq-cache-and-stuck-sort.md).
 
 **Original status, retained for the record: not unsoundness.** Every equivalence
 the kernel derives this way is semantically valid. The defect is that the
 kernel's *accept/reject verdict* for a definitional-equality query depends on
 which **unrelated** queries were performed earlier while checking the same
-declaration, plus a 32-bit hash coincidence an adversary can engineer cheaply.
+declaration, plus a 32-bit hash coincidence a term's author can engineer cheaply.
 
 Reproduces identically on **v4.32.0 and v4.32.2** (the kernel patched for #14576),
 so this is independent of the recent nested-inductive and `opaqueDecl` defects.
@@ -114,7 +114,7 @@ valid relation stays valid, so the union-find is an amplifier, not a bug source.
    the same question twice, is sufficient. This item was the closest this report
    came to the answer and it still understated the case.)*
 4. The guard is a **32-bit** hash and collisions are cheap to search for.
-   *(2026-08-18, TWICE corrected. First: confirmed by #14806's exploits, which
+   *(2026-08-18, TWICE corrected. First: confirmed by #14806's constructions, which
    engineer their own — the colliding pair in `EquivManagerMissingIH.lean`
    measures `h0 = h2 = 1470203867`. Then, later the same day, superseded
    outright: **it is not a guard at all** at two of `quick_is_def_eq`'s three
@@ -124,7 +124,7 @@ valid relation stays valid, so the union-find is an amplifier, not a bug source.
    arrangement and false as a general claim — the closure is reachable with
    plain unpadded terms whose hashes differ. See
    [`2026-08-18-defeq-hash-gate-is-not-a-gate.md`](2026-08-18-defeq-hash-gate-is-not-a-gate.md).)*
-   *(2026-08-18: confirmed by #14806's exploits, which engineer their own. The
+   *(2026-08-18: confirmed by #14806's constructions, which engineer their own. The
    colliding pair in `EquivManagerMissingIH.lean` measures
    `h0 = h2 = 1470203867` at `_ind_fresh.3` — under 2^32, same width, found by
    search over constant names and pad salts exactly as here.)*
@@ -148,14 +148,14 @@ What is worth recording is that #14631 arrives at item 3 of the previous section
 independently, and in the same words. Its stated rationale: *"after #14577 closed
 the nested-inductive path that let unchecked projections into the environment
 (#14576), these comparisons were the remaining places where a future injection bug
-could have been amplified into a def-eq attack surface."* That is the amplifier
-argument, made upstream, as the justification for a change with no exploit behind
+could have been amplified into a def-eq [surface]."* That is the amplifier
+argument, made upstream, as the justification for a change with no construction behind
 it. [lean4#14632](https://github.com/leanprover/lean4/pull/14632) does the same for
 `reduce_proj_core`, which now takes the structure name and refuses a constructor
 belonging to any other inductive.
 
 Item 2 of the previous section also has a concrete instance now, and it cuts the
-other way. The #14576 postmortem records that the exploit passed both the official
+other way. The #14576 postmortem records that the construction passed both the official
 kernel and a week-old `nanoda`, because `nanoda` had its own unverified
 projection-node type name. Independent checkers diverging is the guarantee; the
 case where they agreed for unrelated reasons is [`../CATALOG.md`](../CATALOG.md)

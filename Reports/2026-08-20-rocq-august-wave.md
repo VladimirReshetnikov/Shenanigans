@@ -10,7 +10,7 @@ sources**. This report records the provenance, pins what reproduces on Rocq 9.2
 
 Carlo Angiuli's post of 2026-08-20 18:48 UTC, verbatim:
 
-> Looks like OpenAI (Daniel Selsam?) found nine soundness "adversarial exploits"
+> Looks like OpenAI (Daniel Selsam?) found nine soundness "[deliberately constructed counterexamples]"
 > in Rocq, which were reported privately and already have potential fixes in PRs.
 > https://github.com/rocq-prover/rocq/issues h/t @constantine
 
@@ -26,7 +26,7 @@ filed not by an outside reporter but by **Rocq's own maintainers** — six by
 a fix PR opened the same day. That is what a coordinated private disclosure looks
 like when it lands publicly. It is not what an outside bug report looks like.
 
-So: nine exploits, found privately, landed as maintainer-filed issues with fixes
+So: nine defects, found privately, landed as maintainer-filed issues with fixes
 attached. Whether OpenAI found them is **unconfirmed** and this catalog should
 say so until someone upstream states it.
 
@@ -89,7 +89,7 @@ finding is that the cost stops being reported — which is precisely why
 [`UniverseFlagDesync.v`](../KernelDefects/Coq/ModuleSystem/UniverseFlagDesync.v)
 (rocq#22287) sits in `KernelDefects/` too. Both are the module system losing a
 typing flag's bookkeeping; in both the casualty is the local audit and the
-residual defence is `rocqchk`.
+residual safeguard is `rocqchk`.
 
 It is the **fourth** member of a family this catalog already tracks: §4.2's
 #12155 and #16646 are the universe instances, §1.4's #20550 is the `abstract`

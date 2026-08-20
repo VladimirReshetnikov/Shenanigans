@@ -206,7 +206,7 @@ kernel is structurally unable to find that class.
   `False` has to be handed to the kernel with `addDecl` — the `partial def`
   elaborator would demand `Inhabited False`. Upstream's own commit message says
   as much. That is not a mitigation, for the reason the #14576 postmortem gives.
-* **Not a kernel defect.** It is a frontend defect that defeats a kernel gate, in
+* **Not a kernel defect.** It is a frontend defect that overrides a kernel gate, in
   the same family as the Lean Kernel Arena's *trusted-metadata* tests
   (`ctor-num-fields`, `rec-k-lie`), where the checker is lied to about a
   declaration rather than reasoning wrongly about one.

@@ -77,7 +77,7 @@ The ordering that forecloses this is in `add_inductive_fn::operator()`
     declare_recursors();
 
 which is the same ordering that forecloses the `Expr.proj` route into the
-`_nested` auxiliaries (see `AuxNameReachability.lean` §4).  Two different attacks
+`_nested` auxiliaries (see `AuxNameReachability.lean` §4).  Two different probes
 stopped by one property of the phase order, which is worth noticing: the order is
 load-bearing, and it is not itself a check.
 -/

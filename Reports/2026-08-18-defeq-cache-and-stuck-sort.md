@@ -10,10 +10,10 @@ branches still reads `whnf(infer_type(e))`.
 | --- | --- | --- |
 | [lean4#14806](https://github.com/leanprover/lean4/pull/14806) | The kernel's `is_def_eq` cache was a union-find, so its answer depended on the order of earlier queries. Recursor construction asks the same question twice. | 2026-08-17 |
 | [lean4#14807](https://github.com/leanprover/lean4/pull/14807) | `type_checker::is_prop` answered "not a proposition" for a term whose inferred type does not reduce to a sort, instead of rejecting it. `infer_proj` then skips its proof-irrelevance guard. | 2026-08-18 |
-| [lean4#14808](https://github.com/leanprover/lean4/pull/14808) | Defence in depth: the kernel now type-checks the recursors it generates, and checks that each computation rule is type-preserving. | 2026-08-18 |
+| [lean4#14808](https://github.com/leanprover/lean4/pull/14808) | Redundant checking: the kernel now type-checks the recursors it generates, and checks that each computation rule is type-preserving. | 2026-08-18 |
 
 Both were **reported by Daniel Selsam (OpenAI) using their internal models**;
-per #14806, "an OpenAI agent then produced two distinct exploits" from the first.
+per #14806, "an OpenAI agent then produced two [distinct constructions]" from the first.
 This is the same provenance as the July wave (#14607–#14616), and the second
 time in three weeks that a model found a live kernel soundness hole.
 
@@ -63,7 +63,7 @@ consulted by a client that asks twice, is sufficient.
 
 The report's closing section, *"Not usable to derive `False` as-is"*, argued that
 the bad equation `n ≡ n+1` has no closed endpoints to export, and searched for a
-`False` **among the terms the cache relates**. #14806's exploits do not export
+`False` **among the terms the cache relates**. #14806's constructions do not export
 any equation. They let the cache change a decision *about a declaration*, and take
 the `False` from the malformed declaration. The search was aimed one level below
 where the defect was.
@@ -101,7 +101,7 @@ adds "but only for terms with equal hashes" — **which is wrong, and is
 corrected in [`2026-08-18-defeq-hash-gate-is-not-a-gate.md`](2026-08-18-defeq-hash-gate-is-not-a-gate.md)**.
 The hash comparison below is performed at only one of `quick_is_def_eq`'s three
 call sites; the other two take the `use_hash = false` default and consult the
-closure for any pair. The exploits described in this report do engineer a
+closure for any pair. The constructions described in this report do engineer a
 collision, and the code below is what they are built against, but the
 *mechanism* does not need one:
 
@@ -115,7 +115,7 @@ if (r1 == r2) return true;
 ```
 
 At the one gated call site, whether `a ≡ c` is answered from the closure depends
-on the hash of the surrounding term — which an adversary controls, because
+on the hash of the surrounding term — which a term's author controls, because
 `Expr.hash` is computed bottom-up and a collision propagates through any
 identical one-hole context. It is the same 32-bit hash the 2026-07-29 report
 measured: the colliding pair in `EquivManagerMissingIH.lean` is
@@ -287,7 +287,7 @@ as tests on 2026-08-18 (`lean-kernel-arena` #141):
 This is the cross-checking argument of *Who Watches the Provers?* doing exactly
 what it is for, and it is worth being precise about which way each row cuts.
 
-* For #14806, cross-checking **worked cleanly**: both exploits are caught by
+* For #14806, cross-checking **worked cleanly**: both constructions are caught by
   `nanoda`, and both by `lean-inductive-models`, Joachim Breitner's new checker,
   which was registered in the arena on 2026-08-16 — two days before the tests
   landed. Kernels that construct the recursor independently reject the export.
@@ -312,7 +312,7 @@ checks for underived recursors"* (04:13 UTC, closing the `extra-rec` class), and
 union find eq"* (17:58 UTC) — which is #14807 and #14806 respectively, in one
 commit, arrived at independently and in the same order. Its description of the
 second change is the clearest one-line statement of #14806 anywhere: it replaces
-the union-find with *"sorted pairs which do not try to exploit transitivity."*
+the union-find with *"sorted pairs which do not try to [use transitivity]."*
 So the correct reading of the table is not "`nanoda` is unsound" but "for about
 fourteen hours on 2026-08-18 the two most-used Lean kernels shared a blind spot,
 and only the official one still does."
@@ -346,5 +346,5 @@ postmortem closed on the argument that a kernel bug is survivable because
 independent implementations disagree, and the arena made that operational. Three
 weeks later the same reporter found two more, one of which the main external
 checker also missed. Nothing in the argument is refuted by that — cross-checking
-is a *defence*, not a proof of absence — but the base rate it has to be judged
+is a *safeguard*, not a proof of absence — but the base rate it has to be judged
 against is now higher than the July wave suggested.

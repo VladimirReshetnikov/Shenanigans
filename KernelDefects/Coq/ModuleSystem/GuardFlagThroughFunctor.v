@@ -39,7 +39,7 @@
                                       **Not caught.**
       - [rocqchk] on the .vo:         [Fatal Error: Type error: IllFormedRecBody].
                                       Caught — the checker is the residual
-                                      defence, exactly as in #22287.
+                                      safeguard, exactly as in #22287.
 
     ** The control is one token
 

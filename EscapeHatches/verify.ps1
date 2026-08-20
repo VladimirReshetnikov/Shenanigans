@@ -48,7 +48,7 @@ function Test-Case {
 # --- Lean -------------------------------------------------------------------
 # Each file's own `#guard_msgs` blocks assert the messages; exit 0 is the verdict.
 $leanAccept = @(
-  'Sorry', 'Axioms', 'Unsafe', 'NativeDecide', 'Metaprogramming', 'Spoofing',
+  'Sorry', 'Axioms', 'Unsafe', 'NativeDecide', 'Metaprogramming', 'Misreading',
   'ArenaTrustedMetadata'
 )
 foreach ($m in $leanAccept) {
@@ -57,9 +57,9 @@ foreach ($m in $leanAccept) {
 }
 
 # The one Lean check that cannot live in a `#guard_msgs` block: a *parse* error.
-Copy-Item (Join-Path $root 'Lean/Spoofing.BareCyrillic.lean') $work -Force
-Test-Case -Name 'Lean/Spoofing.BareCyrillic' -Command 'lean' `
-  -Arguments @('Spoofing.BareCyrillic.lean') -Expect 'reject' -Needles @('expected token')
+Copy-Item (Join-Path $root 'Lean/Misreading.BareCyrillic.lean') $work -Force
+Test-Case -Name 'Lean/Misreading.BareCyrillic' -Command 'lean' `
+  -Arguments @('Misreading.BareCyrillic.lean') -Expect 'reject' -Needles @('expected token')
 
 # --- Rocq -------------------------------------------------------------------
 $coqCases = @(
@@ -79,7 +79,7 @@ $coqCases = @(
      Needles = @('Set is impredicative', 'classic : forall P : Prop, P \/ ~ P') },
   @{ Name = 'Coq/ComputeMachines'; File = 'ComputeMachines.v'; Flags = @();
      Needles = @('Closed under the global context') },
-  @{ Name = 'Coq/Spoofing'; File = 'Spoofing.v'; Flags = @();
+  @{ Name = 'Coq/Misreading'; File = 'Misreading.v'; Flags = @();
      Needles = @('Closed under the global context',
                  'Relation.zero_is_one', 'Notated.looks_absurd') },
   # The two hatches of CATALOG.md 1.2 that leave no audit trace at all.
@@ -135,7 +135,7 @@ function Test-Emitted {
   }
 }
 
-Test-Emitted 'ExtractConstant payload'    'ExtractConstant_payload.ml' `
+Test-Emitted 'ExtractConstant emitted code'    'ExtractConstant_payload.ml' `
   @('let secret = true',
     'let nth_safe = (fun l i -> Some (try List.nth l i with _ -> 0))',
     '(<=) n (Stdlib.Int.succ n)')

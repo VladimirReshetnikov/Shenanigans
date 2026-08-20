@@ -27,9 +27,9 @@ directory exists to draw.
 | [`Lean/Unsafe.lean`](Lean/Unsafe.lean) | **Negative result.** `unsafe` and `partial` do *not* get you there: the kernel refuses to let a safe declaration depend on an unsafe one, and `partial` needs `Inhabited` | n/a |
 | [`Lean/NativeDecide.lean`](Lean/NativeDecide.lean) | `@[implemented_by]` + `native_decide`. The one route that yields a closed, `sorry`-free, `unsafe`-free `theorem Paradox : False` from two core attributes | a fresh per-use axiom, `<thm>._native.native_decide.ax_N_M` |
 | [`Lean/Metaprogramming.lean`](Lean/Metaprogramming.lean) | `set_option debug.skipKernelTC true` + hand-built `addDecl`. The only Lean route the audit cannot see | **nothing** — but `leanchecker` rejects it |
-| [`Lean/Spoofing.lean`](Lean/Spoofing.lean) | Shadowed names, claimed glyphs, homoglyph identifiers: the statement is not what it reads as | nothing, correctly |
+| [`Lean/Misreading.lean`](Lean/Misreading.lean) | Shadowed names, claimed glyphs, homoglyph identifiers: the statement is not what it reads as | nothing, correctly |
 | [`Lean/ArenaTrustedMetadata.lean`](Lean/ArenaTrustedMetadata.lean) | Overwrites a derived `ConstantInfo` in `Environment.checked.constants`, past the kernel. Three closed `theorem … : False`; the kernel runs on every declaration and is correct on the input it was given | needs `module` + `import all Lean.Environment` — a disclosure in the *source*, with none in the audit | **nothing at all**; `leanchecker` rejects |
-| [`Lean/Spoofing.BareCyrillic.lean`](Lean/Spoofing.BareCyrillic.lean) | Companion control: a bare Cyrillic homoglyph is a **parse error** in Lean, unlike in Rocq | n/a — must be rejected |
+| [`Lean/Misreading.BareCyrillic.lean`](Lean/Misreading.BareCyrillic.lean) | Companion control: a bare Cyrillic homoglyph is a **parse error** in Lean, unlike in Rocq | n/a — must be rejected |
 
 ### Rocq
 
@@ -39,8 +39,8 @@ directory exists to draw.
 | [`Coq/TypingFlags.v`](Coq/TypingFlags.v) | `Unset Guard Checking` (non-terminating fixpoint), `Unset Positivity Checking` (Curry), `Unset Universe Checking` (Hurkens), `#[bypass_check(...)]` | — | `loop is assumed to be guarded.` / `Curry is assumed to be positive.` / `… relies on an unsafe hierarchy.` |
 | [`Coq/RewriteRules.v`](Coq/RewriteRules.v) | `Symbol` + `Rewrite Rule` — unchecked definitional equalities injected straight into kernel conversion | `-allow-rewrite-rules` | the symbols, plus `Theory: Rewrite rules are allowed` |
 | [`Coq/ImpredicativeSet.v`](Coq/ImpredicativeSet.v) | Chicli–Pottier–Simpson: impredicative `Set` is safe alone, fatal with decidability in `Set` | `-impredicative-set` | `Theory: Set is impredicative` |
-| [`Coq/ComputeMachines.v`](Coq/ComputeMachines.v) | `vm_compute` / `native_compute` — kernel-level conversion machines, not tactics: the kernel re-runs them at `Qed`, so the trusted base becomes `coq_interp.c` or the OCaml native compiler invoked at proof-checking time | — | **nothing.** `Print Assumptions` clean, `Print Typing Flags` unchanged, `coqchk` says `Axioms: <none>`. Carries a **correction** to `CATALOG.md` §1.2: `Opaque` was never load-bearing against conversion, and is the only one of Rocq's three hiding mechanisms these defeat |
-| [`Coq/Spoofing.v`](Coq/Spoofing.v) | Redefined names, redefined notations, redefined `=`, homoglyphs | — | `Closed under the global context`, correctly |
+| [`Coq/ComputeMachines.v`](Coq/ComputeMachines.v) | `vm_compute` / `native_compute` — kernel-level conversion machines, not tactics: the kernel re-runs them at `Qed`, so the trusted base becomes `coq_interp.c` or the OCaml native compiler invoked at proof-checking time | — | **nothing.** `Print Assumptions` clean, `Print Typing Flags` unchanged, `coqchk` says `Axioms: <none>`. Carries a **correction** to `CATALOG.md` §1.2: `Opaque` was never load-bearing against conversion, and is the only one of Rocq's three hiding mechanisms these override |
+| [`Coq/Misreading.v`](Coq/Misreading.v) | Redefined names, redefined notations, redefined `=`, homoglyphs | — | `Closed under the global context`, correctly |
 | [`Coq/ExtractConstant.v`](Coq/ExtractConstant.v) | `Extract Constant` splices arbitrary OCaml over a *verified* function. The refman's own words: the replacement text "is not checked at all by extraction, even for syntax errors" | — | **nothing** — and it is right to report nothing, because nothing happened *inside* Rocq | 
 | [`Coq/DeclareMLModule.v`](Coq/DeclareMLModule.v) | Loads native code into `coqc`'s address space, sharing the kernel's mutable environment — how `lia`, `firstorder`, `Derive` and extraction itself all arrive | — | **nothing**; `coqchk` does not read the plugin's name |
 
@@ -107,9 +107,9 @@ the `Lean.reduceBool` exhibit in
 [`../KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean`](../KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
 documents a mechanism on its way out.
 
-**3. The audit is not the last line of defence — reading the statement is.**
+**3. The audit is not the last line of safeguard — reading the statement is.**
 
-`Spoofing.lean` and `Spoofing.v` produce theorems that are entirely honest, fully
+`Misreading.lean` and `Misreading.v` produce theorems that are entirely honest, fully
 closed, and accepted by every checker, whose displayed statements are lies. No
 assumption-tracking machinery in either system can catch this, and none is
 supposed to. The lexical half of the question — *which* confusable identifiers a

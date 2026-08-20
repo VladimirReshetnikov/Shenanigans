@@ -36,7 +36,7 @@ declaration there, and then `restore_nested` rewrites those names back to the
 real nested occurrences. A declaration naming one of those auxiliaries is
 therefore checked against one type and stored with another. #14616 closes this on
 `master` with `check_no_nested_aux`; no released toolchain has it, and the
-postmortem notes the exploit **cannot be captured as an arena export test**,
+postmortem notes the construction **cannot be captured as an arena export test**,
 which is why no reproduction exists anywhere.
 
 ## What was already closing the safe path
@@ -179,21 +179,21 @@ comment reads:
 
 On `master` that is fair, because `check_no_nested_aux` fires first. On every
 released toolchain there is no such check, and this is a concrete safe
-declaration whose stored output the re-check would reject. Layered defence
+declaration whose stored output the re-check would reject. Layered safeguard
 working exactly as intended — and an argument for backporting #14621 alongside
 #14616 rather than instead of it.
 
 **`check_positivity`'s leading `whnf` is worth recording on its own.** It makes
 positivity's answer depend on the *reduced* form while everything downstream —
 storage, `restore_nested`, and `is_rec()`, which scans the raw expression
-syntactically — uses the unreduced one. Here the disagreement is exploited
+syntactically — uses the unreduced one. Here the disagreement is used
 through `_nested`; it is a standing gap between two views of the same
 constructor type.
 
 ## Scope and honesty
 
 * **Not a `False`.** This is a kernel defect exhibit without a demonstrated
-  exploit, in the same category as the `Nat.shiftLeft` abort of
+  construction, in the same category as the `Nat.shiftLeft` abort of
   [`2026-07-31-kernel-shiftleft-panic.md`](2026-07-31-kernel-shiftleft-panic.md).
   It lives in `Audits/`, not `KernelDefects/`, for exactly that reason.
 * **Not a `master` defect.** `check_no_nested_aux` rejects the declaration

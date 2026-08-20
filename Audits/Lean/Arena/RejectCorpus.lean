@@ -6,12 +6,12 @@ Category (see `../../../README.md`): **audit**. A search that comes up empty is
 the result. No `sorry`, no `axiom`; every verdict is `#guard_msgs`-checked and the
 file exits 0 under `lean --trust=0`.
 
-`CATALOG.md` §3.1 tabulates the arena's named attacks — fourteen when this file
+`CATALOG.md` §3.1 tabulates the arena's named probes — fourteen when this file
 was written, eighteen since 2026-08-18 — and §5 calls the corpus the single
 largest Lean-side gap. An arena test is an **export** test: it
 hands a checker a serialized environment, so most of the corpus is a statement
 about a checker, not about a Lean source file. This file measures the part that
-*is* reachable from inside Lean — the attacks whose payload is a `Declaration`
+*is* reachable from inside Lean — the probes whose term is a `Declaration`
 that can be handed to `Kernel.Environment.addDecl` — and records, with the exact
 kernel messages, that `v4.32.2` rejects every one of them except the one the arena
 itself scores `either`.
@@ -29,7 +29,7 @@ Three measurement notes carried from `../../../README.md`:
   reports kernel rejections as successes. `(← getEnv).toKernelEnv.addDecl` is the
   synchronous path and is what every probe below uses.
 * Judge by exit code and by the asserted message, never by grepping for "error".
-* Each attack is paired with a twin the same procedure treats differently, so an
+* Each probe is paired with a twin the same procedure treats differently, so an
   "accepted" or "rejected" verdict carries information.
 
 ## What is *not* here, and why
@@ -37,21 +37,21 @@ Three measurement notes carried from `../../../README.md`:
 | Arena test | Reachable from inside Lean? |
 | --- | --- |
 | `ctor-num-fields`, `rec-k-lie`, `nat-rec-k-lie`, `nat-rec-rules` | **Yes, but not through `addDecl`** — the kernel derives `numFields`, `k` and the recursor rules and the wire format has nowhere to put a lie. They are reachable by overwriting the stored `ConstantInfo`; see `../../../EscapeHatches/Lean/ArenaTrustedMetadata.lean`, which is where they live because they are escape hatches rather than defects |
-| `large-elim-param` | **No.** The payload is an exported recursor for `MyBool.{u} : Sort u` that large-eliminates; the kernel synthesises recursors itself, so the only in-Lean question is whether its own `is_not_zero` ever says a possibly-zero level is nonzero. Asked and answered in `../Fuzz/IsNotZeroFuzzer.lean` — 360 spellings, 0 unsound |
+| `large-elim-param` | **No.** The term is an exported recursor for `MyBool.{u} : Sort u` that large-eliminates; the kernel synthesises recursors itself, so the only in-Lean question is whether its own `is_not_zero` ever says a possibly-zero level is nonzero. Asked and answered in `../Fuzz/IsNotZeroFuzzer.lean` — 360 spellings, 0 unsound |
 | `nat-rec-rules` (as an *export*) | **No** in that form, for the same reason; the lie is expressible only post-hoc, above |
 | `level-index-out-of-order`, `sparse-name-index` | **No.** These are properties of the NDJSON serialization — `lean4export` emits internalization-table references densely and in order but the spec permits any integers. There is no Lean term that expresses "referred to name #7 before defining it" |
-| `perf/`, `tutorial/` | Out of scope here: timing and a 135-case accept/reject taxonomy, neither of which is an attack |
+| `perf/`, `tutorial/` | Out of scope here: timing and a 135-case accept/reject taxonomy, neither of which is an probe |
 | `undecidability/` | Independently measured in `../Metatheory/` |
-| `extra-rec` (added 2026-08-18) | **No.** A second recursor named `rogue`, of type `False`, smuggled into `False`'s inductive group. The kernel derives an inductive group's recursors, so the wire format is again the only place the lie fits; the arena injects it with the kernel-bypassing `Environment.lakeAdd`. Same class as the `ctor-num-fields` row above |
+| `extra-rec` (added 2026-08-18) | **No.** A second recursor named `rogue`, of type `False`, inserted into `False`'s inductive group. The kernel derives an inductive group's recursors, so the wire format is again the only place the lie fits; the arena injects it with the kernel-bypassing `Environment.lakeAdd`. Same class as the `ctor-num-fields` row above |
 
-**Four attacks were added to the corpus on 2026-08-18, and three of them are
+**Four probes were added to the corpus on 2026-08-18, and three of them are
 reachable from inside Lean — which is why this file's verdict is not extended to
 them here.** `rec-missing-ih`, `proj-of-stuck-prop` and `proj-of-subst-prop` are
 lean4#14806 and lean4#14807: the kernel *accepts* all three on every released
 toolchain, so they are defects rather than negative results, and they live in
 `../../../KernelDefects/Lean/DefEq/` with their own control and verify script.
 The paragraph above — "the kernel rejects every reachable one" — was true of the
-fourteen-attack corpus and is not true of the eighteen-attack one. See
+fourteen-probe corpus and is not true of the eighteen-probe one. See
 `../../../Reports/2026-08-18-defeq-cache-and-stuck-sort.md`.
 -/
 
@@ -64,7 +64,7 @@ private def kprobe (tag : String) (d : Declaration) : CommandElabM Unit := liftT
 
 /-! ## 1. `proj-of-prop` — a projection typed by inferring rather than checking
 
-The arena's payload is `Expr.proj Wrapper 0 (Wrapper.mk True.intro)`, a
+The arena's term is `Expr.proj Wrapper 0 (Wrapper.mk True.intro)`, a
 `True.intro` sitting in a slot that expects a `False`. The elaborator never emits
 a raw `Expr.proj` from `(…).p` syntax — it desugars to the projection *function* —
 so the arena builds the declaration programmatically under `debug.skipKernelTC`
@@ -152,7 +152,7 @@ run_cmd kprobe "k-rec-conv CONTROL (t1 = t1)" (.thmDecl {
 
 /-! ## 4. `bogus1` — the calibration case
 
-Not an attack: a blatant `0 = 1` proved by `True.intro`. It exists so that a
+Not an probe: a blatant `0 = 1` proved by `True.intro`. It exists so that a
 checker which rejects nothing else is still known to reject *something*, and it is
 this repository's `debug.skipKernelTC` control (`EscapeHatches/Lean/Metaprogramming.lean`)
 under another name. -/
@@ -269,7 +269,7 @@ example {A : Type} {a b : A} {P : Type} {Q : P → Prop}
 
 /-! ## 8. `level-imax-leq` and `level-imax-normalization`
 
-Both are level-arithmetic attacks that caught an external checker — `nanoda` and
+Both are level-arithmetic probes that caught an external checker — `nanoda` and
 `lean4lean` respectively. Neither has a Lean *source* form, because a level
 comparison is not a declaration; the reachable question is whether the official
 kernel's own `is_equivalent` accepts the two specific pairs. `Kernel.isDefEq` on
@@ -320,10 +320,10 @@ level list from the caller; and `nat-rec-rules`/`nat-rec-k-lie` by the same
 post-hoc `ConstantInfo` overwrite the arena already uses for their `.lean`
 siblings (`../../../EscapeHatches/Lean/ArenaTrustedMetadata.lean` §2–§3).
 
-Of the fourteen named attacks in `CATALOG.md` §3.1, seven have a payload that is
+Of the fourteen named probes in `CATALOG.md` §3.1, seven have a term that is
 an ordinary `Declaration` and can simply be handed to `addDecl`:
 
-| Attack | This file | Verdict on `v4.32.2` |
+| Probe | This file | Verdict on `v4.32.2` |
 | --- | --- | --- |
 | `proj-of-prop` | §1 | rejected |
 | `proj-non-structure` | §2 | rejected |
@@ -339,9 +339,9 @@ reachable only by overwriting stored metadata and live in `EscapeHatches/`. Two
 declarations and are pinned as kernel queries in §8. One (`large-elim-param`)
 reduces to the kernel's own `is_not_zero`, answered in `../Fuzz/IsNotZeroFuzzer.lean`.
 
-Nothing here is a new defect. That is the result: **every arena attack whose
-payload the released kernel can even be handed is rejected by it, except the two
+Nothing here is a new defect. That is the result: **every arena probe whose
+term the released kernel can even be handed is rejected by it, except the two
 already on the books** — #14613, which has an exhibit, and #14582's
-`nested-nonuniform-param`, which is accepted and is a known non-exploit for the
+`nested-nonuniform-param`, which is accepted and is a known non-construction for the
 reason §6's own control reproduces.
 -/

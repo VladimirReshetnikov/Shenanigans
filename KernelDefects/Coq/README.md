@@ -67,7 +67,7 @@ The route to `False` is a documented flag, so by ground rule 2 it would be an es
 hatch — what puts it here instead is the same thing that puts
 [`UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) here: the module system
 losing a typing flag's bookkeeping, with the local audit as the casualty and
-`rocqchk` as the residual defence. It is the fourth member of a family
+`rocqchk` as the residual safeguard. It is the fourth member of a family
 [`../../CATALOG.md`](../../CATALOG.md) already tracks — §4.2's #12155/#16646 for
 universes and §1.4's #20550 for `abstract` side effects are the other three.
 
@@ -93,7 +93,7 @@ checker rather than in a kernel, on either side of the catalog —
 unreproduced member of that class. It does not
 displace `WrongEnvReduction.v` as the strongest route here — that one needs no
 hand-edited artefact and no channel catches it — but it is the one that refutes
-[`../../CATALOG.md`](../../CATALOG.md) §1.2's standing answer to a tampered
+[`../../CATALOG.md`](../../CATALOG.md) §1.2's standing answer to a hand-edited
 `.vo`. Write-up:
 [`Reports/2026-08-18-rocqchk-vm-bytecode.md`](../../Reports/2026-08-18-rocqchk-vm-bytecode.md);
 companion measurements in

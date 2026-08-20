@@ -68,7 +68,7 @@ one-constructor structure carrying a data field gets a `Prop`-only recursor
 *"field must be a proof, but it has type Bool"*), while a subsingleton that
 large-eliminates has no data to extract. Measured on `v4.33.0`.
 
-So the request is not "this is exploitable". It is that **after #14807 ships,
+So the request is not "this is [reachable]". It is that **after #14807 ships,
 this site is still open**, it is the only remaining place in the kernel where an
 unreducible type yields permission rather than rejection, and the thing it
 permits is the fabrication of projections. Whatever argument justifies
