@@ -1,4 +1,4 @@
-# Rocq kernel defects — seven regression witnesses and three live routes
+# Rocq kernel defects — seven regression witnesses and four live routes
 
 Seven soundness defects from the 2026 sweep, each a proof of `False` on an
 affected toolchain and each **fixed upstream**. That makes those seven
@@ -34,6 +34,8 @@ never a mathematical fact.
 | [`GuardChecker/WrongEnvReductionEscape.v`](GuardChecker/WrongEnvReductionEscape.v) | the escape half | **accepted** — ordinary Rocq that merely `Require`s the exhibit and proves `2 + 2 = 5`, with its own clean audit and clean `coqchk` |
 | [`ModuleSystem/UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) | [rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), **OPEN** | **accepted**, exit 0 — `Closed under the global context`. `coqchk` rejects the `.vo` |
 | [`ModuleSystem/UniverseFlagDesyncImport.v`](ModuleSystem/UniverseFlagDesyncImport.v) | the containment half | rejected at the `Require` — `Universe inconsistency` |
+| [`ModuleSystem/GuardFlagThroughFunctor.v`](ModuleSystem/GuardFlagThroughFunctor.v) | [rocq#22366](https://github.com/rocq-prover/rocq/issues/22366), **OPEN** (2026-08-19) | **accepted**, exit 0 — `Closed under the global context` over a closed `False`. `rocqchk` rejects (`IllFormedRecBody`) |
+| [`ModuleSystem/GuardFlagThroughFunctorControls.v`](ModuleSystem/GuardFlagThroughFunctorControls.v) | the one-token control pair | **accepted** — and the audit NAMES the flag both times: `loopD is assumed to be guarded.` directly, `X2.T is assumed to be guarded.` through a functor without `Inline` |
 | [`Checker/`](Checker/) | [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352), **OPEN** | **accepted**, exit 0 — `Closed under the global context`, and `rocqchk -bytecode-compiler yes` reports `Modules were successfully checked`. Default `rocqchk` rejects. Needs a hand-spliced `.vo`, so it is a build procedure rather than a `.v` file and has [its own harness](Checker/verify.ps1) |
 
 **The live one in one paragraph.** `ugraph` keeps a *copy* of the
@@ -52,6 +54,27 @@ line. What the bug costs is the *local* audit. Compare
 hierarchy` — and [`../Lean/ModuleSystem/`](../Lean/ModuleSystem/), the same
 *shape* in Lean, where the `False` does escape into ordinary downstream code.
 Write-up: [`Reports/2026-08-01-rocq-universe-flag-desync.md`](../../Reports/2026-08-01-rocq-universe-flag-desync.md).
+
+**The fourth live one: a typing flag that vanishes from the audit across a
+functor.** [`ModuleSystem/GuardFlagThroughFunctor.v`](ModuleSystem/GuardFlagThroughFunctor.v)
+is [rocq#22366](https://github.com/rocq-prover/rocq/issues/22366), filed 2026-08-19
+and open. A functor applied while `Unset Guard Checking` is active substitutes an
+`Inline` parameter's body into the instantiated constant without re-checking
+guardedness *and without recording the flag use*, so `Print Assumptions` calls a
+closed `False` axiom-free.
+
+The route to `False` is a documented flag, so by ground rule 2 it would be an escape
+hatch — what puts it here instead is the same thing that puts
+[`UniverseFlagDesync.v`](ModuleSystem/UniverseFlagDesync.v) here: the module system
+losing a typing flag's bookkeeping, with the local audit as the casualty and
+`rocqchk` as the residual defence. It is the fourth member of a family
+[`../../CATALOG.md`](../../CATALOG.md) already tracks — §4.2's #12155/#16646 for
+universes and §1.4's #20550 for `abstract` side effects are the other three.
+
+The control pair is the part upstream's report does not have: used directly the
+audit says `loopD is assumed to be guarded.`, and through the same functor *without*
+`Parameter Inline` it says `X2.T is assumed to be guarded.` One token is the whole
+difference.
 
 **The third live one, and the first checker defect in this catalog.**
 [`Checker/`](Checker/) is [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352),

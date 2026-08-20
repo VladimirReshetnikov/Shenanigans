@@ -640,8 +640,32 @@ neither of them `kind: inconsistency`. The query shape that actually finds these
 is "merged PR titled like a cleanup, with a `test-suite/bugs/*.v` addition".
 
 Coq historically saw roughly one soundness bug per year. **Rocq 9.2.0 fixed ten
-`kind: inconsistency` issues in a single release** — an unprecedented count, and
-the direct output of the 2026 sweep.
+`kind: inconsistency` issues in a single release** — an unprecedented count at
+the time, and the direct output of the 2026 sweep.
+
+**It did not stay unprecedented for long. On 2026-08-20 nine more arrived in a
+single day**, and the seventy-two hours before them brought two further
+axiom-free `False` reports and a checker cluster — from **three independent
+auditing efforts at once**:
+
+| Filed | By | What |
+| --- | --- | --- |
+| 08-18/19 | `JasonGross` | the `rocqchk` cluster — [#22352](https://github.com/rocq-prover/rocq/issues/22352) (a `False` the checker certifies), #22360, #22362, #22363, #22373, #22374 |
+| 08-19 | `christos-spearbit` | [#22364](https://github.com/rocq-prover/rocq/issues/22364), #22365, [#22366](https://github.com/rocq-prover/rocq/issues/22366), #22367 — two of them axiom-free `False` with a clean `Print Assumptions` |
+| 08-20 | `SkySkimmer`, `yannl35133` | the nine `kind: inconsistency` issues, each with a same-day fix PR |
+
+The nine were **filed by Rocq's own maintainers**, which is the tell: Carlo
+Angiuli's [Mathstodon post](https://mathstodon.xyz/@carloangiuli/117129327329317559)
+of the same day reads *"Looks like OpenAI (Daniel Selsam?) found nine soundness
+'adversarial exploits' in Rocq, which were reported privately and already have
+potential fixes in PRs."* The private-disclosure half is corroborated by the
+filing pattern; **the attribution to OpenAI is Angiuli's inference, carries his
+own question mark, and is named nowhere in the issues** — record it as
+unconfirmed until upstream says otherwise. If it holds, it is the same effort
+that produced Lean's July and August waves (§2.1, §6) crossing to the other
+system, which would make the 2026 story one auditing programme rather than two.
+
+Write-up: [`Reports/2026-08-20-rocq-august-wave.md`](Reports/2026-08-20-rocq-august-wave.md).
 
 ### 4.1 Guard checker — by far the most productive source
 
@@ -758,6 +782,7 @@ you, so the divergence needs a companion file compiled as an expected failure.
 | [#21750](https://github.com/rocq-prover/rocq/issues/21750) | Subtyping ignored elimination constraints → unbox a `Box@{SProp}` → `true = false` | 9.2+rc1 | 9.2.0 | **gap** |
 | [#22287](https://github.com/rocq-prover/rocq/issues/22287) | `ugraph` keeps a *copy* of the universe-checking flag; `Local Unset Universe Checking` in a module leaves it desynced on close → effective type-in-type → Hurkens, reported as **"Closed under the global context"** | master — **and 9.2, measured here** | **OPEN** (2026-07-16) | **artifact** + **report** — [`ModuleSystem/UniverseFlagDesync.v`](KernelDefects/Coq/ModuleSystem/UniverseFlagDesync.v), [`Reports/2026-08-01-rocq-universe-flag-…`](Reports/2026-08-01-rocq-universe-flag-desync.md). **Verified here** on Rocq 9.2: `coqc` exit 0, audit clean for both the `False` and a `1 = 2` derived from it, two in-file controls refused. **Contained**: `coqchk` rejects the `.vo` and a `Require` of it is rejected at the `Require` line, so what is lost is the *local* audit, not a library |
 | [#12155](https://github.com/rocq-prover/rocq/issues/12155), [#16646](https://github.com/rocq-prover/rocq/issues/16646) | `Print Assumptions` under-reports inconsistent flags through `Parameter Inline` and functor application | V8.6–now / V8.11–now | **OPEN** | **noted** — [`TypingFlags.v`](EscapeHatches/Coq/TypingFlags.v) |
+| [#22366](https://github.com/rocq-prover/rocq/issues/22366) | **The guard-checking instance of the row above, and the fourth member of that family.** A functor applied while `Unset Guard Checking` is active substitutes an `Inline` parameter's body into the instantiated constant without re-checking guardedness **and without recording the flag use**, so a closed `False` reports `Closed under the global context`. Reported 2026-08-19 by `christos-spearbit` against Coq 8.18.0 and master, with the version field left blank. | **9.2, measured here** | **OPEN** (2026-08-19) | **artifact** — [`ModuleSystem/GuardFlagThroughFunctor.v`](KernelDefects/Coq/ModuleSystem/GuardFlagThroughFunctor.v). **Verified here on Rocq 9.2**: `coqc` exit 0, audit clean, `rocqchk` rejects with `Type error: IllFormedRecBody` — the #22287 shape, contained by the checker. **Isolated to one token, which upstream's report does not do**: the same construction used directly reports `loopD is assumed to be guarded.`, and the same functor *without* `Parameter Inline` reports `X2.T is assumed to be guarded.` Both controls ship in [`GuardFlagThroughFunctorControls.v`](KernelDefects/Coq/ModuleSystem/GuardFlagThroughFunctorControls.v). Filed here rather than under `EscapeHatches/` for the same reason as #22287: the route to `False` is a documented flag, but the *audit silence* is the defect |
 
 ### 4.3 Universes, template polymorphism, sorts
 

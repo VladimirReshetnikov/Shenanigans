@@ -44,7 +44,14 @@ $cases = @(
   @{ Name = 'GuardChecker/WrongEnvReduction';       Path = 'GuardChecker/WrongEnvReduction.v';       Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
   @{ Name = 'GuardChecker/WrongEnvReductionEscape'; Path = 'GuardChecker/WrongEnvReductionEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
   @{ Name = 'ModuleSystem/UniverseFlagDesync';      Path = 'ModuleSystem/UniverseFlagDesync.v';      Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'reject' },
-  @{ Name = 'ModuleSystem/UniverseFlagDesyncImport';Path = 'ModuleSystem/UniverseFlagDesyncImport.v';Expect = 'reject'; Needle = 'Universe inconsistency' }
+  @{ Name = 'ModuleSystem/UniverseFlagDesyncImport';Path = 'ModuleSystem/UniverseFlagDesyncImport.v';Expect = 'reject'; Needle = 'Universe inconsistency' },
+  # rocq#22366 is OPEN: `Unset Guard Checking` is not attributed through a
+  # functor application with `Parameter Inline`, so the audit goes silent.  The
+  # exhibit must be ACCEPTED with a clean audit and rejected by rocqchk; the
+  # controls must be accepted and must NAME the flag, which is what isolates the
+  # defect to the `Inline` token.
+  @{ Name = 'ModuleSystem/GuardFlagThroughFunctor';        Path = 'ModuleSystem/GuardFlagThroughFunctor.v';        Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'reject' },
+  @{ Name = 'ModuleSystem/GuardFlagThroughFunctorControls';Path = 'ModuleSystem/GuardFlagThroughFunctorControls.v';Expect = 'accept'; Needle = 'assumed to be guarded' }
 )
 
 $failures = 0
