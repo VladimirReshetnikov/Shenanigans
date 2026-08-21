@@ -176,9 +176,9 @@ the implicit `import Init` even when it lists explicit imports (verified), so
 this needs `prelude` to control the import prefix — but no core declaration is
 displaced.
 
-## The most severe mechanism: the kernel fabricates an inhabitant of an empty type
+## The most severe mechanism: the kernel manufactures an inhabitant of an empty type
 
-`KernelDefects/Lean/Accelerators/StringLitFabrication.lean` is not a "two rules
+`KernelDefects/Lean/Accelerators/StringLitEmptyInhabitant.lean` is not a "two rules
 disagree" bug at all. `string_lit_to_constructor` (`src/kernel/inductive.cpp`)
 assembles a term **entirely out of hard-coded names**:
 
@@ -281,7 +281,7 @@ pass axioms by `#print axioms`), but reachable without any axiom at all.
 
 The control matters. `KernelDefects/Lean/Controls/NegativeControl.lean` uses
 `set_option debug.skipKernelTC true` to install a blatantly ill-typed
-`bogus : False` into the environment; that module also builds with exit `0` and
+`illTyped : False` into the environment; that module also builds with exit `0` and
 also reports no axioms, but `leanchecker` rejects it. The unsound modules are not
 rejected, so their acceptance is a real kernel judgement rather than a checker
 that is doing nothing.
@@ -345,7 +345,7 @@ Recorded so the search is not repeated:
   identity, and `is_equivalent` only ever concludes equality from syntactically
   identical normal forms.
 * **Positivity and universe checks reject the classical paradoxes.** Direct and
-  non-strictly-positive recursion, non-strict positivity laundered through a
+  non-strictly-positive recursion, non-strict positivity routed through a
   plain `def`, a `structure`, an `@[irreducible] def`, an `opaque`, `Subtype`,
   `Sigma`, `Quot`, and a mutual block; plus `Type`-in-`Type` via an `inductive`
   and via a `structure` field. All rejected, most by the kernel rather than the
@@ -389,7 +389,7 @@ Recorded so the search is not repeated:
   because `infer_type_core` rejects metavariables and unknown free variables
   anyway.
 
-## For contrast: the already-documented loophole
+## For contrast: the already-documented route
 
 `EscapeHatches/Lean/NativeDecide.lean` derives `False` from
 `@[implemented_by]` plus `native_decide`. This is the *known* trust boundary —

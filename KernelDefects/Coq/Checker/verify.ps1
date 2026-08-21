@@ -17,7 +17,7 @@
 #   5. rocqchk -bytecode-compiler yes  on Evil      -> ACCEPTS
 #   6. rocqchk (default)               on Evil      -> REJECTS, "Type error"
 #   7. rocqchk BOTH modes              on Defs alone-> ACCEPT (the spliced file
-#      is itself well typed; only its bytecode segment lies)
+#      is itself well typed; only its bytecode segment misreports)
 #   8. Downstream.v -- a plain `Require Import Evil` -- is ACCEPTED, its own
 #      Print Assumptions is clean, and rocqchk -bytecode-compiler yes accepts it
 #

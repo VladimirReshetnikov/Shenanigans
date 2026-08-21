@@ -11,7 +11,7 @@ passed by the one that is doing the checking.
 `String`s, so this class of bug would be soundness-relevant here. This directory
 records the investigation.
 
-**Result: no soundness loophole, and no checker break.** Lean is byte-exact and
+**Result: no soundness gap, and no checker break.** Lean is byte-exact and
 *uniform* internally, and every decision path in `leanprover/comparator` carries
 names as structural `Lean.Name` — no normalisation, case folding, collation or
 dot-splitting anywhere. Every disagreement found fails **closed**.

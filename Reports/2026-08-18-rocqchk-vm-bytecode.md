@@ -32,11 +32,11 @@ which [`Audits/README.md`](../Audits/README.md) had flagged as a genuine gap.
 Two honest compilations of a four-line file differing only in one constant's
 *value* have byte-identical `opaques` and `summary` segments. Splice the first's
 `library` (body: `poc_evil = true`) onto the second's `vmlibrary` (bytecode:
-`poc_evil = false`) and the result is a well-formed object file that lies about
+`poc_evil = false`) and the result is a well-formed object file that misstates
 what its constant computes. No patched tool is involved; the splice is 60 lines
 of Python over the container layout in `lib/objFile.ml`.
 
-A `<:` VMcast then cashes the lie, and `true = false` follows:
+A `<:` VMcast then cashes the misstatement, and `true = false` follows:
 
 | Channel | Verdict |
 | --- | --- |
@@ -53,9 +53,9 @@ Three of those rows are worth separating out.
 
 **The hand-edited file is not the file that fails.** `rocqchk` accepts the spliced
 `Defs.vo` on its own in *both* modes, and it is right to: its declarations are
-well typed, and only its bytecode segment lies. The unsoundness appears one
+well typed, and only its bytecode segment misreports. The unsoundness appears one
 library downstream, in the file whose VMcast only typechecked because
-`rocq compile` believed the bogus bytecode. Anyone checking the artefact they
+`rocq compile` believed the spliced bytecode. Anyone checking the artefact they
 were handed, rather than the whole closure, learns nothing.
 
 **The `False` escapes through a plain `Require`.** `Downstream.v` contains no
@@ -73,7 +73,7 @@ The term "myeq_refl bool false" has type "myeq bool false false"
 while it is expected to have type "myeq bool poc_evil false".
 ```
 
-so the `False` exists only because the spliced bytecode lied, and nothing else in
+so the `False` exists only because the spliced bytecode misreported, and nothing else in
 the construction is doing work.
 
 ## Which category this is, and why the answer is not obvious
@@ -159,8 +159,8 @@ in both `-norec` orders *and* in full-closure mode, and `rocq c` happily
 is another honest compilation, so what the checker typechecks is well typed and
 it correctly says so. It is recorded because it locates the line precisely: the
 digest is an accident detector, not a safeguard, and the only thing standing
-between a hand-edited `.vo` and a bogus theorem is that `rocqchk` re-typechecks
-the bodies. Which is exactly what #22352 gets around, by lying in the one segment
+between a hand-edited `.vo` and an unsound theorem is that `rocqchk` re-typechecks
+the bodies. Which is exactly the limit #22352 relies on, by misreporting in the one segment
 the re-typechecking does not derive its answers from.
 
 ## What this does not change

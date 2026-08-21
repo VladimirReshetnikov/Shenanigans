@@ -166,8 +166,8 @@ Print Extraction Foreign.
 
     That rejection is the control for section 4.  The OCaml compiler is the only
     checker anywhere in this pipeline; it fires here, and sections 1, 2 and 3
-    are exactly the cases where it does not fire, because a lie that typechecks
-    is still a lie. *)
+    are exactly the cases where it does not fire, because a misstatement that typechecks
+    is still a misstatement. *)
 
 Extraction "ExtractConstant_payload.ml" secret nth_safe grows.
 Extraction "ExtractConstant_junk.ml" junk.

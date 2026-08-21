@@ -120,7 +120,7 @@ inductive Char : Type where
 `Char.ofNat` is the name the kernel uses when expanding a string literal
 (`string_lit_to_constructor` builds `String.ofList (List.cons (Char.ofNat 97)
 List.nil)` by name, unchecked). Here its field type is `Empty`, so evaluating a
-bare `"a"` makes the kernel fabricate an inhabitant of a type with no
+bare `"a"` makes the kernel manufacture an inhabitant of a type with no
 constructors. The rest is three lines of `rec`.
 
 Note it is *identical* in both modules, so even a complete primitive list that
@@ -241,7 +241,7 @@ replacement whose `Char` is `structure Char where mk :: n : False`, with
 and a `Char.ofNat` returning an inhabited `Box` instead. It reaches `False`
 through `String.data "\x02"`, i.e. through `string_lit_to_constructor` handing a
 by-name-assembled term to a recursor rule unchecked. **That is the same kernel
-mechanism as [`../Accelerators/StringLitFabrication.lean`](../Accelerators/StringLitFabrication.lean)**,
+mechanism as [`../Accelerators/StringLitEmptyInhabitant.lean`](../Accelerators/StringLitEmptyInhabitant.lean)**,
 independently constructed, and it is now a comparator regression test.
 
 **What this does to `accepted/` is not yet measured, and must not be assumed.**

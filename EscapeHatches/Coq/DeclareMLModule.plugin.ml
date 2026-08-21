@@ -3,7 +3,7 @@
 
    Everything here runs at LOAD time -- there is no vernacular command to
    invoke, and no proof to write.  `Declare ML Module "hatch".` is the whole
-   attack surface: the toplevel `let () = ...` at the bottom of this file
+   surface: the toplevel `let () = ...` at the bottom of this file
    executes inside coqc, before the next line of the .v file is parsed.
 
    -- BUILD -----------------------------------------------------------------
@@ -56,7 +56,7 @@
        genuinely silent variant needs `Global.reset_safe_env`, which installs
        an arbitrary `Safe_typing.safe_environment` and has no vernacular
        counterpart; it is deliberately not written here, because an unmeasured
-       exploit is a claim, and this repository does not make claims it has not
+       route is a claim, and this repository does not make claims it has not
        run.                                                                  *)
 
 let banner () =

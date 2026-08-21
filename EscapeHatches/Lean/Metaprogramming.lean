@@ -45,7 +45,7 @@ theorem elaborator_still_checks : False := True.intro
 
 /-! ## 2. Building the declaration by hand
 
-Here the term never passes through the elaborator, so nothing objects. `bogus`
+Here the term never passes through the elaborator, so nothing objects. `illTyped`
 is a blatantly ill-typed `False`: its value is a `Pair`. -/
 
 structure Pair where
@@ -55,16 +55,16 @@ structure Pair where
 set_option debug.skipKernelTC true in
 run_cmd do
   let d : Declaration := .thmDecl {
-    name := `bogus
+    name := `illTyped
     levelParams := []
     type := mkConst ``False
     value := mkApp2 (mkConst ``Pair.mk) (mkNatLit 0) (mkConst ``Bool.true) }
   liftCoreM <| Lean.addDecl d
 
-/-- info: 'bogus' does not depend on any axioms -/
-#guard_msgs in #print axioms bogus
+/-- info: 'illTyped' does not depend on any axioms -/
+#guard_msgs in #print axioms illTyped
 
-theorem anything (P : Prop) : P := bogus.elim
+theorem anything (P : Prop) : P := illTyped.elim
 
 /-- info: 'anything' does not depend on any axioms -/
 #guard_msgs in #print axioms anything
@@ -74,7 +74,7 @@ theorem anything (P : Prop) : P := bogus.elim
 `#print axioms` reports nothing, `lean` exits 0, and the `.olean` contains a
 proof of `False`. That is exactly the signature of a genuine kernel defect — and
 it is why the exhibits in `../../KernelDefects/Lean/` are worthless without a
-negative control that produces the same signature by cheating.
+negative control that produces the same signature with kernel type-checking disabled.
 
 `../../KernelDefects/Lean/Controls/NegativeControl.lean` is that control, and
 `../../KernelDefects/Lean/verify.ps1` asserts that `leanchecker --fresh`
@@ -98,7 +98,7 @@ rejects it outright:
 > the elaborator is untrusted by design; soundness cannot depend on an untrusted
 > component refusing to build a bad term
 
-with the argument that an a term's author willing to write a deliberately wrong metaprogram is
+with the argument that a term's author willing to write a deliberately wrong metaprogram is
 equally willing to write the `.olean` directly or edit memory, both of which skip
 the elaborator entirely. The kernel has to reject ill-typed declarations on its
 own, in its own process.

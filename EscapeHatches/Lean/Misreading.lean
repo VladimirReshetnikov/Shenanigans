@@ -1,11 +1,11 @@
 /-!
-# The route no audit defends against: a statement that lies
+# The route no audit catches: a statement that misstates itself
 
 Every other file in this directory obtains `False` by weakening the logic, and
 every one is named by `#print axioms`. This file obtains something that *reads*
 as a proof of `False` while the logic stays completely intact, and
 `#print axioms` correctly reports no axioms at all — because the proof really is
-closed. The lie is in the statement.
+closed. The misstatement is in the statement.
 
 Category (see `../../README.md`): **escape hatch**, but the one that escapes the
 audit rather than the kernel.
@@ -72,7 +72,7 @@ theorem looks_absurd : «Fаlse» := trivial
 #guard_msgs in #print axioms looks_absurd
 end Homoglyph
 
-/-! ## 4. What actually defends against this
+/-! ## 4. What actually catches this
 
 `#print` shows the elaborated statement with constants fully qualified, which
 unmasks §1 and §3, and `pp.notation false` unmasks §2. -/

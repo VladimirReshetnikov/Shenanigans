@@ -38,7 +38,7 @@ carrying different `Bool`s, and observing them gives `False`.
 The fix computes the inferred type with `ensure_sort`, so a stuck sort raises
 `(kernel) type expected` instead of answering that the type is not a
 proposition.  Merged to `master` 2026-08-18; NO RELEASED TOOLCHAIN CARRIES IT.
-The bogus proof was ALSO accepted by `nanoda`; `lean4lean` is not affected,
+The ill-typed proof was ALSO accepted by `nanoda`; `lean4lean` is not affected,
 because its `isProp` already used `ensureSortCore`.
 
 Verified accepted here on v4.33.0 and v4.34.0-rc1.  Needs v4.33.0 or later to

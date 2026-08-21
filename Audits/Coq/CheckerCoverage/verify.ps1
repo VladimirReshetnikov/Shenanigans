@@ -26,9 +26,9 @@
 #      what the checker type-checks is well typed and it correctly says so.  It
 #      is recorded because it says where the line actually is: the digest is an
 #      accident detector, and the only thing standing between a hand-edited .vo
-#      and a bogus theorem is that `rocqchk` re-typechecks the bodies.
+#      and an unsound theorem is that `rocqchk` re-typechecks the bodies.
 #
-#   3. ...WHICH IS EXACTLY WHAT rocq#22352 GETS AROUND, by lying in the one
+#   3. ...AND rocq#22352 RELIES ON EXACTLY THAT LIMIT, by lying in the one
 #      segment the re-typechecking does not derive its answers from.  The
 #      artifact for that is ../../../KernelDefects/Coq/Checker/, and this script
 #      asserts the pointer rather than repeating the exhibit.

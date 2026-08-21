@@ -1,5 +1,5 @@
 /-
-The kernel FABRICATES an inhabitant of an empty type while expanding a string
+The kernel MANUFACTURES an inhabitant of an empty type while expanding a string
 literal.  This is a different, and worse, failure mode than the arithmetic
 accelerator: no definition of mine "disagrees" with anything -- the kernel simply
 builds a term that is not well typed and never checks it.
@@ -57,7 +57,7 @@ theorem extract (s : String) : Q s :=
   @String.rec (fun s => Q s) (fun e => @Empty.rec (fun _ => False) e) s
 
 /-- The kernel expands `"a"` into
-    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, fabricating an
+    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, manufacturing an
     inhabitant of `Empty`. -/
 theorem boom : False := extract "a"
 

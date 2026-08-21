@@ -21,7 +21,7 @@ and that test is **false for `DefinitionSafety.partial`**. So a `partial`
 definition crosses the boundary as an ordinary *safe* axiom. Feed the kernel a
 `partial` definition whose type is `False` — which it accepts, because a mutual
 block tagged `partial` carries no inhabitance obligation at the kernel level —
-and the module boundary launders it into a safe axiom of type `False`.
+and the module boundary re-labels it as a safe axiom of type `False`.
 
 Both of the kernel's safety gates then miss, for two different reasons:
 `type_checker::infer_constant` tests `info.is_unsafe()`, which the stub answers

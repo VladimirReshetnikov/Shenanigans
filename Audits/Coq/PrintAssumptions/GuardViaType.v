@@ -1,7 +1,7 @@
 (** * The extension: it is not only axioms
 
     `Print Assumptions` walks the same reachable set to report `bypass_check`
-    typing flags, so a flag-tainted constant reachable ONLY through a type is
+    typing flags, so a flag-carrying constant reachable ONLY through a type is
     dropped too.  Here the guard-checking flag vanishes.
 
     Compare GuardViaBody.v, which is the same flag on the same constant in the

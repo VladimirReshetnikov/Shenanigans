@@ -75,7 +75,7 @@ The obvious rebuttal is that Lean tracks native evaluation with axioms: the
 honest route through `native_decide` puts `Lean.ofReduceBool` and
 `Lean.trustCompiler` into `#print axioms`, so a reader auditing the proof would
 see that compiled code was trusted — which is exactly the half
-[rocq#22352](https://github.com/rocq-prover/rocq/issues/22352) is dangerous for
+[rocq#22352](https://github.com/rocq-prover/rocq/issues/22352) is consequential for
 lacking, since `Print Assumptions` reports nothing there.
 
 **That rebuttal does not apply to this construction, and the difference is the
@@ -88,7 +88,7 @@ signature exactly:
 * `#print axioms` reports **"does not depend on any axioms"**,
 * the independent checker exits **0**.
 
-The axiom accounting is the mitigation for the *sanctioned* channel. This is the
+The axiom accounting is the safeguard for the *sanctioned* channel. This is the
 unsanctioned one, and it is audited by nothing.
 
 ## Provenance

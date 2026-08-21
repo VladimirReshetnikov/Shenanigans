@@ -79,6 +79,6 @@ argument that quantifies over all structures on a fixed type — and
 That is the class this repository's ground rules cannot fully defend against,
 and it is why the rule is "state the toolchain, give a control, and read the
 statement", not merely "run `#print axioms`". The Rocq counterpart, where the
-statement is a lie for lexical rather than elaboration reasons, is
+statement is a misstatement for lexical rather than elaboration reasons, is
 `../Coq/Misreading.v`; the Lean lexical study is
 `../../Audits/Lean/StringIdentity/`. -/

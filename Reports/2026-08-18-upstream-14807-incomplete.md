@@ -16,7 +16,7 @@ any toolchain, and the report says so.
 #14807 fixed `type_checker::is_prop` by replacing `whnf(infer_type(e))` with
 `ensure_sort`, so that a term whose inferred type does not reduce to a sort is
 rejected rather than reported as "not a proposition". The commit message
-explains why the negative answer was dangerous: `infer_proj` reads it as
+explains why the negative answer was consequential: `infer_proj` reads it as
 permission to project a non-proof field out of a value being used as a `Prop`.
 
 `type_checker::is_prop` is not the only place in the kernel that reduces a type
@@ -36,7 +36,7 @@ The comment dates the copy: `normalizes_to_zero` was carried here by hand when
 #14807's defect — a **stuck** reduct answers "not a proposition".
 
 Here the negative answer is again permission, and arguably a stronger form of it.
-Control falls through to `expand_eta_struct`, which fabricates
+Control falls through to `expand_eta_struct`, which manufactures
 `mk_proj(I, i, e)` for every field of the structure and hands the result to the
 recursor's computation rule. Those projection nodes are **created by the kernel
 inside a reduct**; none of them passes through `infer_proj`, which is the guard
@@ -71,7 +71,7 @@ large-eliminates has no data to extract. Measured on `v4.33.0`.
 So the request is not "this is [reachable]". It is that **after #14807 ships,
 this site is still open**, it is the only remaining place in the kernel where an
 unreducible type yields permission rather than rejection, and the thing it
-permits is the fabrication of projections. Whatever argument justifies
+permits is the manufacture of projections. Whatever argument justifies
 `ensure_sort` at `type_checker.cpp` appears to apply here verbatim.
 
 ### Measured behaviour, for completeness

@@ -8,14 +8,14 @@ every constant used below is the genuine core one.
 
 Upstream: lean4#14613, fixed on `master` 2026-07-31 by commit 17dbc815cf.
 No released toolchain carries the fix; see the matrix in
-../../../Reports/2026-08-01-imax-prop-laundering.md.
+../../../Reports/2026-08-01-imax-prop-spelling.md.
 
 --------------------------------------------------------------------------------
 The defect needs TWO independent kernel weaknesses, not one.  Upstream's commit
 message and its regression test (`tests/elab/kernelImaxProp.lean`) name only the
 second.  (1) below is the first, and it is *not* fixed on master.
 
-  (1) LAUNDERING.  `add_inductive_fn::check_inductive_types` (inductive.cpp:248)
+  (1) INHERITANCE.  `add_inductive_fn::check_inductive_types` (inductive.cpp:248)
       sets `m_result_level` from the FIRST type of a mutual block and only
       requires the others to be `is_equivalent` to it.  Every downstream gate then
       reads that one spelling.  `check_constructors` (inductive.cpp:439) admits a
@@ -55,7 +55,7 @@ open Lean
 
 namespace Paradox
 
-/-! ### Step 1 — the laundered declaration
+/-! ### Step 1 — the inheriting declaration
 
 `Dummy : Sort 0` is inert; its only job is to be *first*, so that
 `m_result_level` is the syntactic `Level.zero` for the whole block.  `Weird` is

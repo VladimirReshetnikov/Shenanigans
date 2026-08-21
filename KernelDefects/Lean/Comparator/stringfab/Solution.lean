@@ -1,5 +1,5 @@
 /-
-Same fabrication, with an empty `Type` field instead of a `Prop` field, so the
+Same manufacture, with an empty `Type` field instead of a `Prop` field, so the
 compiler needs no erasure internals and the module declares NO axioms at all.
 -/
 prelude
@@ -23,7 +23,7 @@ theorem extract (s : String) : Q s :=
   @String.rec (fun s => Q s) (fun e => @Empty.rec (fun _ => False) e) s
 
 /-- The kernel expands `"a"` into
-    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, fabricating an
+    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, manufacturing an
     inhabitant of `Empty`. -/
 theorem boom : False := extract "a"
 

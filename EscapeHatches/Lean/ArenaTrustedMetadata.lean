@@ -16,7 +16,7 @@ neither the audit nor a `set_option`: it is a `modifyEnv` that writes a
 
 `CATALOG.md` §3.1 lists `ctor-num-fields`, `rec-k-lie`/`nat-rec-k-lie` and
 `nat-rec-rules` in the Lean Kernel Arena's rejection corpus and files them as a
-*trusted-metadata* class: the export lies to the checker about a declaration's
+*trusted-metadata* class: the export misreports to the checker a declaration's
 derived metadata. The natural reading — and the one this repository worked from —
 is that such a test cannot be built from inside Lean, because
 `Kernel.Environment.addDecl` derives `numFields`, `k` and the recursor rules
@@ -35,7 +35,7 @@ So this is not `debug.skipKernelTC` (`Metaprogramming.lean`), where the kernel i
 switched off. Here the kernel runs on every declaration in the file, and accepts
 each one *correctly given what it was told*. What is corrupted is the premise,
 not the inference. §1–§3 each show the same declaration **rejected** by the kernel
-before the lie and **rejected again** after it is withdrawn, with acceptance only
+before the misstatement and **rejected again** after it is withdrawn, with acceptance only
 in between; that is the control.
 
 ## Where it sits among the audit-blind routes
@@ -58,7 +58,7 @@ falsified by a caller with legitimate write access to the environment. Ground ru
 quiet the audit is about it.
 
 It is not a kernel bug and is not filed as one: overwriting the environment is the
-`.olean`-fabrication trust model of
+`.olean`-manufacture trust model of
 [lean4#13615](https://github.com/leanprover/lean4/issues/13615) executed
 in-process, and the #14576 postmortem's position applies verbatim — the elaborator
 is untrusted by design. The finding is about the **audit**, which reports nothing,
@@ -149,7 +149,7 @@ public theorem ParadoxCtorNumFields : False :=
 
 run_cmd do
   let .ctorInfo cv ← liftTermElabM (getConstInfo ``S.mk) | throwError "S.mk is not a constructor"
-  misstate (.ctorInfo { cv with numFields := 1 })   -- withdraw the lie
+  misstate (.ctorInfo { cv with numFields := 1 })   -- withdraw the misstatement
 
 /--
 info: CONTROL, numFields restored: REJECTED -- (kernel) declaration type mismatch, 'etaProbe' has type
@@ -166,7 +166,7 @@ run_cmd kprobe "CONTROL, numFields restored" etaThm
 premise, which is sound only for a single-constructor, field-free inductive.
 Claim it for `MyBool` and `MyBool.rec a b m` reduces to `a` whatever `m` is.
 
-The lie is then **withdrawn**, and that is what makes the exhibit closed rather
+The misstatement is then **withdrawn**, and that is what makes the exhibit closed rather
 than merely misleading: `disc MyBool.tt` is `False` under honest metadata — stated
 as a `rfl` before anything is touched — so once `k` is restored, the already
 stored `bad : disc MyBool.tt` is a proof of `False` at face value. -/
@@ -202,7 +202,7 @@ public theorem bad : disc MyBool.tt := True.intro
 
 run_cmd do
   let .recInfo rv ← liftTermElabM (getConstInfo ``MyBool.rec) | throwError "MyBool.rec is not a recursor"
-  misstate (.recInfo { rv with k := false })   -- withdraw the lie
+  misstate (.recInfo { rv with k := false })   -- withdraw the misstatement
 
 /--
 info: CONTROL, k restored: REJECTED -- (kernel) declaration type mismatch, 'kLieProbe' has type
@@ -239,7 +239,7 @@ private def rThm : Declaration :=
   .thmDecl { name := `ruleLieProbe, levelParams := [], type := mkApp (mkConst ``disc2) (mkConst ``NB.tt), value := mkConst ``True.intro }
 
 /-- Swapping twice is the identity, so the same command both installs and
-withdraws the lie. -/
+withdraws the misstatement. -/
 private def swapRules : CommandElabM Unit := do
   let .recInfo rv ← liftTermElabM (getConstInfo ``NB.rec) | throwError "NB.rec is not a recursor"
   let [r0, r1] := rv.rules | throwError "expected exactly two computation rules"
@@ -262,7 +262,7 @@ run_cmd kprobe "MISSTATED, rules swapped" rThm
 
 public theorem bad2 : disc2 NB.tt := True.intro
 
-run_cmd swapRules   -- withdraw the lie
+run_cmd swapRules   -- withdraw the misstatement
 
 /--
 info: CONTROL, rules restored: REJECTED -- (kernel) declaration type mismatch, 'ruleLieProbe' has type
@@ -278,7 +278,7 @@ public theorem ParadoxRecRules : False := bad2
 /-- info: 'ParadoxRecRules' does not depend on any axioms -/
 #guard_msgs in #print axioms ParadoxRecRules
 
-/-! ## 4. The half of the premise that *is* true: `addDecl` cannot be lied to
+/-! ## 4. The half of the premise that *is* true: `addDecl` cannot be misinformed
 
 `Declaration.inductDecl` carries `InductiveType`s whose constructors are just
 `{ name, type }`. There is no `numFields` field, no `k` field and no `rules`
@@ -361,7 +361,7 @@ but is expected to have type
   { f := true } = { f := false }
 ```
 
-**Withdrawing it is not optional bookkeeping.** A file that installs the lie and
+**Withdrawing it is not optional bookkeeping.** A file that installs the misstatement and
 *stops* ships the corrupted `ConstantInfo` in its `.olean`, and every importer
 inherits it — `S2.mk true = S2.mk false` then holds by plain `rfl` in a module
 with no `import Lean`, no `import all`, and no metaprogram of its own:
@@ -437,7 +437,7 @@ It belongs with #14609, not with #14613 — which is the one where a released
 official kernel and its official second checker agree on something false, and
 remains the worse finding in this repository.
 
-Note that `leanchecker` rejects the second file *whether or not the lie was
+Note that `leanchecker` rejects the second file *whether or not the misstatement was
 withdrawn*: withdrawal restores the environment for later Lean elaboration, but
 the `.olean` still records `bad2 : disc2 NB.tt` proved by a term whose real type
 is `True`. Withdrawal buys honest metadata for importers, not a checkable

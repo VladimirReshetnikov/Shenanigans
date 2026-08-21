@@ -33,7 +33,7 @@ $where = [ordered]@{
   'NatAddAccelerator'    = 'Accelerators'
   'NatBeqAccelerator'    = 'Accelerators'
   'NatGcdFreeName'       = 'Accelerators'
-  'StringLitFabrication' = 'Accelerators'
+  'StringLitEmptyInhabitant' = 'Accelerators'
   'ReduceBoolFreeName'   = 'Accelerators'
   'NegativeControl'      = 'Controls'
 }
@@ -42,7 +42,7 @@ $expected = [ordered]@{
   'NatAddAccelerator'  = 'accept'   # own `Nat`, own `Nat.add`
   'NatBeqAccelerator'  = 'accept'   # own `Nat`, own `Nat.beq`
   'NatGcdFreeName'     = 'accept'   # real core `Nat`; only *defines* the free name `Nat.gcd`
-  'StringLitFabrication' = 'accept' # kernel fabricates an inhabitant of `Empty` from a string literal
+  'StringLitEmptyInhabitant' = 'accept' # kernel manufactures an inhabitant of `Empty` from a string literal
   # `lean` accepts it; `leanchecker` refuses because the interpreter behind the
   # native hook cannot resolve `probe`, which is LOCAL to this module.  Not
   # because the hook cannot be replayed -- it can, and when the evaluated

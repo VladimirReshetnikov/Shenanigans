@@ -73,8 +73,8 @@ Two further points worth recording:
 * **`@[csimp]` is marketed as the safe alternative to `@[implemented_by]`, and
   it hides more.** [lean4#7463](https://github.com/leanprover/lean4/issues/7463)
   (open) shows that axioms used in a `csimp` proof are not propagated through
-  `native_decide`: a `csimp` lemma proved from an explicit `axiom cheating :
-  False` yields a theorem whose `#print axioms` does not mention `cheating`.
+  `native_decide`: a `csimp` lemma proved from an explicit `axiom unsound :
+  False` yields a theorem whose `#print axioms` does not mention `unsound`.
 * **The bug does not have to be yours.** Divergences between a reference
   implementation and its `@[implemented_by]` counterpart *in Lean core* have
   produced this same contradiction several times —

@@ -1,4 +1,4 @@
-(** * The route no assumption tracker defends against: a statement that lies
+(** * The route no assumption tracker catches: a statement that misstates itself
 
     Every other file in this directory obtains [False] by weakening the logic,
     and every one of them is named in [Print Assumptions].  This file obtains
@@ -44,7 +44,7 @@ End Notated.
 
 (** ** 3. Redefining the relation inside the statement
 
-    The most dangerous variant, because the lie is in an infix operator rather
+    The most consequential variant, because the misstatement is in an infix operator rather
     than in the headline noun.  A reader scanning for the *shape* of a theorem
     sees [0 = 1]; the [=] is not Rocq's.
 
@@ -74,7 +74,7 @@ Module Homoglyph.
   Print Assumptions looks_absurd.
 End Homoglyph.
 
-(** ** 5. What actually defends against this
+(** ** 5. What actually catches this
 
     - [Set Printing All] disables notations and prints fully qualified constants.
     - [Locate] and [About] resolve a name to the constant it denotes.

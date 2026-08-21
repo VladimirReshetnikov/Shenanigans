@@ -7,6 +7,16 @@
 > Nothing in this repository builds against it, and the harness works in a
 > scratch directory outside the tree.
 
+> **Vocabulary note.** `Evil.v`, `Defs.v`, `poc_evil`, `evil_true` and
+> `evil_false` are **Jason Gross's own identifiers**, verbatim from the
+> reproducer in rocq#22352 — verified against the issue body on 2026-08-20.
+> They are kept unchanged under [ground rule 7](../../../README.md)'s **first**
+> exception, so that this directory can be diffed against upstream, and they are
+> not this repository's vocabulary. The same exception covers `cert_payload` in
+> [`Paradoxes/Coq/CaseReificationVsDefinitionalUIP.v`](../../../Paradoxes/Coq/CaseReificationVsDefinitionalUIP.v).
+> A vocabulary sweep should leave all of them alone; the surrounding *prose* has
+> been neutralised.
+
 [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352), reported
 2026-08-18 by Jason Gross and **open**. `rocqchk` typechecks each constant's
 body, and then — with the non-default `-bytecode-compiler yes` — performs VM
@@ -33,7 +43,7 @@ the **body** from the first and the **bytecode** from the second. No patched too
 is involved anywhere; `rocq compile`'s own output is fine, and the splice is the
 probe.
 
-[`Evil.v`](Evil.v) cashes the lie with a `<:` VMcast — `poc_evil`'s body is
+[`Evil.v`](Evil.v) cashes the misstatement with a `<:` VMcast — `poc_evil`'s body is
 `true`, its bytecode says `false` — and derives `boom : False`.
 [`Downstream.v`](Downstream.v) is a plain `Require Import Evil` that uses it, and
 exists to establish that the `False` escapes into a consumer whose own audit is
@@ -47,7 +57,7 @@ clean.
 | `Print Assumptions boom` | **`Closed under the global context`** |
 | `rocqchk -bytecode-compiler yes Evil` | **`Modules were successfully checked`** |
 | `rocqchk Evil` (default) | `Fatal Error: Type error: ActualType` |
-| `rocqchk` on the spliced `Defs` alone, **both** modes | accepted — correctly; only its bytecode lies |
+| `rocqchk` on the spliced `Defs` alone, **both** modes | accepted — correctly; only its bytecode misreports |
 | `rocq c Downstream.v` | **exit 0**, both constants `Closed under the global context` |
 | `rocqchk -bytecode-compiler yes Downstream` | **`Modules were successfully checked`** |
 | **control** — `Evil.v` over an unspliced `Defs.vo` | **rejected** |

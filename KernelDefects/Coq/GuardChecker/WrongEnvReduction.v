@@ -47,8 +47,8 @@
     UniverseFlagDesync.v, where [coqchk] does catch it -- there the
     inconsistency is written into the .vo's universe graph, and here there is
     nothing wrong with the *term*: it is well typed, and only its guardedness is
-    a lie.  [coqchk] re-runs the same guard checker, so it inherits the same
-    bug.  That makes this the more dangerous of the two shapes.
+    misstated.  [coqchk] re-runs the same guard checker, so it inherits the same
+    bug.  That makes this the more consequential of the two shapes.
 
     A [Require] of the resulting .vo is likewise clean; the [False] escapes into
     downstream code, which the universe-flag desync does not do. *)

@@ -38,11 +38,11 @@ Three measurement notes carried from `../../../README.md`:
 | --- | --- |
 | `ctor-num-fields`, `rec-k-lie`, `nat-rec-k-lie`, `nat-rec-rules` | **Yes, but not through `addDecl`** — the kernel derives `numFields`, `k` and the recursor rules and the wire format has nowhere to put a lie. They are reachable by overwriting the stored `ConstantInfo`; see `../../../EscapeHatches/Lean/ArenaTrustedMetadata.lean`, which is where they live because they are escape hatches rather than defects |
 | `large-elim-param` | **No.** The term is an exported recursor for `MyBool.{u} : Sort u` that large-eliminates; the kernel synthesises recursors itself, so the only in-Lean question is whether its own `is_not_zero` ever says a possibly-zero level is nonzero. Asked and answered in `../Fuzz/IsNotZeroFuzzer.lean` — 360 spellings, 0 unsound |
-| `nat-rec-rules` (as an *export*) | **No** in that form, for the same reason; the lie is expressible only post-hoc, above |
+| `nat-rec-rules` (as an *export*) | **No** in that form, for the same reason; the misstatement is expressible only post-hoc, above |
 | `level-index-out-of-order`, `sparse-name-index` | **No.** These are properties of the NDJSON serialization — `lean4export` emits internalization-table references densely and in order but the spec permits any integers. There is no Lean term that expresses "referred to name #7 before defining it" |
 | `perf/`, `tutorial/` | Out of scope here: timing and a 135-case accept/reject taxonomy, neither of which is an probe |
 | `undecidability/` | Independently measured in `../Metatheory/` |
-| `extra-rec` (added 2026-08-18) | **No.** A second recursor named `rogue`, of type `False`, inserted into `False`'s inductive group. The kernel derives an inductive group's recursors, so the wire format is again the only place the lie fits; the arena injects it with the kernel-bypassing `Environment.lakeAdd`. Same class as the `ctor-num-fields` row above |
+| `extra-rec` (added 2026-08-18) | **No.** A second recursor named `rogue`, of type `False`, inserted into `False`'s inductive group. The kernel derives an inductive group's recursors, so the wire format is again the only place the misstatement fits; the arena inserts it with the kernel-bypassing `Environment.lakeAdd`. Same class as the `ctor-num-fields` row above |
 
 **Four probes were added to the corpus on 2026-08-18, and three of them are
 reachable from inside Lean — which is why this file's verdict is not extended to
@@ -330,7 +330,7 @@ an ordinary `Declaration` and can simply be handed to `addDecl`:
 | `k-rec-conv` | §3 | rejected |
 | `bogus1` | §4 | rejected |
 | `constlevels` | §5 | rejected, three arities |
-| `proj-of-imax-prop` | — | **accepted**; the one reject-test a released kernel fails (#14613), already exhibited in `../../../KernelDefects/Lean/Universes/ImaxPropLaundering.lean` |
+| `proj-of-imax-prop` | — | **accepted**; the one reject-test a released kernel fails (#14613), already exhibited in `../../../KernelDefects/Lean/Universes/ImaxPropSpelling.lean` |
 | `nested-unused-param` | — | fixed in `v4.32.2` (#14576); rebuilding it needs the published `Expr.hash` collision constants, so it is recorded rather than re-measured |
 
 Four more (`ctor-num-fields`, `rec-k-lie`, `nat-rec-k-lie`, `nat-rec-rules`) are

@@ -14,7 +14,7 @@ works on the exact construction this repository ships an exhibit for.
 rather than `nanoda`, and the answer is that `leanchecker` **exits 0 over an
 axiom-free `False`** — falsifying [`CATALOG.md`](../../../CATALOG.md) §4.7's
 claim that it "cannot replay `Lean.reduceBool` at all". Read the two together:
-an independent checker caught the laundered universe spelling, and a one-line
+an independent checker caught the non-normal universe spelling, and a one-line
 rearrangement that changes nothing about the kernel's verdict gets a different
 `False` past the same class of tool.
 
@@ -25,8 +25,8 @@ axiom-free `False` on every released Lean toolchain, and it turns on a *spelling
 the released kernel reads `Sort (imax 1 0)` as "not a proposition" even though
 that level denotes `0`. Upstream says `nanoda` rejects the construction — but
 `nanoda`'s own regression resource, `test_resources/ProjFromProp`, uses the
-**honest** `Sort 0`. Whether it also catches the laundered spelling is a
-different question, and it is the one that matters, because the laundering is
+**honest** `Sort 0`. Whether it also catches the non-normal spelling is a
+different question, and it is the one that matters, because the re-spelling is
 what gets the term past a released Lean kernel in the first place.
 
 ## What was measured
@@ -37,13 +37,13 @@ what gets the term past a released Lean kernel in the first place.
 | --- | --- |
 | control — a well-formed export | **accept**, exit 0, `Checked 0 declarations with no typechecker errors` |
 | honest — `nanoda`'s own `ProjFromProp`, `Sort 0` | **reject**, exit 101, `panicked at src/tc.rs:474: infer_proj prop` |
-| laundered — the same with `Sort (imax 1 0)` | **reject**, exit 101, same message, same site |
+| non-normal — the same with `Sort (imax 1 0)` | **reject**, exit 101, same message, same site |
 
 So `nanoda` normalises the level before deciding `Prop`-hood, and the
 cross-checking argument of *Who Watches the Provers?* holds on this construction:
 **the released Lean kernel accepts it and the independent checker does not.**
 
-The laundered export is *derived* by `verify.ps1` from `nanoda`'s own resource
+The non-normal export is *derived* by `verify.ps1` from `nanoda`'s own resource
 with a three-line edit — `{"ie":14,"sort":0}` becomes `Sort (imax 1 0)` via two
 new level entries — rather than vendored, so the provenance stays visible and
 their file (Apache-2.0) stays theirs.

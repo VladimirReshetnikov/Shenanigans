@@ -32,7 +32,7 @@
     module whose `result` component is *declared* to have type `False`, and a
     consumer that believes the signature — which is the only thing a consumer
     ever gets — inherits the `False` with a clean audit of its own.  This is a
-    library that can be misstated, not merely a file that lies about itself. *)
+    library that can be misstated, not merely a file that misstates itself. *)
 
 Require Import LetinOrderSubtyping.
 

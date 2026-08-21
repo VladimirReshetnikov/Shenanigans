@@ -61,12 +61,12 @@ an accident detector, not a safeguard.
 
 It is recorded because it locates the line precisely, and the line is not where a
 reader might assume. Nothing about a hand-edited `.vo` is caught by its checksum.
-The only thing standing between one and a bogus theorem is that `rocqchk`
+The only thing standing between one and an unsound theorem is that `rocqchk`
 re-typechecks the bodies.
 
-## 3. …which is exactly what rocq#22352 gets around
+## 3. …and rocq#22352 relies on exactly that limit
 
-By lying in the one segment the re-typechecking does not derive its answers from.
+By misreporting in the one segment the re-typechecking does not derive its answers from.
 That one **is** a proof of `False` — closed, `Print Assumptions` clean,
 `rocqchk -bytecode-compiler yes` reporting `Modules were successfully checked` —
 and it lives in [`KernelDefects/Coq/Checker/`](../../../KernelDefects/Coq/Checker/).

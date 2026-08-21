@@ -16,7 +16,7 @@
     one, which is exactly the hypothesis [Hurkens.TypeNeqSmallType.paradox]
     wants.
 
-    Note the shape, because it recurs: nothing here is a lie about a *term*.
+    Note the shape, because it recurs: nothing here is a misstatement about a *term*.
     The term is the identity function and it is fine.  What was lost is a side
     condition, and the kernel then reasons correctly from a premise that is too
     weak.  Compare ./UniverseFlagDesync.v (#22287), where a flag rather than a
