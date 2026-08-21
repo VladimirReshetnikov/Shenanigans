@@ -23,7 +23,7 @@ in the statement.
 
 | Path | System | Substance |
 | --- | --- | --- |
-| [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal manufacture), and **two exhibits here are live on every released toolchain**: the two of 2026-08-17/18 in [`DefEq/`](Lean/DefEq/) — a definitional-equality *cache* whose transitive closure lets a recursor's type disagree with its computation rule, and an `is_prop` that answers "no" for a term it should reject. Two others were counted as live until `v4.33.0` shipped the July wave, and both are now **regression witnesses**, each measured on three toolchains on 2026-08-20: the module boundary that loses `partial` in [`ModuleSystem/`](Lean/ModuleSystem/) ([lean4#14609](https://github.com/leanprover/lean4/pull/14609)) builds on its pinned `v4.32.2` and is refused by `v4.33.0` with `(kernel) invalid declaration, it uses unsafe declaration 'partialFalse'`; and the universe spelling in [`Universes/`](Lean/Universes/) ([lean4#14613](https://github.com/leanprover/lean4/pull/14613)/[#14615](https://github.com/leanprover/lean4/pull/14615)) exits 0 on `v4.32.2` and is refused by both `v4.33.0` and `v4.34.0-rc1` with `(kernel) invalid projection`. **This count is about exhibits in this directory, not about Lean's live defects**: [lean4#14838](https://github.com/leanprover/lean4/pull/14838), the reference-count overflow of 2026-08-20, is live on every released toolchain and has no exhibit here, because reproducing it needs 12–18GB of RAM. What can be measured about it is in [`Audits/Lean/Runtime/`](../Audits/Lean/Runtime/). Plus `Expr.proj` index truncation and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
+| [`Lean/`](Lean/) | Lean 4 | The name-keyed accelerator family (`Nat.add`, `Nat.beq`, the nine free names under `Init.Prelude`, `Lean.reduceBool`, and string-literal manufacture), and **exactly one exhibit here is live on the current stable release**, [`ModuleSystem/classrec/`](Lean/ModuleSystem/classrec/) ([lean4#14875](https://github.com/leanprover/lean4/issues/14875), reported 2026-08-21 and **open**), where a `class inductive`'s recursor keeps a dependency that its module's exported view drops, letting a downstream module rebind the name — measured on five toolchains through `v4.33.1` and `v4.34.0-rc2`, and the only live exhibit here that `leanchecker` **catches**. The two of 2026-08-17/18 in [`DefEq/`](Lean/DefEq/) were live until `v4.33.1` shipped on 2026-08-21 and are **regression witnesses** now: all three modules are refused by it with `kernel error`, so their harness stays pinned to `v4.33.0`. Two others were counted as live until `v4.33.0` shipped the July wave, and both are now **regression witnesses**, each measured on three toolchains on 2026-08-20: the module boundary that loses `partial` in [`ModuleSystem/`](Lean/ModuleSystem/) ([lean4#14609](https://github.com/leanprover/lean4/pull/14609)) builds on its pinned `v4.32.2` and is refused by `v4.33.0` with `(kernel) invalid declaration, it uses unsafe declaration 'partialFalse'`; and the universe spelling in [`Universes/`](Lean/Universes/) ([lean4#14613](https://github.com/leanprover/lean4/pull/14613)/[#14615](https://github.com/leanprover/lean4/pull/14615)) exits 0 on `v4.32.2` and is refused by both `v4.33.0` and `v4.34.0-rc1` with `(kernel) invalid projection`. [lean4#14838](https://github.com/leanprover/lean4/pull/14838), the reference-count overflow of 2026-08-20, never had an exhibit here — reproducing it needs 12–18GB of RAM — and it too shipped in `v4.33.1` (`LEAN_RC_STICKY` is in `lean.h` at that tag and absent at `v4.33.0`). What can be measured about it is in [`Audits/Lean/Runtime/`](../Audits/Lean/Runtime/). Plus `Expr.proj` index truncation and level-normalization incompleteness. With [`Comparator/`](Lean/Comparator/), which shows the Lean FRO's proof judge accepting one of them. |
 | [`Coq/`](Coq/) | Rocq 9.2 | Seven fixed defects from the 2026 sweep kept as regression witnesses that must be *rejected* — including [`RegisterInlineVM.v`](Coq/Conversion/RegisterInlineVM.v) ([rocq#21736](https://github.com/rocq-prover/rocq/issues/21736)), the one Rocq defect here that **`coqchk` also had**, and whose rejection lands at `Qed` because `vm_cast_no_check` defers conversion to the kernel — and **two live ones that must be accepted**. [`UniverseFlagDesync.v`](Coq/ModuleSystem/UniverseFlagDesync.v) ([rocq#22287](https://github.com/rocq-prover/rocq/issues/22287), open) is a `False` with a clean `Print Assumptions` from nine lines of ordinary source — `coqchk` catches it, and it cannot escape a `Require`. [`WrongEnvReduction.v`](Coq/GuardChecker/WrongEnvReduction.v) ([rocq#21839](https://github.com/rocq-prover/rocq/issues/21839), fixed in 9.2.1, installed toolchain is 9.2.0) is the strongest route in the whole catalog: **`coqchk` misses it too**, and the `False` escapes through a plain `Require`. A third live route joined them on 2026-08-18: [`Checker/`](Coq/Checker/) ([rocq#22352](https://github.com/rocq-prover/rocq/issues/22352), open) is the first defect in this catalog that is in a **checker** rather than a kernel — `rocqchk -bytecode-compiler yes` reports `Modules were successfully checked` over a `False`, because it typechecks the bodies and then runs VM bytecode it read from the file instead of deriving it from them. Plain `rocqchk` rejects the same bytes, which makes it the only exhibit here where two modes of one tool disagree. |
 
 ## Reproducing
@@ -41,6 +41,9 @@ pwsh KernelDefects/Lean/Universes/verify.ps1
 pwsh KernelDefects/Lean/ModuleSystem/verify.ps1
 ```
 ```bash
+pwsh KernelDefects/Lean/ModuleSystem/classrec/verify.ps1
+```
+```bash
 pwsh KernelDefects/Lean/DefEq/verify.ps1
 ```
 ```bash
@@ -48,9 +51,10 @@ pwsh KernelDefects/Coq/Checker/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.`,
-`All 41 Coq exhibits behaved as documented.`,
+`All 42 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`,
 `The module-boundary artifact behaved as documented.`,
+`lean4#14875 behaved as documented on: v4.33.1`,
 `All non-transitive-def-eq artifacts behaved as documented.`, and
 `The rocqchk VM-bytecode artifact behaved as documented.`
 
@@ -66,8 +70,10 @@ in the defect.
 ## Why the two systems' defects cluster in different places
 
 Of the Rocq proofs of `False` catalogued in [`../CATALOG.md`](../CATALOG.md) §3,
-the great majority are guard-checker or module-system bugs. Neither subsystem
-exists in Lean. Of Lean's, essentially all are in the three kernel *extensions*
+the great majority are guard-checker or module-system bugs. Lean has no guard
+checker at all, and had no module system either until `v4.31` — see the second
+bullet, which 2026 has forced to be rewritten. Of Lean's, essentially all are in
+the three kernel *extensions*
 Lean 3's own FAQ told you to disable with `-t0`: GMP-accelerated `Nat`
 arithmetic, structure eta, and nested inductives.
 
@@ -79,6 +85,18 @@ arithmetic, structure eta, and nested inductives.
   analogue.
 * Rocq's **module system** — functors, aliases, `Include`, delta-resolution — is
   a large piece of trusted infrastructure with no Lean counterpart at all.
+  **Corrected 2026-08-21, and this is the bullet the last two months have been
+  hardest on.** Lean acquired a module system in `v4.31` (`module`, `public`,
+  `import all`), and it has now produced *two* proofs of `False` here:
+  [#14609](https://github.com/leanprover/lean4/pull/14609), where the export
+  stub drops `partial`, and [#14875](https://github.com/leanprover/lean4/issues/14875),
+  where the exported view drops a dependency the exported recursor still has.
+  Both live in `src/Lean/`, not `src/kernel/`. The honest form of this bullet is
+  now narrower: *Rocq's functors, applicative module equality and delta-resolver
+  have no Lean counterpart* — the parts of Rocq's module system that instantiate
+  and re-check whole signatures. What Lean grew instead is an **export view**,
+  and a view that omits something the exported term depends on is the same class
+  of defect arriving by a different route.
 * Lean's **name-keyed normalizer extensions** are a large piece of trusted
   infrastructure with no Rocq counterpart: the kernel builds
   `g_nat_add = mkConst {"Nat","add"}` at startup and fires on any constant with

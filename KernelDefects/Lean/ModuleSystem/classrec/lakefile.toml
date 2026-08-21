@@ -1,0 +1,6 @@
+name = "classrec"
+defaultTargets = ["IS"]
+
+[[lean_lib]]
+name = "IS"
+roots = ["IS.ClassHidden", "IS.ClassProducer", "IS.ClassConsumer"]

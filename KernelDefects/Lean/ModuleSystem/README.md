@@ -4,6 +4,16 @@
 > machine-checked proof of `False`. It is deliberately unsound, it is not part of
 > this repository's own build, and it must never be imported.
 
+> **This directory now holds two exhibits.** The one below,
+> [lean4#14609](https://github.com/leanprover/lean4/pull/14609), is **fixed** in
+> `v4.33.0` and is kept as a regression witness pinned to `v4.32.2`. The second,
+> [`classrec/`](classrec/) — [lean4#14875](https://github.com/leanprover/lean4/issues/14875),
+> reported 2026-08-21 and **open** — is **live on every released toolchain**,
+> including `v4.34.0-rc1`: a `class inductive`'s generated recursor keeps a
+> reference to a declaration the producer saw only through `import all`, that
+> dependency is dropped from the exported view, and a downstream module rebinds
+> the name. Two proofs of `False` out of one subsystem, two months apart.
+
 Category: [`KernelDefects/`](../../README.md) — closed `False`, **clean audit**,
 no flag, no `prelude`. Full write-up:
 [`Reports/2026-08-01-module-boundary-partial-stub.md`](../../../Reports/2026-08-01-module-boundary-partial-stub.md).
