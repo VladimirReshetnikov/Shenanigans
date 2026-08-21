@@ -21,7 +21,7 @@ checker shipped with the toolchain.
 > Two gates are needed and neither suffices alone: with
 > `set_option debug.skipKernelTC true` a bypassed declaration still reports
 > *"does not depend on any axioms"*, and `leanchecker --fresh` happily replays a
-> plain `axiom sneaky : False` (exit 0). This is precisely why comparator exists.
+> plain `axiom bare : False` (exit 0). This is precisely why comparator exists.
 
 > **Prior art — this is a rediscovery.** The technique below (redefine `Nat.add`
 > in a `prelude` module, then play the kernel's GMP accelerator off against
@@ -32,7 +32,7 @@ checker shipped with the toolchain.
 > operations amounts to *replacing part of the system* rather than finding an
 > inherent hole in it. That reading is reasonable and should be applied here.
 > The contribution of this report is a minimal, self-contained, end-to-end
-> verified reproduction plus the negative results and hardening observations in
+> verified reproduction plus the negative results and [strengthening] observations in
 > the later sections. There is no issue for it on the `leanprover/lean4` tracker,
 > so the behaviour is unfixed — but it is known, and was not treated as a bug.
 
@@ -295,7 +295,7 @@ the *auditing* story, which is exactly where it matters:
 * `#print axioms` is the standard way to establish that a proof rests only on
   `propext` / `Classical.choice` / `Quot.sound`. Here it reports nothing at all.
 * `leanchecker` (and, by the same reasoning, `lean4checker`, which reuses the
-  kernel) is the standard way to detect "environment hacking" in a submitted
+  kernel) is the standard way to detect "[environment substitution]" in a submitted
   `.olean`. It accepts this one.
 * Consequently, a Lean artifact from an untrusted source cannot be validated by
   those two tools alone. Reviewing whether any module carries `prelude` is a
@@ -369,7 +369,7 @@ Recorded so the search is not repeated:
   merely a verbose spelling of `proj S 0 e`; typing and reduction stay
   consistent and I could not build a type confusion from it.
 
-## Hardening observations (not reachable as found)
+## Strengthening observations (not reachable as found)
 
 * `equiv_manager::is_equiv_core` (`kernel/equiv_manager.cpp:103`) and
   `type_checker::is_def_eq_core` (`kernel/type_checker.cpp:1101`) compare `Proj`

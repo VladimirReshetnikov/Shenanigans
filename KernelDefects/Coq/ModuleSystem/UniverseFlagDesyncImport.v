@@ -15,7 +15,7 @@
     exhibit (../../Lean/ModuleSystem/), where the [False] does reach ordinary
     downstream code with a clean audit of its own.  Here the damage is confined
     to the file that caused it — which is precisely why the finding is that the
-    *local* audit lies, not that a library can be poisoned.
+    *local* audit lies, not that a library can be misstated.
 
     Expected: **rejected**, at the [Require Import] itself.
 

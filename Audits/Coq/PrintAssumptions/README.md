@@ -34,7 +34,7 @@ Coq/Rocq**.
 | [`ViaType.v`](ViaType.v) | axiom reachable only through the **type** | `Closed under the global context` |
 | [`ViaType.v`](ViaType.v) | same axiom in the **body** (control) | `Axioms: ax3 : nat` |
 
-**The escalation is the part that matters**, because `Print Assumptions` walks
+**The extension is the part that matters**, because `Print Assumptions` walks
 the same reachable set to report `bypass_check` flags:
 
 | File | What it asks | Answer on 9.2.0 |

@@ -51,7 +51,7 @@ A `<:` VMcast then cashes the lie, and `true = false` follows:
 
 Three of those rows are worth separating out.
 
-**The tampered file is not the file that fails.** `rocqchk` accepts the spliced
+**The hand-edited file is not the file that fails.** `rocqchk` accepts the spliced
 `Defs.vo` on its own in *both* modes, and it is right to: its declarations are
 well typed, and only its bytecode segment lies. The unsoundness appears one
 library downstream, in the file whose VMcast only typechecked because
@@ -84,7 +84,7 @@ needing a flag is an escape hatch even if the flag is obscure. Two things here
 pull in opposite directions.
 
 Toward **escape hatch**: the input is a hand-edited object file. §1.2 already has
-a row for that — *"tampered or stale `.vo` / `.olean` → nothing; neither system
+a row for that — *"[hand-edited] or stale `.vo` / `.olean` → nothing; neither system
 re-typechecks on import"* — and of course you can prove anything from a file you
 are allowed to rewrite.
 
@@ -93,10 +93,10 @@ with defaults and `Print Assumptions` reports nothing. The flag is on the
 *checker*, and it decides only whether the audit notices.
 
 The tie-breaker is what §1.2's row actually claims, and it is now wrong in the
-part that matters. That row carries the note that *Rocq hardened its `coqchk`
+part that matters. That row carries the note that *Rocq strengthened its `coqchk`
 path in 8.19* — i.e. the catalog's position is that `coqchk` **is** the answer to
-a tampered `.vo`. This exhibit is a tampered `.vo` that `coqchk` re-typechecks,
-in a supported mode, and certifies. So the finding is not "you can tamper with a
+a hand-edited `.vo`. This exhibit is a hand-edited `.vo` that `coqchk` re-typechecks,
+in a supported mode, and certifies. So the finding is not "you can [hand-edit] a
 `.vo`", which was known; it is that the tool whose entire purpose is to catch
 that reports success on this one. It belongs in `KernelDefects/`, in a new
 `Checker/` subdirectory, because the defect is in a checker rather than in the
@@ -153,12 +153,12 @@ that bug is only the *observable*; the order dependence is what is being
 measured.)
 
 **Negative result: the recorded segment digest is not compared, in any mode.**
-A `.vo` whose per-segment MD5 does not match its payload is accepted by `rocqchk`
+A `.vo` whose per-segment MD5 does not match its contents is accepted by `rocqchk`
 in both `-norec` orders *and* in full-closure mode, and `rocq c` happily
-`Require`s it. This is **not** unsoundness — the payload spliced in for the test
+`Require`s it. This is **not** unsoundness — the contents spliced in for the test
 is another honest compilation, so what the checker typechecks is well typed and
 it correctly says so. It is recorded because it locates the line precisely: the
-digest is an accident detector, not a defence, and the only thing standing
+digest is an accident detector, not a safeguard, and the only thing standing
 between a hand-edited `.vo` and a bogus theorem is that `rocqchk` re-typechecks
 the bodies. Which is exactly what #22352 gets around, by lying in the one segment
 the re-typechecking does not derive its answers from.

@@ -130,7 +130,7 @@ against the challenge.
 
 ### What this does and does not show
 
-* It does **not** break comparator's logic. It defeats a *documented
+* It does **not** break comparator's logic. It overrides a *documented
   precondition* that comparator neither enforces nor warns about, and it relies
   on the kernel bug that README assumption 5 ("The Lean kernel is correct")
   explicitly excludes.

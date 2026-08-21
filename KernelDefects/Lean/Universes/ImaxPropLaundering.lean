@@ -45,7 +45,7 @@ second.  (1) below is the first, and it is *not* fixed on master.
 
 The elaborator normalizes levels eagerly, so `Sort (imax 1 0)` is not writable in
 surface syntax and the declaration below has to be handed to the kernel directly.
-That is not a mitigation — see the postmortem's own paragraph on why soundness
+That is not a remedy — see the postmortem's own paragraph on why soundness
 cannot rest on an untrusted elaborator refusing to build a bad term.
 -/
 import Lean.CoreM
@@ -107,7 +107,7 @@ require the projected field to be a proof.  On `master` this raises
 
 #eval show CoreM Unit from
   addDecl <| .defnDecl {
-    name        := `Paradox.leak
+    name        := `Paradox.extract
     levelParams := []
     hints       := .abbrev
     safety      := .safe
@@ -116,11 +116,11 @@ require the projected field to be a proof.  On `master` this raises
 
 /-! ### Step 4 — `False`
 
-`leak` is a function, `irrel` says its two arguments are the same proof, and the
+`extract` is a function, `irrel` says its two arguments are the same proof, and the
 kernel's own iota rule says the results are `false` and `true`. -/
 
 theorem boom : False :=
-  Bool.noConfusion (show false = true from congrArg leak irrel)
+  Bool.noConfusion (show false = true from congrArg extract irrel)
 
 -- The whole point: the audit is clean.
 /-- info: 'Paradox.boom' does not depend on any axioms -/
@@ -151,7 +151,7 @@ theorem irrel2 : left2 = right2 := rfl
 
 #eval show CoreM Unit from
   addDecl <| .defnDecl {
-    name        := `Paradox.leak2
+    name        := `Paradox.extract2
     levelParams := []
     hints       := .abbrev
     safety      := .safe
@@ -159,7 +159,7 @@ theorem irrel2 : left2 = right2 := rfl
     value       := .lam `proof (.const ``AsProp2 []) (.proj `Paradox.Weird2 0 (.bvar 0)) .default }
 
 theorem boom2 : False :=
-  Bool.noConfusion (show false = true from congrArg leak2 irrel2)
+  Bool.noConfusion (show false = true from congrArg extract2 irrel2)
 
 /-- info: 'Paradox.boom2' does not depend on any axioms -/
 #guard_msgs in

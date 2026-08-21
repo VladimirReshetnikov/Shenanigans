@@ -7,7 +7,7 @@ choices are safe together only because the kernel refuses to let data escape a
 inductive's recursor to `Prop` motives unless the type is a subsingleton by
 construction.
 
-This file proves that restriction is not defensive belt-and-braces. Grant *any*
+This file proves that restriction is not precautionary belt-and-braces. Grant *any*
 data-carrying eliminator for a `Prop` with two distinguishable constructors, and
 `False` follows in one line — because proof irrelevance has already identified
 the two constructors, so the eliminator is being asked to distinguish terms the

@@ -7,7 +7,7 @@ This directory runs it.
 
 Category ([`../../README.md`](../../README.md)): no `False` is produced here.
 The result is a measurement, and it is a **positive** one — the cross-checking
-defence works on the exact construction this repository ships an exhibit for.
+safeguard works on the exact construction this repository ships an exhibit for.
 
 ## The question
 
@@ -18,7 +18,7 @@ that level denotes `0`. Upstream says `nanoda` rejects the construction — but
 `nanoda`'s own regression resource, `test_resources/ProjFromProp`, uses the
 **honest** `Sort 0`. Whether it also catches the laundered spelling is a
 different question, and it is the one that matters, because the laundering is
-what gets the payload past a released Lean kernel in the first place.
+what gets the term past a released Lean kernel in the first place.
 
 ## What was measured
 

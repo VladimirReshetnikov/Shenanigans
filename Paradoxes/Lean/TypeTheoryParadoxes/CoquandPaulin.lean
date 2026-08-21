@@ -7,7 +7,7 @@ outright** —
   * impredicative `Prop`: `∀ x : X, p x : Prop` for `X` in *any* universe, and
   * a universe type: `Prop : Type`.
 Only the third is denied, by the kernel's positivity check. This file proves that
-guard is essential rather than defensive: from merely a *retraction* of `Phi A`
+guard is essential rather than precautionary: from merely a *retraction* of `Phi A`
 into `A`, `False` follows, axiom-free.
 
 The kernel's refusal to supply that retraction is machine-checked in

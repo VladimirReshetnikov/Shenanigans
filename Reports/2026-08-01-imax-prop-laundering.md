@@ -123,7 +123,7 @@ type is a proposition for one purpose and not for the other in the same session.
 
 ```lean
 theorem boom : False :=
-  Bool.noConfusion (show false = true from congrArg leak irrel)
+  Bool.noConfusion (show false = true from congrArg extract irrel)
 ```
 
 `#print axioms boom` reports nothing.
@@ -208,7 +208,7 @@ That is a global invariant standing in for a local one, which is precisely the
 pattern [#14631](https://github.com/leanprover/lean4/pull/14631) and
 [#14632](https://github.com/leanprover/lean4/pull/14632) spent the same week
 converting in the other direction — `#14631`'s own justification is that
-`proj_sname` equality "is not exploitable, because `infer_proj` had already
+`proj_sname` equality "is not [reachable], because `infer_proj` had already
 rejected mismatched names on the paths that reach it", and it was made local
 anyway. The same argument applies here: `check_constructors` should gate on the
 type it is checking, not on the block's first type.
@@ -216,8 +216,8 @@ type it is checking, not on the block's first type.
 One consequence is concrete rather than stylistic. A future change that makes any
 `m_result_level` consumer spelling-sensitive again — or that relaxes the
 same-universe requirement on mutual blocks from `is_equivalent` to something
-weaker — reintroduces this exploit, and the regression test for #14613 will not
-catch it, because that test's payload is `is_prop` rather than the block
+weaker — reintroduces this construction, and the regression test for #14613 will not
+catch it, because that test's subject is `is_prop` rather than the block
 structure. `MutualResultLevel.lean` is the missing test.
 
 ---
@@ -245,7 +245,7 @@ either way.
 
 * **Reachable only through metaprogramming.** The elaborator normalizes levels
   eagerly, so `Sort (imax 1 0)` is not writable in surface syntax. This is not a
-  mitigation, and the postmortem is explicit about why: the elaborator is
+  remedy, and the postmortem is explicit about why: the elaborator is
   untrusted by design, and "soundness cannot depend on an untrusted component
   refusing to build a bad term."
 * **Not a `prelude` module.** Unlike the accelerator family in

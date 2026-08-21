@@ -148,7 +148,7 @@ Two further quiet failures in the same family:
   Name.escapePart "a»b"  =  none             -- genuinely impossible
   ```
 
-  So only `»` defeats `escapePart`, which honestly returns `none`; `maybeEscape`
+  So only `»` overrides `escapePart`, which honestly returns `none`; `maybeEscape`
   (`Init/Data/ToString/Name.lean:85`) then swallows that with `.getD s` and emits
   the component **raw**, discarding exactly the signal `escapePart`'s docstring
   promises.
@@ -161,9 +161,9 @@ Two further quiet failures in the same family:
   `--foo._inaccessible`; lean4export's `args.partition (·.startsWith "--")`
   reclassifies it as an *option*, so it is never exported and no error is raised.
 
-## Why none of this escalates to unsoundness
+## Why none of this extends to unsoundness
 
-The boundary a solution author actually controls — the export payload — is
+The boundary a solution author actually controls — the export data — is
 clean. `lean4export/Export.lean:95 dumpName` emits
 `{"str":{"pre":idx,"str":s}}` with the component as a raw JSON string, and
 comparator's `Export/Parse.lean:92` reads it back structurally. A fuzz over all

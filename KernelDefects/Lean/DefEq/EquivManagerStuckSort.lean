@@ -1,7 +1,7 @@
 /-
 KERNEL DEFECT — an axiom-free `False`, live on every released toolchain.
 
-The second exploit of lean4#14806, and the one that also needs lean4#14807.
+The second construction of lean4#14806, and the one that also needs lean4#14807.
 Same non-transitive triple as EquivManagerMissingIH.lean, same hash-gated
 union-find, but the consequence is different: instead of a malformed recursor,
 the order-dependent comparison decides a RESULT SORT.

@@ -50,14 +50,14 @@ development switch.
 
 ## 2. Negative result: the recorded segment digest is not compared, in any mode
 
-A `.vo` whose per-segment MD5 does not match its payload is accepted by `rocqchk`
+A `.vo` whose per-segment MD5 does not match its contents is accepted by `rocqchk`
 in **both** `-norec` orders and in full-closure mode, and `rocq c` `Require`s it
 without complaint.
 
 **This is not unsoundness**, and the harness says so in as many words. The
-payload spliced in for the measurement is another *honest* compilation, so what
+contents spliced in for the measurement is another *honest* compilation, so what
 the checker typechecks is well typed and it is right to accept it. The digest is
-an accident detector, not a defence.
+an accident detector, not a safeguard.
 
 It is recorded because it locates the line precisely, and the line is not where a
 reader might assume. Nothing about a hand-edited `.vo` is caught by its checksum.

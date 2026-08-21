@@ -56,7 +56,16 @@ $coqCases = @(
   @{ Name = 'Coq/UnivalenceUIP'; File = 'UnivalenceUIP.v';
      Needles = @('Closed under the global context') },
   @{ Name = 'Coq/GuardVsUnivalence'; File = 'GuardVsUnivalence.v';
-     Needles = @('Closed under the global context') }
+     Needles = @('Closed under the global context') },
+  # The 2026-08-20 Rocq wave contributed two CONDITIONAL routes.  rocq#22376 and
+  # rocq#22380 each yield `False` only with definitional UIP assumed, so ground
+  # rule 1 files them here rather than under KernelDefects/, exactly as
+  # GuardVsUnivalence.v (rocq#22024) is.  The hypothesis is visible in the audit,
+  # which is what the needle asserts.
+  @{ Name = 'Coq/VarianceVsDefinitionalUIP'; File = 'VarianceVsDefinitionalUIP.v';
+     Needles = @('relies on definitional UIP') },
+  @{ Name = 'Coq/CaseReificationVsDefinitionalUIP'; File = 'CaseReificationVsDefinitionalUIP.v';
+     Needles = @('relies on definitional UIP') }
 )
 foreach ($c in $coqCases) {
   Copy-Item (Join-Path $root "Coq/$($c.File)") $work -Force

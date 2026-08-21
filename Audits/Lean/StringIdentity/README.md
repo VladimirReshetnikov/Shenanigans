@@ -152,7 +152,8 @@ ARABIC TATWEEL**.
 Letterlike U+2100-214F (including U+212A KELVIN, U+2126 OHM, U+212B ANGSTROM,
 and the `So` symbols No and TM), Math Alphanumerics, Latin-1 Supplement, Latin
 Extended-A, Greek. `Lean.Parser.Basic:563 whitespace` skips only
-`' ' | '	' | '' | '
+`' ' | '	' | '
+' | '
 '`; there is no normalising or stripping pre-pass.
 
 Re-run under Lean 4.33.0-rc1 (comparator's pinned toolchain) for 15
@@ -208,7 +209,7 @@ both of which are legal bare Lean identifier characters.
   as `foo.5` while `Name.mkStr foo "5"` prints as `foo.«5»`; both survive
   `toString ∘ toName`, and they stay distinct. (This is the risk comparator's
   `numeric_namespace` regression test covers.)
-* **The export payload is clean** — and this is why nothing escalates to
+* **The export data is clean** — and this is why nothing extends to
   soundness. It is the one boundary a solution author controls, and it carries
   names structurally as `{"str":{"pre":idx,"str":s}}`. A fuzz over all 1,112,064
   code points found 0 JSON round-trip mismatches and 0 distinct characters

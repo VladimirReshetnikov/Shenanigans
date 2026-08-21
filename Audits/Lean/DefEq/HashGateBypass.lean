@@ -15,7 +15,7 @@ and every account of the bug — upstream's PR body, the arena's `rec-missing-ih
 collision → rejected (collision essential)") and its
 ../../../Reports/2026-08-18-defeq-cache-and-stuck-sort.md — presents the
 collision as the thing that normally hides the transitive closure, and the
-engineered collision as what makes an exploit possible.
+engineered collision as what makes a construction possible.
 
 THE MEASUREMENT.  It is not gated, at two of the three call sites.
 
@@ -43,10 +43,10 @@ the non-transitive triple, and for the three comparisons to happen inside one
 declaration check.  The exhibits in ../../../KernelDefects/Lean/DefEq/ inherit
 their salts and paddings from upstream's regression tests; this file shows the
 paddings are not load-bearing for the *mechanism*, whatever else they do in
-those particular exploits.
+those particular constructions.
 
 WHAT THIS IS NOT.  It is not a new route to `False`, and it does not by itself
-make upstream's exploits collision-free: those use the collision for a SECOND
+make upstream's constructions collision-free: those use the collision for a SECOND
 purpose, selectivity — `rec-missing-ih` needs the closure visible while the
 recursor's minor premises are built and invisible while its rules are.  Removing
 the gate makes it visible everywhere, which is the opposite of selective.  It is a reachability
@@ -165,7 +165,7 @@ run_meta do
     throwError "the bare ascription was accepted; the control is vacuous"
 
   -- ------------------------------------------------------------------ padded
-  -- Upstream's exploits pad their terms.  Padding with deliberately
+  -- Upstream's constructions pad their terms.  Padding with deliberately
   -- NON-colliding salts changes nothing: the closure is still consulted.
   let Ap := vecPadded ``RecClass.rcA 135601
   let Bp := vecPadded ``RecClass.rcB 0

@@ -131,7 +131,7 @@ Print Assumptions grows_true.
 
 (** The only place in the entire system that mentions [secret] is a printing
     command about *inlining*.  [Extract Constant] marks its target [NoInline] as
-    a side effect, so the constant's name leaks here -- but the replacement text
+    a side effect, so the constant's name escapes here -- but the replacement text
     does not, and neither does the fact that there is one.  There is no
     [Print Extraction Constant]; the [Foreign] table is a different feature and
     is empty.

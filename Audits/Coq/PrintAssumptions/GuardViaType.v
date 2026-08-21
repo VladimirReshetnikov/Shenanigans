@@ -1,4 +1,4 @@
-(** * The escalation: it is not only axioms
+(** * The extension: it is not only axioms
 
     `Print Assumptions` walks the same reachable set to report `bypass_check`
     typing flags, so a flag-tainted constant reachable ONLY through a type is

@@ -29,7 +29,7 @@ a `Prop` with two distinguishable inhabitants gives `False`.
   `#print axioms` reports NOTHING.
 
 Reported by Daniel Selsam (OpenAI) using their internal models; an OpenAI agent
-then produced two distinct exploits from it.  Fixed on `master` 2026-08-17 by
+then produced two distinct constructions from it.  Fixed on `master` 2026-08-17 by
 lean4#14806 (union-find replaced by a plain cache keyed on the query pair) and
 defended by lean4#14808.  NO RELEASED TOOLCHAIN CARRIES EITHER.  Verified
 accepted here on v4.33.0 and v4.34.0-rc1; upstream reports the same for v4.28.0,

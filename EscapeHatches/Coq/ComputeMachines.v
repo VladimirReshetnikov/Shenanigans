@@ -100,7 +100,7 @@ Goal secret = 5. Proof. change_no_check (5 = 5). reflexivity. Qed.
 
 (** What [vm_compute] therefore breaks is the *displayed* abstraction, not
     provability.  Stated precisely: [Opaque] is the only one of Rocq's three
-    hiding mechanisms that [vm_compute] defeats, and it is also the only one
+    hiding mechanisms that [vm_compute] overrides, and it is also the only one
     that was never load-bearing.  The two that are load-bearing hold, at tactic
     level and at kernel level both, and the rest of this section is the
     controls that show it. *)

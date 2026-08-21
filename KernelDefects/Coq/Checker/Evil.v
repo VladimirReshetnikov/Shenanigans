@@ -27,23 +27,23 @@
                                             its declarations are well typed and
                                             only its bytecode segment lies.
 
-    So the .vo that is tampered with is not the .vo that fails.  The failure
+    So the .vo that is hand-edited with is not the .vo that fails.  The failure
     surfaces one library downstream, in the file whose VMcast only typechecked
     because [rocq compile] believed the bogus bytecode.
 
     ** Where this sits in the catalog
 
-    CATALOG.md §1.2 has a row reading "tampered or stale .vo / .olean → nothing;
-    neither system re-typechecks on import", with the note that Rocq hardened its
+    CATALOG.md §1.2 has a row reading "[hand-edited] or stale .vo / .olean → nothing;
+    neither system re-typechecks on import", with the note that Rocq [strengthened] its
     [coqchk] path in 8.19.  That is the row this exhibit refines.  [coqchk] IS
-    the answer to a tampered .vo, it DOES re-typecheck, and in one of its two
+    the answer to a hand-edited .vo, it DOES re-typecheck, and in one of its two
     supported modes it still certifies this one.  §4.7's asymmetry, in its
     sharpest form so far: not "the checker is not run", but "the checker ran,
     said [Modules were successfully checked], and had not derived the code it
     executed from the terms it checked".
 
     Note what is NOT claimed.  This needs a hand-edited object file, so it is not
-    a route to [False] from ordinary source — [splice.py] is the attack.  What is
+    a route to [False] from ordinary source — [splice.py] is the probe.  What is
     new is that the tool whose entire purpose is to catch a hand-edited object
     file reports success on this one.  The [False] itself needs no flag: [rocq c]
     accepts it with defaults, and [Print Assumptions] is clean.

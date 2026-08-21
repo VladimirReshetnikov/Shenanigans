@@ -91,7 +91,7 @@ git log v4.32.2..HEAD --format="%h %s" --grep=soundness --grep=unsound -i
 ```
 
 — which turns up ten commits, of which #14609, #14613 and #14616 are the three
-unreleased proofs of `False`; #14615 and #14621 are widening and hardening, and
+unreleased proofs of `False`; #14615 and #14621 are widening and strengthening, and
 #14618, #13587, #14524, #14404 are tactic bugs the kernel itself caught.
 
 **And that correction is itself incomplete.** It misses #14607 and #14608, whose

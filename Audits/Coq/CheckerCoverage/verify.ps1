@@ -20,9 +20,9 @@
 #      library:" list.
 #
 #   2. THE SEGMENT DIGEST IS NOT COMPARED, in any mode (negative result).  A .vo
-#      whose recorded per-segment MD5 does not match its payload is accepted by
+#      whose recorded per-segment MD5 does not match its contents is accepted by
 #      `rocqchk` in both `-norec` orders and in full-closure mode.  This is NOT
-#      unsoundness -- the payload spliced in is another honest compilation, so
+#      unsoundness -- the contents spliced in is another honest compilation, so
 #      what the checker type-checks is well typed and it correctly says so.  It
 #      is recorded because it says where the line actually is: the digest is an
 #      accident detector, and the only thing standing between a hand-edited .vo
@@ -83,7 +83,7 @@ try {
   # 2.  Is the recorded segment digest compared?
   # ======================================================================
   Write-Host ""
-  Write-Host "2. Is a .vo whose segment digest does not match its payload rejected?"
+  Write-Host "2. Is a .vo whose segment digest does not match its contents rejected?"
   $dig = Join-Path $work 'digest'
   New-Item -ItemType Directory -Path (Join-Path $dig 'v1') -Force | Out-Null
   New-Item -ItemType Directory -Path (Join-Path $dig 'v2') -Force | Out-Null
@@ -99,7 +99,7 @@ try {
   }
 
   Push-Location $dig
-  # Payload from v2, digest recorded from v1: the file's own checksum is wrong.
+  # Contents from v2, digest recorded from v1: the file's own checksum is wrong.
   $py = @'
 import hashlib, struct, sys
 M = 0x436F7121
@@ -134,7 +134,7 @@ print("ok")
 '@
   Set-Content -Path (Join-Path $dig 'mismatch.py') -Value $py -NoNewline
   $mk = & python mismatch.py 2>&1 | Out-String
-  Check "built a .vo whose recorded digest does not match its payload" ($mk -match 'ok') $mk.Trim()
+  Check "built a .vo whose recorded digest does not match its contents" ($mk -match 'ok') $mk.Trim()
 
   Set-Content (Join-Path $dig 'A.v') "Require Import B.`nDefinition foo := b.`n"
   & rocq c -boot -R . "" -noinit A.v 2>&1 | Out-Null

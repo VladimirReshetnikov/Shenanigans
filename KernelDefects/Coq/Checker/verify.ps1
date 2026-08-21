@@ -5,7 +5,7 @@
 # This exhibit cannot join ../verify.ps1's one-file-per-coqc loop: the defect
 # needs a hand-spliced object file, so the artifact is a build procedure rather
 # than a .v file.  Everything it asserts is listed below, and the control is the
-# load-bearing part -- acceptance of the exploit means something only because the
+# load-bearing part -- acceptance of the construction means something only because the
 # same sources over an UNSPLICED Defs.vo are rejected.
 #
 # Asserted, in order:
@@ -79,7 +79,7 @@ try {
   Check "CONTROL: Evil.v over an UNSPLICED Defs.vo is rejected" `
     (($ctlCode -ne 0) -and ($ctl -match 'while it is expected to have type')) $ctl.Trim()
 
-  # --- 3/4. the exploit and its audit ---------------------------------------
+  # --- 3/4. the construction and its audit ---------------------------------------
   Push-Location $work
   & rocq c -boot -R . "" -noinit Evil.v 2>&1 | Out-Null
   $evilOk = ($LASTEXITCODE -eq 0)

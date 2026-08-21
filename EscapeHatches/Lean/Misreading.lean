@@ -10,7 +10,7 @@ closed. The lie is in the statement.
 Category (see `../../README.md`): **escape hatch**, but the one that escapes the
 audit rather than the kernel.
 
-This is the Lean counterpart of `../Coq/Spoofing.v`. The systematic lexical
+This is the Lean counterpart of `../Coq/Misreading.v`. The systematic lexical
 study of the same question — which characters Lean will and will not let you use
 to build confusable identifiers — is `../../Audits/Lean/StringIdentity/`.
 
@@ -38,7 +38,7 @@ Mathlib-free file can bind it to anything.
 
 Overriding a notation core *does* define — `¬`, say — is not available this way:
 Lean reports `Ambiguous term` and refuses rather than silently preferring one
-reading. That is a real defence, and it is why this section uses a free glyph. -/
+reading. That is a real safeguard, and it is why this section uses a free glyph. -/
 
 namespace Claimed
 notation:max "⊥" => True
@@ -48,21 +48,21 @@ theorem looks_absurd : ⊥ := trivial
 #guard_msgs in #print axioms looks_absurd
 end Claimed
 
-/-! ## 3. Homoglyphs — and Lean's partial defence
+/-! ## 3. Homoglyphs — and Lean's partial safeguard
 
 The identifier below contains U+0430 CYRILLIC SMALL LETTER A in place of the
-Latin `a`. Rocq accepts the same spelling as a bare identifier (`../Coq/Spoofing.v`
+Latin `a`. Rocq accepts the same spelling as a bare identifier (`../Coq/Misreading.v`
 §4); **Lean does not**, because `isIdRest` admits Latin-1 Supplement and Latin
 Extended-A but no Cyrillic. The bare form is a *parse* error —
 `def Fаlse : Prop := True` gives `error: expected token`, which `#guard_msgs`
 cannot capture because the failure happens before elaboration. It lives in the
-companion file `Spoofing.BareCyrillic.lean`, which `../verify.ps1` asserts is
+companion file `Misreading.BareCyrillic.lean`, which `../verify.ps1` asserts is
 rejected.
 
 French quotes lift the restriction, and *that* is the reachable form. The
 `«…»` are conspicuous in source, which is exactly the finding of
 `../../Audits/Lean/StringIdentity/`: every confusable Lean admits requires them,
-so the attack survives only where the quotes go unread. -/
+so the probe survives only where the quotes go unread. -/
 
 namespace Homoglyph
 def «Fаlse» : Prop := True

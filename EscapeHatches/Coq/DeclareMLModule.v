@@ -4,14 +4,14 @@
     Category (see ../../README.md): ESCAPE HATCH.  It is documented, it is how
     every tactic in Rocq that is not written in Ltac gets there -- [lia],
     [congruence], [firstorder], [Derive], extraction itself -- and it is
-    unbounded.  A [.cmxs] loaded this way runs with the privileges of [coqc]
+    unbounded.  A [.cmxs] loaded this way runs with the same operating-system access as [coqc]
     inside [coqc]'s address space, sharing the kernel's mutable global
     environment.  Nothing about that appears in [Print Assumptions], and
     [coqchk] does not so much as read the plugin's name.
 
     Read this file next to ../Lean/NativeDecide.lean.  Lean's escape hatches all
     stop at a boundary: [@[implemented_by]] buys a per-use axiom in
-    [#print axioms], [unsafe] is quarantined *by the kernel*, and the one Lean
+    [#print axioms], [unsafe] is contained *by the kernel*, and the one Lean
     route the audit cannot see needs [set_option debug.skipKernelTC true] and is
     caught by [leanchecker].  Lean has no counterpart to this file at all --
     there is no supported way to load native code into [lean]'s process and have

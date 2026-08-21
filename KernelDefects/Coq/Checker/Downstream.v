@@ -2,7 +2,7 @@
 
     rocq#22352, second half.  This file does nothing but [Require Import Evil]
     and use what is there.  It contains no VMcast, no flag, and no reference to
-    the spliced object file — its only relationship to the tampering is that one
+    the spliced object file — its only relationship to the hand-editing is that one
     of its transitive dependencies was built against it.
 
     Measured on Rocq 9.2:
