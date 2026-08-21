@@ -1,4 +1,20 @@
 /-
+STATUS CHANGED 2026-08-21: this file is a REGRESSION WITNESS now.
+
+`v4.33.1` (released 2026-08-21T12:02Z) removed `src/kernel/equiv_manager.cpp`
+outright and replaced it with plain positive/negative pair caches, whose header
+comment gives the reason in the same terms this file measures: "`is_def_eq` is a
+sound but incomplete semi-decision procedure and is therefore not transitive, so
+taking a transitive closure of successful pairs would make its result depend on
+evaluation order."
+
+Measured on both tags: exit 0 on `v4.33.0`, and on `v4.33.1` the primed exhibit
+"did not reach the parameter check" -- it dies at inductive.cpp:426 with
+`application type mismatch`, exactly like its control. The order dependence is
+gone. Run this against `v4.33.0` to see what it was written for.
+
+--------------------------------------------------------------------------------
+
 Category (see ../../../README.md): **audit**.  No proof of `False` is produced
 here.  What is measured refutes a claim that this repository, upstream's own
 pull request, and the Lean Kernel Arena's test descriptions all state as fact.

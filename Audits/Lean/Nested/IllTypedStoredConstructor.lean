@@ -1,5 +1,22 @@
 import Lean
 /-!
+STATUS CHANGED, measured 2026-08-21: THIS ROUTE IS CLOSED, and this file no
+longer elaborates cleanly.
+
+`check_no_nested_aux` (lean4#14616, shipped in `v4.33.0`) refuses a declaration
+naming a `_nested` auxiliary, so on BOTH `v4.33.0` and `v4.33.1` this module
+stops at
+
+    (kernel) invalid declaration 'B.node', it uses the reserved prefix '_nested'
+
+and its `#guard_msgs` fail accordingly.  The header below claims `v4.27.0-rc1`
+through `v4.33.0-rc1`; read that as ending at `v4.32.2`, the last release
+without the check.  The analysis stands -- positivity's `whnf` erases an
+occurrence, and a released kernel stored a constant its own `Kernel.check`
+rejects -- and what closed it was a NAME check, not a fix to positivity.
+
+--------------------------------------------------------------------------------
+
 DEFECT (no `False` demonstrated).  A **safe**, axiom-free declaration that makes a
 released Lean kernel store three constants its own type checker rejects:
 `B.node`, `B.rec`, and `B.rec`'s computation rule.  `lean --trust=0` exits 0 and
