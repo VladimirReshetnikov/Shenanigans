@@ -77,6 +77,68 @@ equality and delta-resolver still have none, but Lean grew an **export view**,
 and a view that omits something the exported term depends on is the same class of
 defect by another route.
 
+## The mechanism, located in the kernel and measured (2026-08-21)
+
+The issue says "a public recursor can retain a reference to a declaration
+available only through `import all`". Read from source and measured here, the
+statement can be made two steps sharper, and the sharper form predicts a wider
+surface than the issue names.
+
+**Where the reference is written.** `add_inductive_fn::mk_minor_premises`
+(`src/kernel/inductive.cpp`, v4.33.1) builds each induction hypothesis from the
+**`whnf`-unfolded** type of the recursive field:
+
+```cpp
+expr u_i_ty = whnf(infer_type(u_i));        // unfolds `Wrap Victim` to `Hidden -> Victim`
+buffer<expr> xs;
+while (is_pi(u_i_ty)) {
+    expr x = mk_local_decl_for(u_i_ty);     // x : Hidden   <-- the leaked binder
+    xs.push_back(x);
+    u_i_ty = whnf(instantiate(binding_body(u_i_ty), x));
+}
+```
+
+`mk_local_decl_for` takes its type from the binder *domain* of the unfolded
+form, so `Hidden` is written into the recursor even though nothing in the source
+mentions it. `is_rec_argument` opens with the same `t = whnf(t)`. Printing the
+exported recursor from the consumer shows exactly this, with the field still
+folded and the hypothesis unfolded:
+
+```
+@Victim.rec.{u_1} : {motive : (t : Victim) -> Sort u_1} ->
+  (roll : (a : Wrap Victim) -> ((a_1 : Hidden) -> motive (@a a_1)) -> motive (Victim.roll a)) ->
+  (t : Victim) -> motive t
+```
+
+`a : Wrap Victim` keeps `Wrap` **folded** — `Wrap` is exported opaquely, because
+its body is not public — while the hypothesis carries `Hidden` **unfolded**. The
+export view is consistent about `Wrap` and inconsistent about `Hidden`, and the
+difference is that one was written and the other was produced by `whnf`.
+
+**Two conditions are jointly required**, measured by varying the producer:
+
+| Producer form | Reference to `Hidden` | Result on v4.33.1 |
+| --- | --- | --- |
+| `class inductive` | indirect, via `public def Wrap` | **accepted — `False`, clean audit** |
+| `class` (a structure) | indirect, via `public def Wrap` | **accepted — `False`, clean audit** |
+| plain `inductive` | indirect, via `public def Wrap` | refused: `Unknown constant Hidden` |
+| plain `structure` | indirect, via `public def Wrap` | refused: `Unknown constant Hidden` |
+| plain `inductive`, `\| public` constructor | indirect, via `public def Wrap` | refused: `Unknown constant Hidden` |
+| `class inductive` | **direct**, `(Hidden -> Victim)` written out | refused: `Unknown identifier Hidden` |
+
+So the leak needs an **indirect** reference — one the visibility check never sees
+because only `whnf` produces it — *and* a **class**, because the plain
+`inductive` and `structure` paths do apply the check that the class path skips.
+**The issue names only `class inductive`; a plain `class` is affected too.**
+
+**What this does not get you.** Every member of the family is caught by
+`leanchecker`, and structurally so: the route needs two different declarations
+bearing one global name in one environment, which is precisely what the replay
+refuses. Attempts to arrange the two halves so that no single replay sees both
+fail, because the producer's `.olean` records its `import all` and the replay
+follows it. That is why this sits alongside [`../paradox/`](../paradox/) rather
+than alongside the `DefEq/` family, and it is the honest limit of the route.
+
 ## Upstream's suggested fixes
 
 The issue lists three, and they are worth recording because they bracket the
