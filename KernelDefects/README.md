@@ -48,7 +48,7 @@ pwsh KernelDefects/Coq/Checker/verify.ps1
 ```
 
 Expected final lines: `All 6 modules behaved as documented.`,
-`All 11 Coq exhibits behaved as documented.`,
+`All 41 Coq exhibits behaved as documented.`,
 `All universe-spelling artifacts behaved as documented.`,
 `The module-boundary artifact behaved as documented.`,
 `All non-transitive-def-eq artifacts behaved as documented.`, and

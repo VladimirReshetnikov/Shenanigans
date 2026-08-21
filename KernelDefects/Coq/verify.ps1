@@ -51,7 +51,52 @@ $cases = @(
   # controls must be accepted and must NAME the flag, which is what isolates the
   # defect to the `Inline` token.
   @{ Name = 'ModuleSystem/GuardFlagThroughFunctor';        Path = 'ModuleSystem/GuardFlagThroughFunctor.v';        Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'reject' },
-  @{ Name = 'ModuleSystem/GuardFlagThroughFunctorControls';Path = 'ModuleSystem/GuardFlagThroughFunctorControls.v';Expect = 'accept'; Needle = 'assumed to be guarded' }
+  @{ Name = 'ModuleSystem/GuardFlagThroughFunctorControls';Path = 'ModuleSystem/GuardFlagThroughFunctorControls.v';Expect = 'accept'; Needle = 'assumed to be guarded' },
+
+  # ------------------------------------------------------------------------
+  # The 2026-08-20 wave.  Nine kind:inconsistency issues reported to Rocq's
+  # maintainers by OpenAI and credited in the issue bodies to "an LLM and
+  # @dselsam".  Every exhibit below is OPEN upstream with an unmerged fix, so
+  # each must be ACCEPTED here, with a clean audit, and -- unlike #22287 and
+  # #22366 -- `coqchk` must ACCEPT them too.  That combination was unique to
+  # rocq#21839 until this wave; it is not any more, which is what
+  # Conversion/AuditBlindSextet.v measures.
+  #
+  # Order matters: an Escape/Require/Sextet case needs its exhibit's .vo, and
+  # the harness copies each file into one flat scratch directory in list order.
+  # ------------------------------------------------------------------------
+  @{ Name = 'Conversion/LetinRelevanceShift'; Path = 'Conversion/LetinRelevanceShift.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'Conversion/LetinRelevanceShiftControls'; Path = 'Conversion/LetinRelevanceShiftControls.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/LetinRelevanceShiftEscape'; Path = 'Conversion/LetinRelevanceShiftEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'CoFixGuard/CofixWrongEnvRectree'; Path = 'CoFixGuard/CofixWrongEnvRectree.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'CoFixGuard/CofixWrongEnvRectreeControls'; Path = 'CoFixGuard/CofixWrongEnvRectreeControls.v'; Expect = 'accept'; Needle = 'assumed to be guarded' },
+  @{ Name = 'CoFixGuard/CofixWrongEnvRectreeEscape'; Path = 'CoFixGuard/CofixWrongEnvRectreeEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'CoFixGuard/NestedMutualCofixRectree'; Path = 'CoFixGuard/NestedMutualCofixRectree.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'CoFixGuard/NestedMutualCofixRectreeControls'; Path = 'CoFixGuard/NestedMutualCofixRectreeControls.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'GuardChecker/UniformArgsLetBinder'; Path = 'GuardChecker/UniformArgsLetBinder.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'GuardChecker/UniformArgsLetBinderControls'; Path = 'GuardChecker/UniformArgsLetBinderControls.v'; Expect = 'reject'; Needle = 'Recursive definition of russell_zeta is ill-formed' },
+  @{ Name = 'GuardChecker/UniformArgsLetBinderRequire'; Path = 'GuardChecker/UniformArgsLetBinderRequire.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'ModuleSystem/LetinOrderSubtyping'; Path = 'ModuleSystem/LetinOrderSubtyping.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'ModuleSystem/LetinOrderSubtypingControls'; Path = 'ModuleSystem/LetinOrderSubtypingControls.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'ModuleSystem/LetinOrderSubtypingEscape'; Path = 'ModuleSystem/LetinOrderSubtypingEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'ModuleSystem/LetinOrderSubtypingUnsealed'; Path = 'ModuleSystem/LetinOrderSubtypingUnsealed.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Universes/LetinVarianceInference'; Path = 'Universes/LetinVarianceInference.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'Universes/LetinVarianceInferenceControls'; Path = 'Universes/LetinVarianceInferenceControls.v'; Expect = 'accept'; Needle = 'let hidden :=' },
+  @{ Name = 'Universes/LetinVarianceInferenceEscape'; Path = 'Universes/LetinVarianceInferenceEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+
+  # AuditBlindSextet.v is the file that falsifies CATALOG.md section 4.1's claim
+  # that rocq#21839 is "the only one" both audits miss and that escapes a plain
+  # Require.  It must come last: it Requires the six exhibits above it.
+  @{ Name = 'Conversion/AuditBlindLetinConv'; Path = 'Conversion/AuditBlindLetinConv.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindCofixEnv'; Path = 'Conversion/AuditBlindCofixEnv.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindNestedCofix'; Path = 'Conversion/AuditBlindNestedCofix.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindUniformArgs'; Path = 'Conversion/AuditBlindUniformArgs.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindCumulLetin'; Path = 'Conversion/AuditBlindCumulLetin.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindSubtypeLetin'; Path = 'Conversion/AuditBlindSubtypeLetin.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindStuckCase'; Path = 'Conversion/AuditBlindStuckCase.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
+  @{ Name = 'Conversion/AuditBlindUipControl'; Path = 'Conversion/AuditBlindUipControl.v'; Expect = 'accept'; Needle = 'relies on definitional UIP' },
+  @{ Name = 'Conversion/AuditBlindControls'; Path = 'Conversion/AuditBlindControls.v'; Expect = 'accept'; Needle = '' },
+  @{ Name = 'Conversion/AuditBlindSextet'; Path = 'Conversion/AuditBlindSextet.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' }
 )
 
 $failures = 0
