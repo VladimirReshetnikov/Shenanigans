@@ -185,6 +185,21 @@ does.
 > corrected procedure is to re-run the exhibits against every new tag rather than
 > to re-read the tracker.
 >
+> **Added 2026-08-20, a fourth pass.** A third item is now live on both:
+> [#14838](https://github.com/leanprover/lean4/pull/14838), a 32-bit
+> **reference-count overflow in the runtime** — not a kernel-logic defect at all.
+> It is the first entry in this catalog whose fix touches neither `src/kernel/`
+> nor `src/Lean/`, and it has its own subsection, §2.7. Live on both releases,
+> checked two ways: the fix commit `8df768b731` is an ancestor of neither tag and
+> `git tag --contains` is empty, *and* the token `sticky` is absent from
+> `src/include/lean/lean.h` on both release branches. Two exhibits this file
+> previously called live are meanwhile **regression witnesses**, each measured on
+> three toolchains the same day:
+> [`Universes/`](KernelDefects/Lean/Universes/) exits 0 on `v4.32.2` and is
+> refused by `v4.33.0` and `v4.34.0-rc1` with `(kernel) invalid projection`, and
+> [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/) builds on `v4.32.2` and is
+> refused by `v4.33.0`.
+>
 > **What is actually live on `v4.33.0` and `v4.34.0-rc1`** is the August pair
 > plus its [strengthening] — [#14806](https://github.com/leanprover/lean4/pull/14806),
 > [#14807](https://github.com/leanprover/lean4/pull/14807) and
@@ -407,6 +422,58 @@ accepts for well-formed input.
 | **Strict positivity depends on which bodies are visible** | The sharpest statement of the row below, and it needs no metaprogramming at all. Because `check_positivity` starts `t = whnf(t)`, `inductive Bad1 \| mk : IgnoreD (Bad1 → False) → Bad1` — the declared type in a **negative** position — is *accepted* when `IgnoreD`'s body is visible and *refused* when it is `opaque`, on every released toolchain. So strict positivity is a property of the declaration **plus the ambient set of unfoldable bodies**, and an abstraction boundary changes the answer. Inert (`IgnoreD X` is definitionally `True`), but it is Dolan's *A little knowledge…* — exposing an implementation should never change what typechecks — with the violation in the direction where more knowledge means a weaker check. | **artifact** — [`Audits/Lean/Positivity/VisibilityDependentPositivity.lean`](Audits/Lean/Positivity/VisibilityDependentPositivity.lean) |
 | **`check_positivity`'s leading `whnf` erases occurrences it then does not check** | `check_positivity` (inductive.cpp:452) starts `t = whnf(t)` and returns at its first branch when the reduced form has no occurrence of the types being declared — but the kernel stores the **unreduced** type, and `restore_nested` rewrites `_nested` occurrences inside it. Hiding the auxiliary behind `def Ignore (_ : Prop) : Prop := True` therefore walks past the only gate on the safe path. Result: a **safe**, axiom-free module, `lean --trust=0` exit 0, `#print axioms` clean, that makes every released kernel store three constants its own `Kernel.check` rejects — `B.node`, `B.rec`, and `B.rec`'s computation rule. Not a `False`: `Ignore X` is definitionally `True` whichever argument it holds, so every use reduces past the ill-typed application. `master` rejects the declaration up front (#14616's `check_no_nested_aux`), so this is a route on the release line rather than a new `master` defect — and it is a concrete case where #14621's re-check, whose own comment calls it "not necessary", would fire. | **artifact** + **report** — [`Audits/Lean/Nested/IllTypedStoredConstructor.lean`](Audits/Lean/Nested/IllTypedStoredConstructor.lean), [`Reports/2026-08-01-positivity-whnf-…`](Reports/2026-08-01-positivity-whnf-erasure.md) |
 | `is_not_zero` differential sweep | `is_not_zero` is the one level predicate the July 2026 wave did **not** convert to a semantic test, and it is read *before* the "mutual ⟹ `Prop`-only" and "more than one constructor ⟹ `Prop`-only" branches of `elim_only_at_universe_zero` — so a false positive there hands an inductive predicate a data-eliminating recursor. Fuzzed through the observable channel (declare a 2-constructor inductive at the level, read whether the recursor gained an elimination universe) against the denotational "can this level be zero?". 360 level spellings to depth 3, 91 large-eliminating: **0 unsound**. | **negative result** — [`Audits/Lean/Fuzz/IsNotZeroFuzzer.lean`](Audits/Lean/Fuzz/IsNotZeroFuzzer.lean) |
+
+### 2.7 Runtime defects: memory safety below the logic
+
+A category opened on **2026-08-20** by a single entry, and it is a category
+rather than a row because nothing else in §2 sits where it does. §2.1–2.3 are
+kernel-logic defects, §2.4 is the compiler/`native_decide` trust base, §2.5 is
+precautionary [strengthening]. This is a **memory-safety** defect in the Lean
+runtime's reference counter, reached through the kernel's ordinary
+declaration-checking path.
+
+| PR | Substance | Status |
+| --- | --- | --- |
+| [#14838](https://github.com/leanprover/lean4/pull/14838) | *"fix: freeze objects when their reference count overflows"*, label `runtime-soundness`. A 32-bit reference count that overflows wrapped and corrupted the object's state; the PR makes such a count "sticky" — it lands in a reserved deeply-negative band and the object is frozen, never adjusted and never freed, following Koka's approach. Per the PR body: *"On machines with at least 18GB of free RAM, it could be used to trigger use-after-free in the official kernel, which could be extended into a proof of False. Other kernels such as nanoda not based on the Lean runtime were not affected."* Reported by **Daniel Selsam (OpenAI) using their internal models** — the same reporter as #14607–#14616 (July) and #14806/#14807 (2026-08-17/18), which is this catalog's own observation across PRs rather than an upstream claim. | Merged 2026-08-20. **Live on every released toolchain**; see §2.1. Coverage: **noted**, plus the audit below |
+
+**Why this is not §2.4.** Every §2.4 entry needs `native_decide` or the compiler,
+and `lean4checker` never accepted those proofs because it has no compiled-code
+support. This one needs neither: it goes through `addDeclCore` on the checked
+path, with `#print axioms` reporting nothing and no flag set. Filing it under
+§2.4 would assert exactly the equivalence that section exists to deny.
+
+**Why it has no exhibit.** Reproducing the `False` needs the reproducer's
+commented-out `depth := 30` and 12–18GB of free RAM held for a kernel check —
+ground rule 1 asks for a machine-checked exhibit with a control, and this cannot
+be one. Note that the test upstream merged is de-tuned to `depth := 12`, whose
+peak is 2^13 references: it exercises the code path and does not reproduce the
+defect. Same shape as #14616, which no artifact anywhere reproduces.
+
+**What is measured here instead**, in
+[`Audits/Lean/Runtime/RefCountOverflow.lean`](Audits/Lean/Runtime/RefCountOverflow.lean),
+on `v4.33.0` and `v4.34.0-rc1`: the construction's honest scaffold typechecks,
+and its one fraudulent step — a `u := 0` proof offered for a schematic `u` — is
+refused with `(kernel) declaration type mismatch` at every depth tried. Two
+findings came out of building that control and both correct the natural reading:
+a **transparent** twin of upstream's `opaque` constant is refused identically, so
+opacity is not what does the work; and a level that *mentions* `u` and is just as
+large but whose normal form is `0` (`imax (maxDag u 8) 0`) is **accepted**. The
+discriminator is the level's normal form, not opacity, DAG size, or whether the
+parameter occurs.
+
+**Two methodological consequences**, both measured:
+
+* §2.6's lesson that *soundness is not a property of `src/kernel/`* gets a
+  strictly stronger instance. The `src/kernel/` path filter misses this (the diff
+  touches zero files there); so would a `src/Lean/` filter. The fix is entirely
+  in `src/runtime/object.cpp` and `src/include/lean/lean.h`.
+* §5.2's keyword sweep **catches** it — `--grep="proof of false" -i` returns the
+  commit, because the PR body contains the phrase. That is the first time that
+  sweep is vindicated rather than corrected. The postmortem-driven method would
+  miss it: there is no postmortem, and the reliable index is the GitHub label
+  `runtime-soundness`, not commit text.
+
+Write-up: [`Reports/2026-08-20-refcount-overflow.md`](Reports/2026-08-20-refcount-overflow.md).
 
 ---
 
