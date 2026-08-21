@@ -147,7 +147,7 @@ same omission wearing different clothes. Independence of implementations is not
 independence of blind spots. [`CATALOG.md`](CATALOG.md) §3.0 works through it.
 
 The postmortem is also worth reading for what it refuses. The suggested
-mitigation — restrict metaprogramming so the probe is not expressible — is
+remedy — restrict metaprogramming so the probe is not expressible — is
 rejected outright, because the elaborator is untrusted by design and *"soundness
 cannot depend on an untrusted component refusing to build a bad term."* That is
 the same premise this directory is organised around: what the audit reports is

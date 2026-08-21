@@ -1,5 +1,5 @@
 /-!
-# `unsafe` and `partial`: what Lean's quarantine actually holds
+# `unsafe` and `partial`: what Lean's containment actually holds
 
 These two keywords look like the obvious route to `False` — `unsafe def f : False
 := f` elaborates without complaint — and they are the route Rocq's
@@ -13,7 +13,7 @@ it. Nothing here proves `False`.
 Toolchain: Lean 4.32.0. Verified by `../verify.ps1`.
 -/
 
-/-! ## 1. `unsafe` permits general recursion — and the kernel quarantines it
+/-! ## 1. `unsafe` permits general recursion — and the kernel contains it
 
 The definition is accepted. Using it from a safe declaration is not, and the
 refusal comes from the kernel. -/
@@ -25,7 +25,7 @@ unsafe def falseImpl : False := falseImpl
 #guard_msgs in
 theorem escaped : False := falseImpl
 
-/-! So the quarantine is not "the elaborator declines to look at unsafe code";
+/-! So the [containment] is not "the elaborator declines to look at unsafe code";
 it is a flag on the declaration that the kernel refuses to let a safe
 declaration depend on. Every route out of `unsafe` therefore has to go through
 something that is *not* a proof term — which is what `@[implemented_by]` plus
@@ -80,7 +80,7 @@ opaque wished : False
 /-- info: 'wished' depends on axioms: [sorryAx] -/
 #guard_msgs in #print axioms wished
 
-/-! ## 4. Where the quarantine did leak
+/-! ## 4. Where the containment did escape
 
 [lean4#14609](https://github.com/leanprover/lean4/pull/14609) (merged 2026-07-30)
 fixed a case where it did not hold. When a module exports a definition whose

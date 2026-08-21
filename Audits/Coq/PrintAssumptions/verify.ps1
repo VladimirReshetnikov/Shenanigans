@@ -15,9 +15,9 @@
 #      is carried only by the V9.3+rc1 prerelease.
 #        ViaType.v       axiom in the TYPE      -> silent      (defect)
 #                        axiom in the BODY      -> reported    (control)
-#        GuardViaType.v  guard flag via TYPE    -> silent      (escalation)
+#        GuardViaType.v  guard flag via TYPE    -> silent      (extension)
 #        GuardViaBody.v  guard flag via BODY    -> reported    (control)
-#      The escalation is the part that matters: the same blind spot drops a
+#      The extension is the part that matters: the same blind spot drops a
 #      `bypass_check` flag, which CATALOG.md §1.4 asserts is always named.
 #
 #   2. rocq#20550 — `abstract` generates its side-effect constant with the

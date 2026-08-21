@@ -190,7 +190,7 @@ Ten commits, which classify as:
 | --- | --- |
 | **Unreleased proofs of `False`** | **#14609** (this report), **#14613** ([`Universes/`](../KernelDefects/Lean/Universes/)), **#14616** (still a gap) |
 | Already released | #14498/#14484 (`v4.32.1`), #14577/#14576 (`v4.32.2`) |
-| Widening / hardening, not soundness | #14615, #14621 |
+| Widening / strengthening, not soundness | #14615, #14621 |
 | Tactic bugs the kernel itself caught | #14618 (`grind` closed a goal with an ill-typed term — and the kernel rejected it), #13587 (`lia`/`grind` `eq_def` kernel type mismatch), #14524, #14404 |
 
 The general lesson is the one #14609 itself illustrates: **soundness is not a
@@ -205,7 +205,7 @@ kernel is structurally unable to find that class.
 * **Reachable only through metaprogramming**, since the `partial` definition of
   `False` has to be handed to the kernel with `addDecl` — the `partial def`
   elaborator would demand `Inhabited False`. Upstream's own commit message says
-  as much. That is not a mitigation, for the reason the #14576 postmortem gives.
+  as much. That is not a remedy, for the reason the #14576 postmortem gives.
 * **Not a kernel defect.** It is a frontend defect that overrides a kernel gate, in
   the same family as the Lean Kernel Arena's *trusted-metadata* tests
   (`ctor-num-fields`, `rec-k-lie`), where the checker is lied to about a

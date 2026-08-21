@@ -123,7 +123,7 @@ type is a proposition for one purpose and not for the other in the same session.
 
 ```lean
 theorem boom : False :=
-  Bool.noConfusion (show false = true from congrArg leak irrel)
+  Bool.noConfusion (show false = true from congrArg extract irrel)
 ```
 
 `#print axioms boom` reports nothing.
@@ -245,7 +245,7 @@ either way.
 
 * **Reachable only through metaprogramming.** The elaborator normalizes levels
   eagerly, so `Sort (imax 1 0)` is not writable in surface syntax. This is not a
-  mitigation, and the postmortem is explicit about why: the elaborator is
+  remedy, and the postmortem is explicit about why: the elaborator is
   untrusted by design, and "soundness cannot depend on an untrusted component
   refusing to build a bad term."
 * **Not a `prelude` module.** Unlike the accelerator family in

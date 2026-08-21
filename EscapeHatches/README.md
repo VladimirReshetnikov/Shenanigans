@@ -90,7 +90,7 @@ Rocq lets you switch off each kernel check individually and then *tells you* —
 `Print Assumptions` names the disabled flag, and the report is per-declaration.
 Lean has no such flag, and no such report: its only comparable route,
 `debug.skipKernelTC`, bypasses the kernel wholesale and is invisible to
-`#print axioms`. Against that, Lean's `unsafe`/`partial` quarantine is enforced
+`#print axioms`. Against that, Lean's `unsafe`/`partial` containment is enforced
 *by the kernel* — `(kernel) invalid declaration, it uses unsafe declaration` —
 where Rocq's `Unset Guard Checking` is a real, documented route to `False`.
 

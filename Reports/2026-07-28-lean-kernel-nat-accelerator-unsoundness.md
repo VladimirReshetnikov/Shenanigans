@@ -32,7 +32,7 @@ checker shipped with the toolchain.
 > operations amounts to *replacing part of the system* rather than finding an
 > inherent hole in it. That reading is reasonable and should be applied here.
 > The contribution of this report is a minimal, self-contained, end-to-end
-> verified reproduction plus the negative results and hardening observations in
+> verified reproduction plus the negative results and [strengthening] observations in
 > the later sections. There is no issue for it on the `leanprover/lean4` tracker,
 > so the behaviour is unfixed — but it is known, and was not treated as a bug.
 
@@ -369,7 +369,7 @@ Recorded so the search is not repeated:
   merely a verbose spelling of `proj S 0 e`; typing and reduction stay
   consistent and I could not build a type confusion from it.
 
-## Hardening observations (not reachable as found)
+## Strengthening observations (not reachable as found)
 
 * `equiv_manager::is_equiv_core` (`kernel/equiv_manager.cpp:103`) and
   `type_checker::is_def_eq_core` (`kernel/type_checker.cpp:1101`) compare `Proj`

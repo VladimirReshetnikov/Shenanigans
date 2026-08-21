@@ -44,7 +44,7 @@ recorded at the point of use.
 
 Third pass **2026-08-18**, on the two soundness fixes merged to `master` the day
 before and the day of ([#14806](https://github.com/leanprover/lean4/pull/14806),
-[#14807](https://github.com/leanprover/lean4/pull/14807)) plus the hardening PR
+[#14807](https://github.com/leanprover/lean4/pull/14807)) plus the strengthening PR
 that accompanies them ([#14808](https://github.com/leanprover/lean4/pull/14808)),
 and on the arena's corpus and checker roster, which have both grown
 substantially since 08-01. Scope: `leanprover/lean4` issues and PRs since 08-01,
@@ -111,7 +111,7 @@ The `False` is closed, but something discloses the cost.
 | `vm_compute` / `native_compute` | Rocq | **nothing.** Both are kernel-level conversion machines, not tactics — they leave a `VMcast`/`NATIVEcast` the *kernel* re-runs at `Qed`, so the trusted base becomes `kernel/byterun/coq_interp.c` or the OCaml native compiler invoked at proof-checking time. **Correction, measured:** the row used to end "Both ignore `Opaque`", which is true of the machines and overstates the consequence. `Opaque` sets a `Conv_oracle` priority that the six reduction *tactics* honour and that conversion never consults, so the sealed goal is closable by plain `reflexivity` anyway. What `vm_compute` [overrides] is the *displayed* abstraction, not provability — and it is the only one of Rocq's three hiding mechanisms it [overrides]: `Qed`-opacity and signature ascription hold against it, at tactic and kernel level both, with `Fail` controls | **artifact** — [`EscapeHatches/Coq/ComputeMachines.v`](EscapeHatches/Coq/ComputeMachines.v) |
 | `Extraction` with `Extract Constant` | Rocq | nothing; the spliced OCaml *"is currently not checked at all by extraction, even for syntax errors"* | **artifact** — [`EscapeHatches/Coq/ExtractConstant.v`](EscapeHatches/Coq/ExtractConstant.v). Measured: `coqc` exit 0, `Print Assumptions` clean, `coqchk` clean, and the extracted binary disagrees with the Coq theorems 3 times out of 3. Syntactically invalid OCaml and an arity mismatch both survive `coqc` and are caught only by `ocamlc` |
 | `Declare ML Module` | Rocq | nothing. Loads OCaml into the kernel's own process. **The Lean row this line used to say did not exist is now measured, and it is a DISANALOGY.** `lean --plugin=<lib>` does load and initialise a shared library, and its `@[init]` runs arbitrary `IO` in the elaborator's process before the host file is elaborated — with nothing in the host's text or import list disclosing it. But a plugin cannot contribute declarations or syntax to a host that does not import it: `syntax` and `@[command_elab]` live in environment extensions populated from the **import graph**, which is built after plugins load, so a plugin-registered command is simply not in scope (`unexpected identifier; expected command`, measured on v4.33.0 with the plugin's initializer demonstrably having run). Rocq's capability comes from `Declare ML Module` calling kernel APIs directly; Lean's plugin hook does not reach the environment. Scope: `--plugin` only — `--load-dynlib` plus an imported module is the `@[extern]`/`native_decide` family, already recorded above | **artifact** — [`EscapeHatches/Coq/DeclareMLModule.v`](EscapeHatches/Coq/DeclareMLModule.v). Measured with shipped plugins; loading a plugin *we wrote* was not achieved on this machine (ABI mismatch with the opam switch's prebuilt binaries) and the file says so. No Lean row exists for this line |
-| Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import — *the independent checker is the answer, and on the Rocq side that answer is now known to be incomplete* | **artifact** — [`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/). [lean4#13615](https://github.com/leanprover/lean4/issues/13615) closed as by-design; Rocq hardened its `coqchk` path in 8.19, and this row used to stop there. [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352) is a hand-edited `.vo` that `rocqchk` **does** re-typecheck and, with `-bytecode-compiler yes`, certifies — over a closed `False` with a clean `Print Assumptions` that escapes a plain `Require`. §4.7 |
+| Tampered or stale `.vo` / `.olean` | both | nothing. Neither system re-typechecks on import — *the independent checker is the answer, and on the Rocq side that answer is now known to be incomplete* | **artifact** — [`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/). [lean4#13615](https://github.com/leanprover/lean4/issues/13615) closed as by-design; Rocq strengthened its `coqchk` path in 8.19, and this row used to stop there. [rocq#22352](https://github.com/rocq-prover/rocq/issues/22352) is a hand-edited `.vo` that `rocqchk` **does** re-typecheck and, with `-bytecode-compiler yes`, certifies — over a closed `False` with a clean `Print Assumptions` that escapes a plain `Require`. §4.7 |
 | A statement that does not mean what it reads as | both | `Closed under the global context` / no axioms — **correctly** | **artifact** — [`Misreading.lean`](EscapeHatches/Lean/Misreading.lean), [`Misreading.v`](EscapeHatches/Coq/Misreading.v) |
 | An over-general statement (`autoImplicit`, a missing side condition, an instance argument quantifying over all structures) | Lean | nothing | **artifact** — [`Axioms.lean`](EscapeHatches/Lean/Axioms.lean) §4 |
 
@@ -186,7 +186,7 @@ does.
 > to re-read the tracker.
 >
 > **What is actually live on `v4.33.0` and `v4.34.0-rc1`** is the August pair
-> plus its hardening — [#14806](https://github.com/leanprover/lean4/pull/14806),
+> plus its [strengthening] — [#14806](https://github.com/leanprover/lean4/pull/14806),
 > [#14807](https://github.com/leanprover/lean4/pull/14807) and
 > [#14808](https://github.com/leanprover/lean4/pull/14808) — checked directly:
 > `src/kernel/equiv_manager.cpp` is still present on both release branches, and
@@ -226,7 +226,7 @@ relation.
 | [#7637](https://github.com/leanprover/lean4/issues/7637) | Primitive projections are not conservative over recursors. OPEN. | **artifact** — [`Audits/Lean/Metatheory/ProjBeyondRecursor.lean`](Audits/Lean/Metatheory/ProjBeyondRecursor.lean), which reaches the same conclusion independently |
 | [#8982](https://github.com/leanprover/lean4/issues/8982) | An unsound `unif_hint` makes everything defeq and crashes Lean. Elaborator-level. OPEN; fix PR #8988 unmerged. | **gap** |
 | [#7463](https://github.com/leanprover/lean4/issues/7463) | `@[csimp]` does not propagate axioms used in its proof through `native_decide`. OPEN, `P-low`. | **noted** — §1.2 |
-| [#10760](https://github.com/leanprover/lean4/issues/10760) | Visibility of section variables not verified correctly under the module system. OPEN. **Measured here 2026-08-18 and it reproduces on `v4.33.0`**: with `private structure X` and `variable {n : X}`, a `public theorem privTypeThm : n = n` is accepted, and what crosses the boundary is `@privTypeThm : ∀ {n : X✝}, n = n` — a public signature quantifying over the private structure, with `#print axioms` clean. The direct form is correctly refused (*"A private declaration `defaultX` exists but would need to be public"*), so it is the section-variable route specifically. **Classified: a visibility leak, not a soundness route** — the escaped constant is exported as an inaccessible name, downstream knows strictly less about it than upstream, and no direction was found in which a consumer learns more than the producer. | **noted**, measured |
+| [#10760](https://github.com/leanprover/lean4/issues/10760) | Visibility of section variables not verified correctly under the module system. OPEN. **Measured here 2026-08-18 and it reproduces on `v4.33.0`**: with `private structure X` and `variable {n : X}`, a `public theorem privTypeThm : n = n` is accepted, and what crosses the boundary is `@privTypeThm : ∀ {n : X✝}, n = n` — a public signature quantifying over the private structure, with `#print axioms` clean. The direct form is correctly refused (*"A private declaration `defaultX` exists but would need to be public"*), so it is the section-variable route specifically. **Classified: a visibility gap, not a soundness route** — the escaped constant is exported as an inaccessible name, downstream knows strictly less about it than upstream, and no direction was found in which a consumer learns more than the producer. | **noted**, measured |
 
 **lean4#14807's fix is incomplete, and this is the most useful thing the
 2026-08-18 hunt found.** `type_checker::is_prop` is not the only place the kernel
@@ -293,7 +293,7 @@ by handing a declaration to the kernel directly, past a frontend that would have
 caught it. The postmortem states this of #14576 and of #14607–#14616; for #14484
 it is this repo's own measurement
 ([`Reports/2026-07-29-lean-4.33-…`](Reports/2026-07-29-lean-4.33-backport-gap.md),
-"Scope"), not something upstream says. It is *not* a mitigation, and the postmortem is
+"Scope"), not something upstream says. It is *not* a [remedy], and the postmortem is
 unusually direct about why: the elaborator is untrusted by design, an a term's author
 can write `.olean` files or modify memory instead, and *"soundness cannot depend
 on an untrusted component refusing to build a bad term."* The two counterexamples
@@ -341,7 +341,7 @@ does not have to be yours. Coverage: **noted** for all.
 | [#8840](https://github.com/leanprover/lean4/issues/8840) | **Trust-accounting bug**: `collectAxioms` did not collect axioms referenced by *other* axioms, so a `native_decide` proof did not report `Lean.trustCompiler`. `#print axioms` was itself under-reporting the TCB. | 2025-06-17 |
 
 Historical, and the ancestor of the whole family: the **2023 `native_decide`
-leakage**. `Lean.reduceBool` ran compiled code, and compiled code could be
+escape**. `Lean.reduceBool` ran compiled code, and compiled code could be
 nondeterministic — a definition calling `IO.getRandomBytes` gave `rfl` proofs of
 both `Lean.reduceBool foo = false` and `= true`, combined by `nomatch` into
 `False`, with `#print axioms` reporting **nothing**. Root cause: `IO.RealWorld`
@@ -351,7 +351,7 @@ Carneiro; fixed by [PR #2654](https://github.com/leanprover/lean4/pull/2654) in
 support. Coverage: **noted**; the descendant mechanism is
 [`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean).
 
-### 2.5 Hardening fixes (precautionary, no published derivation of `False`)
+### 2.5 Strengthening fixes (precautionary, no published derivation of `False`)
 
 Two waves. Coverage: **noted** for all.
 
@@ -378,7 +378,7 @@ so that a future mistake nearby surfaces as an error instead of being amplified.
 | [#14615](https://github.com/leanprover/lean4/pull/14615) | The inductive checker now tests a resulting universe for zero **up to normalization**, so `Sort (imax 1 0)` and `Sort 0` describe the same inductive type. The two spellings previously disagreed on whether a constructor field may carry data, on whether the recursor eliminates only into `Prop`, and on whether the type is a K-like reduction target. **Widens** what the kernel accepts and is explicitly *not* a soundness fix — every syntactic test erred in the restrictive direction. **Refinement measured here (§2.6):** restrictive *per mutual block*, not per type. `m_result_level` is the block's **first** type's spelling, so the permission a syntactic `Sort 0` earns is inherited by a later type spelled `Sort (imax 1 0)` — and that inheritance is what gets #14613's term past a released kernel, which rejects the same type declared alone. Its actual content is a **kernel/`nanoda` divergence**: `nanoda` decides all three semantically and derives recursors rather than trusting the export, so it rejected exports the kernel accepted. **Measured here** ([`Audits/Lean/Checkers/`](Audits/Lean/Checkers/)) rather than cited: `nanoda` 0.4.10-beta rejects both the honest `Sort 0` and the laundered `Sort (imax 1 0)` spelling with the same `infer_proj prop`, while accepting a control — so the cross-check does hold on the construction §2.1/#14613 constructions. Same `imax 1 0` surface as #14613, opposite direction. | 2026-07-31 |
 | [#14621](https://github.com/leanprover/lean4/pull/14621) | The kernel re-checks the declarations it adds after eliminating a nested inductive. Redundant by construction; a backstop in case the nested-inductive code is still missing a validation. §5.1 records this repo's attempt to exercise it from inside Lean, and why that cannot be done. | 2026-07-31 |
 | [#14631](https://github.com/leanprover/lean4/pull/14631) | `type_checker::is_def_eq_core` and `equiv_manager::is_equiv_core` compared only the projection index and the projected expression, **ignoring `proj_sname`**. Not reachable: `infer_proj` rejects a structure name disagreeing with the projected expression's type, and kernel-built projections always carry the right one, so two projections reaching def-eq can differ on the name only if one is ill-typed. Turns that global invariant into a local one. Two reasons it matters here — it edits the exact function analysed in [`Reports/2026-07-29-defeq-…`](Reports/2026-07-29-defeq-history-dependence.md), and it is the *same omission* as the `nanoda` bug of §3.0. | 2026-08-01 |
-| [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part hardening pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
+| [#14632](https://github.com/leanprover/lean4/pull/14632) | A five-part [strengthening] pass. **One part is #12746**: projection indices are now rejected unless they fit the width the kernel consumes them at — the new `to_proj_idx` helper adds the `> UINT_MAX` bound the `is_small()` guard never had, in both `infer_proj` and `reduce_proj`, with a comment naming `.proj S 2^32 c` → `.proj S 0 c` as the failure mode. Also: `add_quot` now checks `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind` are undeclared instead of inserting over whatever holds those names (*"which only a module replacing the prelude can arrange"* — the §2.3 precondition exactly); `reduce_proj_core` takes the structure name and refuses a constructor of any other inductive; `add_mutual` rejects a block declaring the same name twice, where the old check saw only the pre-existing environment; and the nested-restoration `lean_assert`s become kernel exceptions, since in a release build they vanish. | 2026-08-01 |
 | [#14633](https://github.com/leanprover/lean4/pull/14633) | `infer_lambda` and `infer_let` now check a binder's type — and for `let`, its value — *before* adding the declaration to the local context, which is what `infer_pi` already did. *"No valid declaration changes behavior."* **Not in the postmortem**, which was published earlier the same day; found by reading the log at the pinned [`Upstream/lean4`](Upstream/lean4) commit. Adjacent to the local-context anomaly in §5.1's closing paragraph, though not the same thing: that one is about a caller-supplied `_kernel_fresh.N` fvar being captured, not about the order of checking and extending. | 2026-08-01 |
 
 **August 2026**, alongside §2.1's #14806/#14807. One PR, and it belongs in this
@@ -490,7 +490,7 @@ one in each implementation — improbable, and the postmortem could reasonably c
 the safeguard intact. Here there is **one bug, present in both**: `is_prop`
 answering a question about a term whose type does not reduce to a sort, instead
 of rejecting it. That is the §3.0 moral — independence of implementations is not
-independence of blind spots — with the "unrelated provenance" mitigation removed.
+independence of blind spots — with the "unrelated provenance" [remedy] removed.
 
 `lean4lean` is unaffected, and its reason is the strongest argument the project
 has: its `isProp` already used `ensureSortCore`, so it had the fix before there
@@ -654,16 +654,35 @@ auditing efforts at once**:
 | 08-19 | `christos-spearbit` | [#22364](https://github.com/rocq-prover/rocq/issues/22364), #22365, [#22366](https://github.com/rocq-prover/rocq/issues/22366), #22367 — two of them axiom-free `False` with a clean `Print Assumptions` |
 | 08-20 | `SkySkimmer`, `yannl35133` | the nine `kind: inconsistency` issues, each with a same-day fix PR |
 
-The nine were **filed by Rocq's own maintainers**, which is the tell: Carlo
-Angiuli's [Mathstodon post](https://mathstodon.xyz/@carloangiuli/117129327329317559)
-of the same day reads *"Looks like OpenAI (Daniel Selsam?) found nine soundness
-'[deliberately constructed counterexamples]' in Rocq, which were reported
-privately and already have potential fixes in PRs."* The private-disclosure half is corroborated by the
-filing pattern; **the attribution to OpenAI is Angiuli's inference, carries his
-own question mark, and is named nowhere in the issues** — record it as
-unconfirmed until upstream says otherwise. If it holds, it is the same effort
-that produced Lean's July and August waves (§2.1, §6) crossing to the other
-system, which would make the 2026 story one auditing programme rather than two.
+The nine were **filed by Rocq's own maintainers** on behalf of an outside
+reporter, and **all nine issue bodies name that reporter**. This was recorded here
+on the day of filing as unconfirmed — *"the attribution to OpenAI is Angiuli's
+inference … named nowhere in the issues"* — and that was wrong. It was written
+after reading only the two `christos-spearbit` issues of 08-19, which are a
+different effort; the bodies of the nine say it outright, in two independent
+voices, checked here against all nine:
+
+* the six filed by `SkySkimmer` each read *"Reported by OpenAI by email to a
+  random core team member (not me). For anyone reading this, please directly open
+  issues instead of emailing random people."*
+* the three filed by `yannl35133` each read *"Found by an LLM and @dselsam ; feel
+  free to open these issues directly."*
+
+So Carlo Angiuli's
+[Mathstodon post](https://mathstodon.xyz/@carloangiuli/117129327329317559) —
+*"Looks like OpenAI (Daniel Selsam?) found nine soundness '[deliberately
+constructed counterexamples]' in Rocq, which were reported privately and already
+have potential fixes in PRs."* — is the **publicity, not the evidence**, and its
+question mark is Angiuli's caution rather than a gap in the record. Both
+maintainers, independently, also ask to be sent issues rather than email.
+
+That settles the cross-system question: this is the effort behind Lean's July and
+August waves (§2.1, §6) pointed at Rocq, which makes the 2026 story **one
+auditing programme reaching both systems**, not two coincidences. It also means
+2026 now contains at least four distinct efforts against Rocq alone — the
+February–March sweep, JasonGross on 08-18/19, `christos-spearbit` on 08-19, and
+this one on 08-20 — so §4's older phrase "the direct output of the 2026 sweep"
+should not be read as naming a single programme.
 
 Write-up: [`Reports/2026-08-20-rocq-august-wave.md`](Reports/2026-08-20-rocq-august-wave.md).
 
@@ -1046,7 +1065,7 @@ Ordered by value.
    #14616 that means `v4.32.2` or earlier, all of which are to hand.
 
    [`Audits/Lean/Nested/AuxNameReachability.lean`](Audits/Lean/Nested/AuxNameReachability.lean)
-   is the reconnaissance, and it establishes four things on `v4.32.2`. The
+   is the survey, and it establishes four things on `v4.32.2`. The
    auxiliary name is **predictable** — `mk_unique_name` appends `_1`, `_2`, … so
    the first auxiliary for a nested `Wrap` is exactly `_nested.Wrap_1` — and a
    safe declaration naming it **is accepted**. The **checked/stored divergence is
@@ -1204,7 +1223,7 @@ Lean kernel surface against an explicit oracle; harnesses and counts are in
 | `String` `get`/`next`/`prev`/`atEnd`/`extract` at invalid UTF-8 boundaries | compiled `String` | 320 comparisons, 0 divergence |
 | `Nat.rec` on literals, `0` through `2^100` | expected constructor branch | 0 divergence |
 | `Prop` inductives: subsingleton-elimination restriction | proof-relevance | 40 declarations, correctly restricted |
-| Kernel-internal fvar leaks into inferred types | `_kernel_fresh` scan + re-check | none (i.e. #10475 is fixed) |
+| Kernel-internal fvar escapes into inferred types | `_kernel_fresh` scan + re-check | none (i.e. #10475 is fixed) |
 | Module boundary: `sorry`, private-in-public, section variables | `#print axioms`, visibility | all correctly guarded — **but the sweep did not cover `partial` across the boundary, which is not guarded at all**: see §2.1/#14609 and [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/). The row stands for what it tested; the omission is recorded here rather than silently fixed |
 | `Expr.mdata` as a bypass: positivity, self-occurrence-in-index, `check_no_metavar_no_fvar` | the corresponding kernel check | every check strips `mdata`; all of `hasFVar`/`hasMVar`/`hasLooseBVars` propagate through it |
 | `Nat.sqrt`, `nextPowerOfTwo`, `lcm`, `min`, `max`, `testBit` | compiled implementation | 10,638 comparisons, 0 divergence |
@@ -1234,7 +1253,7 @@ declaration**. What it ruled out:
 | The K-like flag as the kernel *computes* it (not as the wire format can lie about it) | one constructor, no fields beyond parameters and indices, `Prop`-valued | every inductive in the `import Lean` environment plus an deliberately constructed boundary corpus: **0 wrong** |
 | Structure eta and unit-like eta | if `whnf` gives two constructor applications the kernel itself calls unequal, the terms must not be defeq | **0 unsound**; one incompleteness — `is_rec` is computed per *mutual block*, so eta switches off for a non-recursive structure sharing a block with a recursive sibling, which errs safe |
 | Does nested recursion hide from the eta gate? A structure recursive only *through a nested occurrence* would be eta-expanded if `is_rec` could not see through the wrapper | declare `NestS.mk : Wrap NestS → Bool → NestS` and ask the kernel whether eta fires | **No.** `isRec=true` and eta refuses, same as for direct recursion. Measured on v4.33.0 |
-| Can the `inductive.h` eta defect (§2.2) be escalated to a `False` on a release? It needs a `Prop`-valued one-constructor structure carrying **data**, whose recursor **large-eliminates** | declare both shapes and read the generated recursor's `levelParams` | **Mutually exclusive by construction.** `structure PropData : Prop where b : Bool` gets `lparams=[]` — `Prop`-only elimination — and the frontend refuses its projection outright (*"field must be a proof, but it has type Bool"*); `structure PropProof : Prop where h : True` gets `lparams=[u]` but has no data to extract. So the fabricated projection can only be consumed at `Prop`, where proof irrelevance makes it inert. This is why that defect is latent rather than live |
+| Can the `inductive.h` eta defect (§2.2) be [extended] to a `False` on a release? It needs a `Prop`-valued one-constructor structure carrying **data**, whose recursor **large-eliminates** | declare both shapes and read the generated recursor's `levelParams` | **Mutually exclusive by construction.** `structure PropData : Prop where b : Bool` gets `lparams=[]` — `Prop`-only elimination — and the frontend refuses its projection outright (*"field must be a proof, but it has type Bool"*); `structure PropProof : Prop where h : True` gets `lparams=[u]` but has no data to extract. So the fabricated projection can only be consumed at `Prop`, where proof irrelevance makes it inert. This is why that defect is latent rather than live |
 | Universe parameters escaping their declaration | every `add_*` path, with types and bodies mentioning a `Level.param` outside `levelParams` | all rejected |
 | Mode flags versus caches, beyond `equiv_manager` | `infer_only`, `cheap_rec`/`cheap_proj`, `m_eager_reduce`, `m_definition_safety` against the keys of `m_infer_type`, `m_whnf`, `m_whnf_core`, `m_failure`, `m_unfold` | one anomaly — `m_eager_reduce` is not part of `m_eqv_manager`'s key, so an eager-only verdict is consumable by a later non-eager query in the same declaration — and no route past it |
 | Every reduce-and-match site in the kernel (the #14807 class) | does the function *answer* about an unreducible input rather than rejecting it, and does any consumer read the negative as permission? | seven `is_sort(` hits; five assert or throw; `type_checker.cpp:351` is #14807 itself; **`inductive.h`'s `to_cnstr_when_structure` is the only other one, and it is the only site anywhere that reads the negative as permission to emit new terms** — §2.2 |
@@ -1247,7 +1266,7 @@ failed attempt.
 Every pair `equiv_manager` merges is one the kernel *validly* accepted — by
 proof irrelevance, by iota, by congruence. The union-find's transitive closure
 therefore contains only genuine definitional equalities, and **no false equation
-can be read out of it**. That is not a mitigation; it is the reason both of
+can be read out of it**. That is not a remedy; it is the reason both of
 upstream's constructions take their `False` from a *malformed declaration* rather
 than from an exported equation, and it is the reason the 2026-07-29 report's
 search — which looked for a `False` among the terms the cache relates —
@@ -1355,7 +1374,7 @@ Ten commits, classifying as:
 | --- | --- |
 | **Unreleased proofs of `False`** | **#14609** (module stub, §2.1), **#14613** (`is_prop`, §2.1), **#14616** (`_nested`, §2.1) |
 | Already released | #14498/#14484 (`v4.32.1`), #14577/#14576 (`v4.32.2`) |
-| Widening / hardening, not soundness | #14615, #14621 |
+| Widening / strengthening, not soundness | #14615, #14621 |
 | Tactic bugs the kernel itself caught | #14618 (`grind` closes a goal with an ill-typed term; the kernel rejects it), #13587 (`lia`/`grind` `eq_def` kernel type mismatch), #14524, #14404 |
 
 **And that sweep is still incomplete.** It misses #14607 and #14608, whose commit
@@ -1373,7 +1392,7 @@ holes are still shipped".
 
 | Surface | Question | Result |
 | --- | --- | --- |
-| The whole `src/kernel/` diff, `v4.32.2` → `master` | Which of the July-wave fixes are in no released toolchain? | Twelve files, of which **two are live proofs of `False`**: #14613 (`is_prop`) and #14616 (`_nested`). The rest are hardening (#14621, #14631, #14632's `add_quot`/`add_mutual`/`reduce_proj_core` guards, #14633's checking order) or widening (#14615). **Incomplete by construction** — the path filter hides #14609, a `src/Lean/` fix that is a third live proof of `False`; see the corrected method above |
+| The whole `src/kernel/` diff, `v4.32.2` → `master` | Which of the July-wave fixes are in no released toolchain? | Twelve files, of which **two are live proofs of `False`**: #14613 (`is_prop`) and #14616 (`_nested`). The rest are strengthening (#14621, #14631, #14632's `add_quot`/`add_mutual`/`reduce_proj_core` guards, #14633's checking order) or widening (#14615). **Incomplete by construction** — the path filter hides #14609, a `src/Lean/` fix that is a third live proof of `False`; see the corrected method above |
 | #14613, reachability on releases | Can the term be declared at all, given that `check_constructors` at `v4.32.2` gates data fields on the *syntactic* `is_zero`? | **Only via a mutual block.** `Sort (imax 1 0)` alone with a `Bool` field is rejected; second in a block whose first type is `Sort 0`, accepted; reversed, rejected. This is §2.6's laundering finding and is the step that makes the construction possible |
 | Spellings of zero other than `imax 1 0` | Is the class wider than the one level upstream's test names? | Yes — `max 0 0` gives its own `False` by the identical route. `is_zero` is `kind() == Zero`, so the class is every spelling that is not literally `Level.zero` |
 | Every syntactic `Prop`-hood test in `src/kernel/` on `master` | Did #14613/#14615 convert all of them? | Yes. Grepping `is_zero(` and `mk_Prop()` over `src/kernel/` leaves no site deciding `Prop`-hood: the surviving `mk_Prop()` uses build the type of `Quot`'s relation argument and the placeholder type of `local_ctx`'s dummy declaration, and the surviving `is_zero` uses are on `Nat` literals |
@@ -1382,7 +1401,7 @@ holes are still shipped".
 | `Expr.proj` index arithmetic on `master` | `reduce_proj_core` still computes `nparams + idx` in `unsigned`, and `to_proj_idx` admits up to `UINT_MAX`, so the sum can still wrap | **Source argument, not measured.** `infer_proj` iterates the constructor's Pi-telescope `idx` times and throws as soon as it runs out of binders, so `idx < nfields` on every accepted term and the sum cannot approach `UINT_MAX`. The #13618 family stays closed for the reason #12746 was, not by a bound on the sum — which means it reopens if a path ever reduces a projection that `infer_proj` did not see |
 | #14616's `_nested` auxiliary environment — is the checked/stored divergence reachable from a **safe** declaration? | The auxiliaries exist only in a temporary environment; `restore_nested` rewrites the names back afterwards, so a declaration naming one is checked against one type and stored with another | **Yes, from a safe declaration.** The name is predictable (`_nested.<Host>_1`) and a safe declaration naming it is accepted. Four levers were measured: *level swap* and *parameter swap* die in `check_positivity`, since `is_valid_ind_app` compares against `m_ind_cnsts[i]` with `expr` equality (covering args **and** levels); *`Expr.proj`* dies on ordering (`check_constructors` precedes `declare_constructors`, so the auxiliary's constructor is not yet declared — the control proves the rewrite happened); *`isUnsafe`* skips positivity, reaches the divergence, and loses to the safety gate. The fifth works: **hide the occurrence from `check_positivity`'s leading `whnf`** (§2.6), and a safe module stores three ill-typed constants on every release. Still no `False` — the ill-typedness is inert. Harnesses [`AuxNameReachability.lean`](Audits/Lean/Nested/AuxNameReachability.lean), [`IllTypedStoredConstructor.lean`](Audits/Lean/Nested/IllTypedStoredConstructor.lean) |
 | #14607 (`check_no_metavar_no_fvar` in `inductive.cpp`) — the **third** July fix in no release, and §2.2 lists it among the defects that yielded an axiom-free `False`. Is it reachable? | Free variables and metavariables in a nested inductive declaration | **Not by five shapes.** Tried: an fvar as a plain field type; in a nested occurrence's parameter; in a separate field beside a nested occurrence; in a **phantom** host parameter — the shape that survives into `m_aux2nested` without appearing in the auxiliary type or its constructor; and metavariables in those positions plus an index. All five rejected. The phantom one dies on a check easy to miss in the diff: `add_inductive` already ran `tc.check(nested, …)` over every stored nested occurrence. If #14607 is reachable on a release it is by some other shape |
-| **Composites of the live gaps** — ten July fixes are in no release, and each is individually called "not [reachable]" for a reason that assumes some *other* invariant holds. Do they compose? | Four pairings, each driven to a `False` or to a quoted guard | **No new `False`.** (C) `add_mutual` duplicate names × (E) the module stub: foreclosed because the body loop iterates the *original* member list, so `v.get_value()` and `v.get_type()` always come from the same member and the surviving constant is internally consistent (environment.cpp:250-254). (D) mismatched `lparams` × (E): foreclosed three times over — the body-loop def-eq catches the universe lie, `check_level` (type_checker.cpp:76-80) catches any later reference to the dangling atom, and the partial-safety gate quarantines the constant; (E) only stubs a **singleton** `.mutualDefnDecl [defn]` (AddDecl.lean:118) while the misstatement needs ≥2 members, so it cannot even be laundered. (A)+(B) driven directly through `Kernel.whnf`/`isDefEq`, and (A)+(B) fed from stored ill-typedness: both foreclosed by one line, `if (I_name != proj_sname(e)) throw` (type_checker.cpp:231) — with the coverage limit measured separately in §2.6 |
+| **Composites of the live gaps** — ten July fixes are in no release, and each is individually called "not [reachable]" for a reason that assumes some *other* invariant holds. Do they compose? | Four pairings, each driven to a `False` or to a quoted guard | **No new `False`.** (C) `add_mutual` duplicate names × (E) the module stub: foreclosed because the body loop iterates the *original* member list, so `v.get_value()` and `v.get_type()` always come from the same member and the surviving constant is internally consistent (environment.cpp:250-254). (D) mismatched `lparams` × (E): foreclosed three times over — the body-loop def-eq catches the universe lie, `check_level` (type_checker.cpp:76-80) catches any later reference to the dangling atom, and the partial-safety gate contains the constant; (E) only stubs a **singleton** `.mutualDefnDecl [defn]` (AddDecl.lean:118) while the misstatement needs ≥2 members, so it cannot even be laundered. (A)+(B) driven directly through `Kernel.whnf`/`isDefEq`, and (A)+(B) fed from stored ill-typedness: both foreclosed by one line, `if (I_name != proj_sname(e)) throw` (type_checker.cpp:231) — with the coverage limit measured separately in §2.6 |
 | Every `add_*` path, re-checked for the `_kernel_fresh` containment claim | §5.1 records the kernel's own generated binder capturing a caller-supplied `_kernel_fresh.N` fvar, and calls it contained because "every `add_*` path in `environment.cpp` rejects fvars in values *before* type-checking" | **Holds, and now verified path by path rather than asserted.** `add_definition` (both the safe and the unsafe branch), `add_theorem`, `add_opaque` and `add_mutual` each call `check_no_metavar_no_fvar` on the **value** before `checker.check`, and `check_constant_val` calls it on the **type** — so both halves are covered, and the code is byte-identical on `v4.32.2` and `master`. The claim needed checking because #14607 showed the *inductive* path had no such guard |
 | `scope_rec_depth`, absent from `infer_type_core` and `whnf_core` on releases (#14633) | Does an unguarded recursion depth abort the kernel, as `Nat.shiftLeft` does? | **No, at reachable depths.** 10 000 nested applications type-check on `v4.32.2` with exit 0. `check_system` and the OS stack cope; this is not a second `INTERNAL PANIC` |
 | Kernel-special-cased names, re-enumerated at the pin | Is any name the kernel hard-wires undeclared in *core*, i.e. claimable from a non-`prelude` module? | No. The list is `dontcare`, `eagerReduce`, `Bool.true`, the fourteen `Nat.*`, `String.ofList`, `Char.ofNat`, `List.cons`/`nil`, `Lean.reduceBool`/`reduceNat`, `Quot`/`Quot.mk`/`Quot.lift`/`Quot.ind`, and the `_nested`/`_ind_fresh`/`_nested_fresh`/`_kernel_fresh` generator prefixes. `eagerReduce` is real (`Init/Core.lean`, `def eagerReduce {α : Sort u} (a : α) : α := a`) and only flips `m_eager_reduce`, a strategy flag; `dontcare` remains vacuous. §2.3's prelude precondition still bounds the whole family |

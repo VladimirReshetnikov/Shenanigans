@@ -17,18 +17,28 @@ Carlo Angiuli's post of 2026-08-20 18:48 UTC, verbatim:
 Two things in that are worth separating, because the naive reading is wrong in a
 way that matters.
 
-**The attribution is Angiuli's inference and is marked as such** — "Daniel
-Selsam?" carries a question mark. Nothing in the issues names OpenAI or Selsam.
-What *is* checkable is the filing pattern, and it corroborates the "reported
-privately" half exactly: the nine `kind: inconsistency` issues of 2026-08-20 were
-filed not by an outside reporter but by **Rocq's own maintainers** — six by
-`SkySkimmer` (Gaëtan Gilbert) and three by `yannl35133` (Yann Leray) — each with
-a fix PR opened the same day. That is what a coordinated private disclosure looks
-like when it lands publicly. It is not what an outside bug report looks like.
+**Corrected 2026-08-20, after reading the issue bodies.** The first version of
+this report said the attribution was Angiuli's inference and that "nothing in the
+issues names OpenAI or Selsam". That was written after reading only the two
+`christos-spearbit` issues of 08-19 — a different effort — and it is false of the
+nine. **All nine name the reporter**, checked one by one:
+
+* the six filed by `SkySkimmer` (Gaëtan Gilbert): *"Reported by OpenAI by email to
+  a random core team member (not me). For anyone reading this, please directly
+  open issues instead of emailing random people."*
+* the three filed by `yannl35133` (Yann Leray): *"Found by an LLM and @dselsam ;
+  feel free to open these issues directly."*
+
+So the filing pattern is exactly what it looked like — maintainers publishing an
+outside report with fixes already prepared — but the attribution needs no
+inference at all. Angiuli's post is the publicity; the issue bodies are the
+evidence. Both maintainers, independently and in almost the same words, also ask
+to be sent issues rather than email.
 
 So: nine defects, found privately, landed as maintainer-filed issues with fixes
-attached. Whether OpenAI found them is **unconfirmed** and this catalog should
-say so until someone upstream states it.
+attached, and credited upstream to OpenAI and to Daniel Selsam by name. That
+makes this the effort behind Lean's July and August waves reaching the other
+system — one auditing programme across both, rather than two coincidences.
 
 **And it was not one effort but three, concurrently:**
 

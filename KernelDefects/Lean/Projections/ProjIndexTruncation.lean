@@ -26,7 +26,7 @@ Upstream: lean4#12746 (P-medium, filed 2026-03-01, found by Opus 4.6).
 lean4#13602 reported the same defect as an accepted theorem and was closed as a
 duplicate of #12746.
 
-FIXED ON `master` 2026-08-01 by lean4#14632, a five-part kernel hardening pass.
+FIXED ON `master` 2026-08-01 by lean4#14632, a five-part kernel strengthening pass.
 It adds a `to_proj_idx` helper that rejects an index above `UINT_MAX` — the bound
 `is_small()` never had — and routes both `infer_proj` and `reduce_proj` through
 it; the accompanying comment names `.proj S 2^32 c` becoming `.proj S 0 c` as the

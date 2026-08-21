@@ -5,7 +5,7 @@
 **Toolchains measured:** `v4.27.0-rc1`, `v4.30.0-rc2`, `v4.31.0`, `v4.32.0`, `v4.32.1`,
 `v4.32.2`, `v4.33.0-rc1`, against `leanprover/lean4` at `5fa71c9141`.
 **Artifacts:** [`Audits/Lean/Nested/IllTypedStoredConstructor.lean`](../Audits/Lean/Nested/IllTypedStoredConstructor.lean),
-reconnaissance [`Audits/Lean/Nested/AuxNameReachability.lean`](../Audits/Lean/Nested/AuxNameReachability.lean).
+survey [`Audits/Lean/Nested/AuxNameReachability.lean`](../Audits/Lean/Nested/AuxNameReachability.lean).
 
 ---
 
@@ -199,7 +199,7 @@ constructor type.
 * **Not a `master` defect.** `check_no_nested_aux` rejects the declaration
   because it names `_nested.Wrap_1` as a constant.
 * **Reachable only through metaprogramming**, like every defect in the July 2026
-  wave, and for the reason the postmortem gives that is not a mitigation.
+  wave, and for the reason the postmortem gives that is not a remedy.
 * **`comparator` is unaffected**, and #14607's commit message says why for the
   neighbouring fvar case: `lean4export` refuses declarations containing free
   variables or metavariables, and it would likewise not emit a declaration naming

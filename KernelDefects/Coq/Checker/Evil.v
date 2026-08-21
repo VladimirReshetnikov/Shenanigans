@@ -34,7 +34,7 @@
     ** Where this sits in the catalog
 
     CATALOG.md §1.2 has a row reading "[hand-edited] or stale .vo / .olean → nothing;
-    neither system re-typechecks on import", with the note that Rocq hardened its
+    neither system re-typechecks on import", with the note that Rocq [strengthened] its
     [coqchk] path in 8.19.  That is the row this exhibit refines.  [coqchk] IS
     the answer to a hand-edited .vo, it DOES re-typecheck, and in one of its two
     supported modes it still certifies this one.  §4.7's asymmetry, in its

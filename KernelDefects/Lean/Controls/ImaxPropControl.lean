@@ -53,7 +53,7 @@ error: (kernel) invalid projection
 #guard_msgs in
 #eval show CoreM Unit from
   addDecl <| .defnDecl {
-    name        := `Control.leak
+    name        := `Control.extract
     levelParams := []
     hints       := .abbrev
     safety      := .safe

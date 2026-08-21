@@ -93,7 +93,7 @@ with defaults and `Print Assumptions` reports nothing. The flag is on the
 *checker*, and it decides only whether the audit notices.
 
 The tie-breaker is what §1.2's row actually claims, and it is now wrong in the
-part that matters. That row carries the note that *Rocq hardened its `coqchk`
+part that matters. That row carries the note that *Rocq strengthened its `coqchk`
 path in 8.19* — i.e. the catalog's position is that `coqchk` **is** the answer to
 a hand-edited `.vo`. This exhibit is a hand-edited `.vo` that `coqchk` re-typechecks,
 in a supported mode, and certifies. So the finding is not "you can [hand-edit] a

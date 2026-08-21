@@ -91,7 +91,7 @@ it. There is no Lean equivalent of that report. -/
 Every kernel defect in the July 2026 wave (`../../CATALOG.md` §2.2 — #14484,
 #14576, #14607 through #14616) is reachable *only* by handing a declaration to the
 kernel directly, past a frontend that would have caught it. That naturally
-suggests restricting metaprogramming as the mitigation, and de Moura's
+suggests restricting metaprogramming as the remedy, and de Moura's
 [postmortem for #14576](https://leodemoura.github.io/blog/2026-8-1-postmortem-for-kernel-soundness-bug-14576/)
 rejects it outright:
 

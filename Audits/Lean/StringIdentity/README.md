@@ -209,7 +209,7 @@ both of which are legal bare Lean identifier characters.
   as `foo.5` while `Name.mkStr foo "5"` prints as `foo.«5»`; both survive
   `toString ∘ toName`, and they stay distinct. (This is the risk comparator's
   `numeric_namespace` regression test covers.)
-* **The export data is clean** — and this is why nothing escalates to
+* **The export data is clean** — and this is why nothing extends to
   soundness. It is the one boundary a solution author controls, and it carries
   names structurally as `{"str":{"pre":idx,"str":s}}`. A fuzz over all 1,112,064
   code points found 0 JSON round-trip mismatches and 0 distinct characters

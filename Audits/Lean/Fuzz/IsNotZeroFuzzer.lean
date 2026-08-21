@@ -1,7 +1,7 @@
 import Lean
 /-!
 IS_NOT_ZERO FUZZER.  `is_not_zero` (kernel/level.cpp:150) is the one level
-predicate the July-2026 hardening wave did **not** convert to a semantic test:
+predicate the July-2026 strengthening wave did **not** convert to a semantic test:
 #14613 and #14615 replaced `is_zero` with `normalizes_to_zero` at five sites and
 left `is_not_zero` alone.
 
