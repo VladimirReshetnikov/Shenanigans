@@ -11,6 +11,12 @@
 # native-hook exhibit is NOT (it is an axiom-*tracking* hole, not a kernel hole),
 # and the negative control must be rejected — that last one is what proves
 # `leanchecker` is actually doing something.
+#
+# The native-hook row is rejected for a NARROWER reason than it looks, corrected
+# 2026-08-20: `leanchecker` replays the hook fine, and refuses this module only
+# because the constant the hook evaluates is declared here rather than imported.
+# Move it into an imported module and `leanchecker` accepts the identical
+# axiom-free `False`.  See ../../Audits/Lean/Checkers/reducebool/.
 
 $ErrorActionPreference = 'Continue'
 $env:LEAN_NUM_THREADS = '0'
@@ -37,7 +43,12 @@ $expected = [ordered]@{
   'NatBeqAccelerator'  = 'accept'   # own `Nat`, own `Nat.beq`
   'NatGcdFreeName'     = 'accept'   # real core `Nat`; only *defines* the free name `Nat.gcd`
   'StringLitFabrication' = 'accept' # kernel fabricates an inhabitant of `Empty` from a string literal
-  'ReduceBoolFreeName' = 'reject'   # `lean` accepts it, but the native hook cannot be replayed
+  # `lean` accepts it; `leanchecker` refuses because the interpreter behind the
+  # native hook cannot resolve `probe`, which is LOCAL to this module.  Not
+  # because the hook cannot be replayed -- it can, and when the evaluated
+  # constant is imported instead, `leanchecker` accepts the same `False`.
+  # Measured in ../../Audits/Lean/Checkers/reducebool/.
+  'ReduceBoolFreeName' = 'reject'
   'NegativeControl'    = 'reject'   # control: built with debug.skipKernelTC
 }
 
