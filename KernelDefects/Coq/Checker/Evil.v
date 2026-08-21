@@ -7,9 +7,9 @@
     reads from the .vo's separately serialised [vmlibrary] segment, with nothing
     tying that segment to the bodies it just checked.  Splice one honest
     compilation's [library] onto another's [vmlibrary] and the resulting .vo is
-    well formed, well typed, and lies about what its constants compute.
+    well formed, well typed, and misstates what its constants compute.
 
-    The lie is cashed by the [<:] VMcast below.  [poc_evil]'s BODY is
+    The misstatement is cashed by the [<:] VMcast below.  [poc_evil]'s BODY is
     [idb true]; its BYTECODE says [false].  So [myeq_refl bool false] is accepted
     at type [myeq bool poc_evil false], and with [evil_true] on the other side
     [true] and [false] are identified.
@@ -25,11 +25,11 @@
                                             at [Evil.evil_false].  Caught.
       - [rocqchk] on the spliced Defs ALONE: accepted in BOTH modes, correctly —
                                             its declarations are well typed and
-                                            only its bytecode segment lies.
+                                            only its bytecode segment misreports.
 
     So the .vo that is hand-edited with is not the .vo that fails.  The failure
     surfaces one library downstream, in the file whose VMcast only typechecked
-    because [rocq compile] believed the bogus bytecode.
+    because [rocq compile] believed the spliced bytecode.
 
     ** Where this sits in the catalog
 

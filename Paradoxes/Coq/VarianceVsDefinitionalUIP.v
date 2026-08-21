@@ -280,7 +280,7 @@ Fail Definition control_flag_alone : False :=
 Fail Definition control_hurkens@{lo hi | lo < hi} : False :=
   TypeNeqSmallType.paradox Type@{lo} (eq_refl : @eq Type@{hi} Type@{lo} Type@{lo}).
 
-(** ** 4. Smuggling a universe through the irrelevant slot *)
+(** ** 4. Passing a universe through the irrelevant slot *)
 
 Definition Box@{u z w h | u < z, z < w, w < h} : Type@{w} :=
   Hidden@{u z w h} Type@{z}

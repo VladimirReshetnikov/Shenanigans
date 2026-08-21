@@ -7,7 +7,7 @@
 # and lean4#14613's commit message says "`nanoda` rejects it".  Both are
 # citations.  This script measures them, and it measures the case that actually
 # matters here: not the honest `Sort 0` spelling that nanoda's own regression
-# test uses, but the LAUNDERED `Sort (imax 1 0)` spelling that
+# test uses, but the NON-NORMAL `Sort (imax 1 0)` spelling that
 # ../../../KernelDefects/Lean/Universes/ turns into an axiom-free `False` on
 # every released Lean toolchain.
 #
@@ -15,9 +15,9 @@
 #
 #   control    a well-formed export                     -> ACCEPT
 #   honest     nanoda's own ProjFromProp test, Sort 0    -> reject
-#   laundered  the same with Sort (imax 1 0)             -> reject
+#   non-normal  the same with Sort (imax 1 0)             -> reject
 #
-# The laundered export is DERIVED here from nanoda's own test resource by a
+# The non-normal export is DERIVED here from nanoda's own test resource by a
 # single-line edit, rather than vendored, so the provenance stays visible and
 # their file stays theirs (Apache-2.0).
 #
@@ -46,11 +46,11 @@ if (-not $SkipBuild -or -not (Test-Path $bin)) {
 if (-not (Test-Path $bin)) { Write-Output "  !! nanoda did not build"; exit 1 }
 
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("nanoda-check-" + [guid]::NewGuid().ToString('N').Substring(0,8))
-New-Item -ItemType Directory -Force -Path (Join-Path $work 'laundered') | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $work 'nonnormal') | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $work 'control')   | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $work 'honest')    | Out-Null
 
-# --- derive the laundered export -------------------------------------------
+# --- derive the non-normal export -------------------------------------------
 # `Wrap`'s type in nanoda's resource is `{"ie":14,"sort":0}` — the honest,
 # syntactic `Prop`.  Replace it with `Sort (imax 1 0)`, which denotes `Prop` and
 # is the spelling the released Lean kernel reads as "not a proposition".
@@ -66,7 +66,7 @@ if (($edited -join "`n") -eq ($lines -join "`n")) {
   Write-Output "  !! the anchor line {""ie"":14,""sort"":0} was not found — nanoda's resource changed"
   exit 1
 }
-Set-Content -Path (Join-Path $work 'laundered/export') -Value $edited
+Set-Content -Path (Join-Path $work 'nonnormal/export') -Value $edited
 Copy-Item (Join-Path $nanoda 'test_resources/Empty/export') (Join-Path $work 'control/export')
 # Run nanoda's own resource under OUR config too, so all three cases are driven
 # identically and a rejection can only be a type error, never a missing file.
@@ -83,13 +83,13 @@ function Write-Config($dir) {
 }
 '@
 }
-Write-Config 'laundered'; Write-Config 'control'; Write-Config 'honest'
+Write-Config 'nonnormal'; Write-Config 'control'; Write-Config 'honest'
 
 # --- run --------------------------------------------------------------------
 $cases = @(
   @{ Name = 'control   (well-formed export)';          Dir = Join-Path $work 'control'; Expect = 'accept' },
   @{ Name = "honest    (nanoda's own, Sort 0)";        Dir = Join-Path $work 'honest'; Expect = 'reject' },
-  @{ Name = 'laundered (Sort (imax 1 0))';             Dir = Join-Path $work 'laundered'; Expect = 'reject' }
+  @{ Name = 'non-normal (Sort (imax 1 0))';             Dir = Join-Path $work 'nonnormal'; Expect = 'reject' }
 )
 
 $failures = 0
@@ -110,7 +110,7 @@ foreach ($c in $cases) {
     $why = ($out -split "`n" | Where-Object { $_ -match 'panicked at|Error' } | Select-Object -First 1)
     if ($why) { Write-Output ("        " + $why.Trim()) }
     # A rejection is only evidence if it is a TYPE error. Anything else — a
-    # missing file, a parse failure — is the harness lying to itself.
+    # missing file, a parse failure — is the harness misreporting.
     if ($out -notmatch 'infer_proj prop') {
       $failures++
       Write-Output "        !! rejected, but NOT with 'infer_proj prop' — this is not a type error"

@@ -1,4 +1,4 @@
-# An axiom-free `False` on every released Lean toolchain, and the laundering step upstream did not name
+# An axiom-free `False` on every released Lean toolchain, and the inheritance step upstream did not name
 
 **Date:** 2026-08-01
 **Source line numbers** are `v4.32.2`'s unless stated otherwise.
@@ -6,7 +6,7 @@
 `v4.32.2`, `v4.33.0-rc1` (all `x86_64-w64-windows-gnu`), against
 `leanprover/lean4` at `5fa71c9141` (`master` after #14633) for the source
 citations.
-**Artifacts:** [`KernelDefects/Lean/Universes/ImaxPropLaundering.lean`](../KernelDefects/Lean/Universes/ImaxPropLaundering.lean),
+**Artifacts:** [`KernelDefects/Lean/Universes/ImaxPropSpelling.lean`](../KernelDefects/Lean/Universes/ImaxPropSpelling.lean),
 [`KernelDefects/Lean/Universes/MutualResultLevel.lean`](../KernelDefects/Lean/Universes/MutualResultLevel.lean),
 control [`KernelDefects/Lean/Controls/ImaxPropControl.lean`](../KernelDefects/Lean/Controls/ImaxPropControl.lean).
 
@@ -26,7 +26,7 @@ Two things here are not upstream's.
 
 1. **The reproducer needs two independent kernel weaknesses, and upstream's
    commit message and regression test name only one.** The second — the
-   *laundering step* — is that a mutual inductive block takes `m_result_level`
+   *inheritance step* — is that a mutual inductive block takes `m_result_level`
    from its **first** type and lets every other type in the block inherit the
    permissions that spelling earns. It is *not* fixed on `master`.
 2. **The defect class is wider than the one level it is documented against.**
@@ -42,7 +42,7 @@ about the shape of the hole, and (1) leaves a live primitive behind.
 
 ## The construction
 
-### Step 1 — laundering: borrow a `Sort 0`'s permissions
+### Step 1 — inheritance: borrow a `Sort 0`'s permissions
 
 `add_inductive_fn::check_inductive_types` (`kernel/inductive.cpp:248`) does:
 
@@ -135,7 +135,7 @@ theorem boom : False :=
 Each row is `lean --trust=0 <file>`, exit code plus the `#guard_msgs`-asserted
 audit output. `MutualResultLevel.lean` is a measurement and produces no `False`.
 
-| Toolchain | `ImaxPropLaundering.lean` | `ImaxPropControl.lean` |
+| Toolchain | `ImaxPropSpelling.lean` | `ImaxPropControl.lean` |
 | --- | --- | --- |
 | `v4.27.0-rc1` | exit 0 — `False` accepted, `'Paradox' does not depend on any axioms` | exit 0 — `(kernel) invalid projection` |
 | `v4.30.0-rc2` | exit 0 | exit 0 |
@@ -157,8 +157,8 @@ kernel soundness. Both ship this.
 All seven rows of `MutualResultLevel.lean`'s table — including both REVERSED
 controls — reproduce identically on all seven toolchains.
 
-**`leanchecker` accepts it**, in both modes: `leanchecker ImaxPropLaundering`
-and `leanchecker --fresh ImaxPropLaundering` on `v4.33.0-rc1` both exit 0, the
+**`leanchecker` accepts it**, in both modes: `leanchecker ImaxPropSpelling`
+and `leanchecker --fresh ImaxPropSpelling` on `v4.33.0-rc1` both exit 0, the
 second having re-checked the whole `Lean.CoreM` closure from an empty
 environment. That is expected rather than surprising, and it is the point of §3 of
 [`CATALOG.md`](../CATALOG.md): the `leanchecker` binary shipped in the toolchain
@@ -197,7 +197,7 @@ That closes both spellings at once, and it closes them for `max 0 0` as well as
 for `imax 1 0` without anybody having to enumerate the spellings. It is the right
 fix.
 
-**The laundering step is untouched.** `m_result_level` is still the first type's
+**The inheritance step is untouched.** `m_result_level` is still the first type's
 spelling on `master`, and the reversal still fails there. It is harmless *today*
 only because every gate that reads it became semantic in the same wave: since all
 types in a block must be `is_equivalent`, they have equal normal forms, so
@@ -256,7 +256,7 @@ either way.
 * **Not novel as a defect.** #14613 is upstream's, found and fixed within the
   #14576 response. What this report adds is the artifact — this catalog had none,
   and the Lean Kernel Arena's `proj-of-imax-prop` is an export test rather than a
-  Lean module — plus the laundering analysis, the `max 0 0` member of the class,
+  Lean module — plus the inheritance analysis, the `max 0 0` member of the class,
   and the version matrix for the released toolchains.
 * **The arena already records that the released kernel fails this test.**
   `official` `4.32.2` scores 56/57 there, and `proj-of-imax-prop` is the one it

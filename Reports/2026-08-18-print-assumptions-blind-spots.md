@@ -37,7 +37,7 @@ Definition viaBody : nat := match loop 0 return nat with end.
 Print Assumptions viaBody.     (* -> Axioms: loop is assumed to be guarded. *)
 ```
 
-Same flag, same fixpoint, same file pair. Reported when the taint sits in a body,
+Same flag, same fixpoint, same file pair. Reported when the flag record sits in a body,
 silent when it sits in a type.
 
 Two precision points, because the severity is easy to overstate. The gap is
@@ -60,7 +60,7 @@ Print Assumptions bar.          (* -> Closed under the global context *)
 The control is the same lemma proved by the same tactic without `abstract`, and
 it reports `foo relies on an unsafe hierarchy.` correctly. `abstract` builds its
 side-effect constant with the *global* typing flags rather than the
-declaration's, so the taint never reaches the constant that holds the proof.
+declaration's, so the flag record never reaches the constant that holds the proof.
 Restoring `Set Universe Checking` afterwards does not change the answer.
 
 **Contained, and the harness measures it:** `rocqchk` rejects the `.vo`. That is
@@ -92,7 +92,7 @@ missing feature rather than a soundness bug, and unlike #12155/#16646 it is not
 in `dev/doc/critical-bugs.md`. It earns its place because of the shape, which is
 the same shape as [`KernelDefects/Coq/Checker/`](../KernelDefects/Coq/Checker/)
 and its companion measurement: **the verdict depends on the asker.** Where the
-taint sits; which tactic produced the constant; which flags the reader passed;
+flag record sits; which tactic produced the constant; which flags the reader passed;
 which mode the checker ran in. A verdict that varies with the asker is not a
 property of the artifact, and a CI script that records the verdict has recorded
 the asker.

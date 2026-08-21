@@ -1,5 +1,5 @@
 /-
-Loophole #2 (kernel, no axioms at all).
+Route #2 (kernel, no axioms at all).
 
 The Lean kernel has a hard-wired normalizer extension for `Nat` that is keyed on
 *names only*.  From `src/kernel/type_checker.cpp`:

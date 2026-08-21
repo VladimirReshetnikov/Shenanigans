@@ -1,4 +1,4 @@
-(** * Girard/Hurkens paradoxes in Coq, and the loophole that used to reach them
+(** * Girard/Hurkens paradoxes in Coq, and the route that used to reach them
 
     This is the Coq counterpart of [../Lean/] (Lean 4).  Nothing
     here is a defect in Coq.  Every [False] below is derived from a hypothesis
@@ -55,7 +55,7 @@ End RetractTypeIntoProp.
 
 Print Assumptions retract_type_prop_absurd.
 
-(** ** 3. The historical loophole: reaching the paradox without a hypothesis
+(** ** 3. The historical route: reaching the paradox without a hypothesis
 
     A submission to <https://github.com/codyroux/name-the-biggest-number>
     ([Shenannigans.v], by jakobbotsh, annotated "Works in 8.9.1") reached

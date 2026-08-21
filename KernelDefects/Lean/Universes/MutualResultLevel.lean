@@ -1,6 +1,6 @@
 /-
 MEASUREMENT (no `False` here).  The first of the two weaknesses behind
-ImaxPropLaundering.lean, isolated and measured on its own.
+ImaxPropSpelling.lean, isolated and measured on its own.
 
 `add_inductive_fn::check_inductive_types` (kernel/inductive.cpp:246) sets
 
@@ -44,8 +44,8 @@ run_cmd liftTermElabM do
   attempt "W : Sort (imax 1 0)                       -- alone"        [weirdT imax10]
   attempt "W : Sort (max 0 0)                        -- alone"        [weirdT max00]
   attempt "W : Sort 0                                -- alone"        [weirdT .zero]
-  attempt "D : Sort 0        , W : Sort (imax 1 0)   -- laundered"    [dummyT .zero, weirdT imax10]
-  attempt "D : Sort 0        , W : Sort (max 0 0)    -- laundered"    [dummyT .zero, weirdT max00]
+  attempt "D : Sort 0        , W : Sort (imax 1 0)   -- inherited"    [dummyT .zero, weirdT imax10]
+  attempt "D : Sort 0        , W : Sort (max 0 0)    -- inherited"    [dummyT .zero, weirdT max00]
   attempt "D : Sort (imax 1 0), W : Sort 0           -- REVERSED"     [dummyT imax10, weirdT .zero]
   attempt "D : Sort (max 0 0) , W : Sort 0           -- REVERSED"     [dummyT max00, weirdT .zero]
 
@@ -55,14 +55,14 @@ Expected on every released toolchain through v4.33.0-rc1:
   rejected  W : Sort (imax 1 0)                       -- alone
   rejected  W : Sort (max 0 0)                        -- alone
   ACCEPTED  W : Sort 0                                -- alone
-  ACCEPTED  D : Sort 0        , W : Sort (imax 1 0)   -- laundered
-  ACCEPTED  D : Sort 0        , W : Sort (max 0 0)    -- laundered
+  ACCEPTED  D : Sort 0        , W : Sort (imax 1 0)   -- inherited
+  ACCEPTED  D : Sort 0        , W : Sort (max 0 0)    -- inherited
   rejected  D : Sort (imax 1 0), W : Sort 0           -- REVERSED
   rejected  D : Sort (max 0 0) , W : Sort 0           -- REVERSED
 
 On `master` (after lean4#14615) the first two flip to ACCEPTED, because
 `check_constructors` now asks `normalizes_to_zero` instead of `is_zero`; the
-laundering therefore becomes unnecessary rather than blocked.  The first-type
+inheritance therefore becomes unnecessary rather than blocked.  The first-type
 inheritance itself is unchanged on master, and the REVERSED rows are expected to
 stay rejected there.  It is harmless there only because every gate that reads
 `m_result_level` became semantic in the same wave — a global invariant standing in

@@ -36,7 +36,7 @@ equivalence.**
 
 ## The construction
 
-Three honest pieces and one fraudulent step:
+Three honest pieces and one unsound step:
 
 ```
 AllSubsingleton.{u} := ∀ (α : Sort u) (x y : α), x = y
@@ -44,7 +44,7 @@ opaque Enc.{u} : { p : Prop // p = AllSubsingleton.{u} }
 
 HONEST   encZero     : Enc.{0}.val            -- Sort 0 = Prop; proof irrelevance
 HONEST   encOneFalse : Enc.{1}.val → False    -- Bool : Sort 1 has true ≠ false
-FRAUD    Candidate.{u} : Enc.{u}.val := encZero
+UNSOUND  Candidate.{u} : Enc.{u}.val := encZero
 ```
 
 `AllSubsingleton` is true at universe 0 and false at universe 1, so a proof of
@@ -71,7 +71,7 @@ That factor of two is load-bearing arithmetic, not pedantry: **2^30 = 1,073,741,
 is less than `INT_MAX` = 2,147,483,647.** A write-up claiming 2^30 occurrences
 overflow a signed 32-bit counter is claiming something false. 2^31 = `INT_MAX` + 1,
 so `depth = 30` is exactly the smallest depth that overflows. This report's first
-draft had it wrong, and an adversarial check caught it.
+draft had it wrong, and an independent check caught it.
 
 **Upstream disagrees with itself about the RAM.** The PR body says "at least
 18GB"; the reproducer's own docstring says "~12GB". Both are recorded; neither is
@@ -83,7 +83,7 @@ Artifact: [`Audits/Lean/Runtime/RefCountOverflow.lean`](../Audits/Lean/Runtime/R
 `#guard_msgs`-asserted, green on `v4.33.0` and `v4.34.0-rc1`.
 
 The `False` is **not** reproduced — that needs 12–18GB and the reproducer's
-commented-out `depth := 30`. What is measured is where the fraud is:
+commented-out `depth := 30`. What is measured is where the unsound step is:
 
 | | Result |
 | --- | --- |

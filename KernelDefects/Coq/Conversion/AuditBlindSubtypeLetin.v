@@ -74,7 +74,7 @@
        So the independent checker *can* catch rocq#22387: it re-typechecks the
        substituted functor body and finds `I` checked against a type that has
        become `False`.  rocq#21839 has no such safeguard anywhere.  Counting
-       #22387 as a peer would mean counting a construction whose only defence
+       #22387 as a peer would mean counting a construction whose only safeguard
        against the checker is that the module system stopped handing it a body.
 
        (`Print Assumptions contradiction` says `Closed under the global context`

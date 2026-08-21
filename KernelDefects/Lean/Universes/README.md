@@ -1,12 +1,12 @@
 # Universe-spelling defects
 
-> **Warning.** [`ImaxPropLaundering.lean`](ImaxPropLaundering.lean) contains a
+> **Warning.** [`ImaxPropSpelling.lean`](ImaxPropSpelling.lean) contains a
 > machine-checked proof of `False`. It is deliberately unsound, belongs to no
 > Lake package, is imported by nothing, and must never be.
 
 Category: [`KernelDefects/`](../../README.md) — closed `False`, clean audit, no
 flag, no `prelude`. Full write-up:
-[`Reports/2026-08-01-imax-prop-laundering.md`](../../../Reports/2026-08-01-imax-prop-laundering.md).
+[`Reports/2026-08-01-imax-prop-spelling.md`](../../../Reports/2026-08-01-imax-prop-spelling.md).
 
 ## The hole in one paragraph
 
@@ -23,15 +23,15 @@ its inhabitants while `infer_proj` hands you a `Bool` out of them.
 
 | File | What it is |
 | --- | --- |
-| [`ImaxPropLaundering.lean`](ImaxPropLaundering.lean) | The exhibit. `theorem Paradox : False`, `#print axioms` reports nothing, `lean --trust=0` exits 0. Both spellings of zero, each giving its own `False`. |
-| [`MutualResultLevel.lean`](MutualResultLevel.lean) | The laundering step measured on its own, with the order reversal as its control. No `False`. |
+| [`ImaxPropSpelling.lean`](ImaxPropSpelling.lean) | The exhibit. `theorem Paradox : False`, `#print axioms` reports nothing, `lean --trust=0` exits 0. Both spellings of zero, each giving its own `False`. |
+| [`MutualResultLevel.lean`](MutualResultLevel.lean) | The inheritance step measured on its own, with the order reversal as its control. No `False`. |
 | [`../Controls/ImaxPropControl.lean`](../Controls/ImaxPropControl.lean) | Control. The same construction with the sort spelled `Sort 0`; the kernel refuses the projection with `(kernel) invalid projection`, asserted by `#guard_msgs`. |
 
 ## The two steps, and which one upstream fixed
 
 The reproducer needs **two** independent weaknesses.
 
-**Laundering.** `check_inductive_types` (`kernel/inductive.cpp:248`) sets
+**Inheritance.** `check_inductive_types` (`kernel/inductive.cpp:248`) sets
 `m_result_level` from the **first** type of a mutual block and requires the rest
 only to be `is_equivalent` to it. `check_constructors` then admits a data field
 in an inductive predicate when `is_zero(m_result_level)` — syntactically. So a
@@ -49,7 +49,7 @@ restriction.
 by routing every `Prop`-hood decision through the new semantic
 `normalizes_to_zero`. That closes both spellings at once and is the right fix.
 
-**The laundering half is untouched on `master`,** and `MutualResultLevel.lean`
+**The inheritance half is untouched on `master`,** and `MutualResultLevel.lean`
 still reads the same there apart from the two "alone" rows, which #14615 turns
 from rejections into acceptances. It is harmless today only because every
 consumer of `m_result_level` became semantic in the same wave — a global

@@ -208,7 +208,7 @@ kernel is structurally unable to find that class.
   as much. That is not a remedy, for the reason the #14576 postmortem gives.
 * **Not a kernel defect.** It is a frontend defect that overrides a kernel gate, in
   the same family as the Lean Kernel Arena's *trusted-metadata* tests
-  (`ctor-num-fields`, `rec-k-lie`), where the checker is lied to about a
+  (`ctor-num-fields`, `rec-k-lie`), where the checker is misinformed about a
   declaration rather than reasoning wrongly about one.
 * **Not novel as a defect** — #14609 is upstream's, found and fixed in the July
   wave. What is new here is the artifact, the observation that `#print axioms` is

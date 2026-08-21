@@ -74,7 +74,7 @@ theorem extract (s : String) : Q s :=
     s
 
 /-- The kernel expands `"a"` into
-    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, fabricating a `Char`
+    `String.ofList (List.cons (Char.ofNat 97) List.nil)`, manufacturing a `Char`
     -- and hence an `Empty` -- out of the numeral 97. -/
 theorem boom : False := extract "a"
 

@@ -28,7 +28,7 @@ $ctl  = Join-Path (Split-Path $PSScriptRoot -Parent) 'Controls'
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("shenanigans-universes-" + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $work | Out-Null
 
-Copy-Item (Join-Path $src 'ImaxPropLaundering.lean') $work
+Copy-Item (Join-Path $src 'ImaxPropSpelling.lean') $work
 Copy-Item (Join-Path $src 'MutualResultLevel.lean')  $work
 Copy-Item (Join-Path $ctl 'ImaxPropControl.lean')    $work
 
@@ -38,8 +38,8 @@ $expectedTable = @(
   'rejected  W : Sort (imax 1 0)                       -- alone'
   'rejected  W : Sort (max 0 0)                        -- alone'
   'ACCEPTED  W : Sort 0                                -- alone'
-  'ACCEPTED  D : Sort 0        , W : Sort (imax 1 0)   -- laundered'
-  'ACCEPTED  D : Sort 0        , W : Sort (max 0 0)    -- laundered'
+  'ACCEPTED  D : Sort 0        , W : Sort (imax 1 0)   -- inherited'
+  'ACCEPTED  D : Sort 0        , W : Sort (max 0 0)    -- inherited'
   'rejected  D : Sort (imax 1 0), W : Sort 0           -- REVERSED'
   'rejected  D : Sort (max 0 0) , W : Sort 0           -- REVERSED'
 )
@@ -53,7 +53,7 @@ try {
 
     # 1. The exhibit.  `#guard_msgs` inside the file asserts that `#print axioms`
     #    reports nothing for every `False` it proves, so exit 0 IS the assertion.
-    $out = & elan run "leanprover/lean4:$tc" lean --trust=0 ImaxPropLaundering.lean 2>&1
+    $out = & elan run "leanprover/lean4:$tc" lean --trust=0 ImaxPropSpelling.lean 2>&1
     $ex  = $LASTEXITCODE
     Write-Output "  exhibit      lean --trust=0 -> exit $ex   (expect 0: False accepted, audit clean)"
     if ($ex -ne 0) { $out | ForEach-Object { "      $_" }; $failures++ }
@@ -65,7 +65,7 @@ try {
     Write-Output "  control      lean --trust=0 -> exit $ex   (expect 0: projection refused)"
     if ($ex -ne 0) { $out | ForEach-Object { "      $_" }; $failures++ }
 
-    # 3. The laundering measurement.
+    # 3. The inheritance measurement.
     $out = @(& elan run "leanprover/lean4:$tc" lean MutualResultLevel.lean 2>&1)
     $rows = @($out | Where-Object { $_ -match '^(ACCEPTED|rejected)' })
     Write-Output "  measurement  $($rows.Count) rows"
@@ -104,12 +104,12 @@ try {
     Write-Output ""
     Write-Output "=================== leanchecker ($tc) ==================="
     $env:LEAN_PATH = $work
-    & elan run "leanprover/lean4:$tc" lean -o ImaxPropLaundering.olean ImaxPropLaundering.lean 2>&1 |
+    & elan run "leanprover/lean4:$tc" lean -o ImaxPropSpelling.olean ImaxPropSpelling.lean 2>&1 |
       ForEach-Object { "  [lean] $_" }
     if ($LASTEXITCODE -ne 0) {
       Write-Output "  !! could not build the .olean"; $failures++
     } else {
-      & elan run "leanprover/lean4:$tc" leanchecker ImaxPropLaundering 2>&1 |
+      & elan run "leanprover/lean4:$tc" leanchecker ImaxPropSpelling 2>&1 |
         ForEach-Object { "  [leanchecker] $_" }
       $verdict = if ($LASTEXITCODE -eq 0) { 'accept' } else { 'reject' }
       Write-Output "  leanchecker -> $verdict   (expect accept: it shares Lean's own kernel)"

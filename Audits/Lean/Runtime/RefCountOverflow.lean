@@ -24,16 +24,16 @@ THE CONSTRUCTION, simplified from the PR's own reproducer (`tests/elab/14383.lea
 `vcgen` PR and is NOT this).  Upstream's declared type also carries two
 nondependent `let`s and an 8192-node `Nat.add` padding tree, which are omitted
 here; what is kept is the part the audit is about.  Three honest pieces and one
-fraudulent step:
+unsound step:
 
   AllSubsingleton.{u} := forall (a : Sort u) (x y : a), x = y
   opaque Enc.{u} : { p : Prop // p = AllSubsingleton.{u} }
 
   HONEST   encZero     : Enc.{0}.val          -- Sort 0 is Prop; proof irrelevance
   HONEST   encOneFalse : Enc.{1}.val -> False -- Bool : Sort 1 has true != false
-  FRAUD    Candidate.{u} : Enc.{u}.val := encZero
+  UNSOUND  Candidate.{u} : Enc.{u}.val := encZero
 
-The fraud is the universe generalisation: a proof of the `u := 0` instance is
+The unsound step is the universe generalisation: a proof of the `u := 0` instance is
 offered as a proof of the schematic `u`.  With `Candidate.{u}` in hand,
 `Candidate.{1}` feeds `encOneFalse` and gives `False`.
 
@@ -59,11 +59,11 @@ least 18GB", the reproducer's own docstring says "~12GB".  Both are recorded
 here; neither is measured.
 
 WHAT IS MEASURED BELOW, on v4.33.0 and v4.34.0-rc1.  Not the `False`.  What is
-measured is where the fraud is, and -- more usefully -- what the kernel's
+measured is where the unsound step is, and -- more usefully -- what the kernel's
 acceptance actually keys on:
 
   * the scaffold (`encZero`, `encOneFalse`) elaborates and typechecks;
-  * the fraudulent `Candidate.{u}` is REJECTED with a genuine
+  * the unsound `Candidate.{u}` is REJECTED with a genuine
     `(kernel) declaration type mismatch` at every depth tried (0, 1, 3, 8, 16);
   * a TRANSPARENT twin -- the same construction with `Enc` a plain `def` instead
     of `opaque` -- is rejected identically.  **So opacity is not what does the
@@ -71,7 +71,7 @@ acceptance actually keys on:
     wrong;
   * the discriminator is the **normal form of the level**.  A DAG that mentions
     `u`, and is just as large, but whose normal form is `0` -- `imax (maxDag u 8) 0`
-    -- is ACCEPTED.  That is the sharp control: it isolates the fraud to the
+    -- is ACCEPTED.  That is the sharp control: it isolates the unsound step to the
     level's normal form rather than to the DAG's size, to opacity, or to whether
     `u` occurs at all.
 
@@ -146,7 +146,7 @@ end RCOverflow
 open RCOverflow
 
 /--
-info: FRAUDULENT (a `u := 0` proof offered for schematic `u`), every depth tried:
+info: UNSOUND (a `u := 0` proof offered for schematic `u`), every depth tried:
   opaque      Enc.[maxDag u  0]   REJECTED  declaration type mismatch
   transparent EncD.[maxDag u  0]  REJECTED  declaration type mismatch
   opaque      Enc.[maxDag u  1]   REJECTED  declaration type mismatch
@@ -164,7 +164,7 @@ info: FRAUDULENT (a `u := 0` proof offered for schematic `u`), every depth tried
 #guard_msgs in
 run_meta do
   let env ← getEnv
-  let mut out := #["FRAUDULENT (a `u := 0` proof offered for schematic `u`), every depth tried:"]
+  let mut out := #["UNSOUND (a `u := 0` proof offered for schematic `u`), every depth tried:"]
   let mk (n c v : Name) (dag : Level) : Declaration :=
     .thmDecl { name := n, levelParams := [`u]
                type := mkProj ``Subtype 0 (mkConst c [dag]), value := mkConst v }

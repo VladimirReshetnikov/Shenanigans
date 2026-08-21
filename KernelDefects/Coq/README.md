@@ -82,7 +82,7 @@ filed 2026-08-18 and open. `rocqchk` typechecks each constant's body and then, i
 its `-bytecode-compiler yes` mode, performs VM conversions with bytecode read
 from the `.vo`'s separately serialised `vmlibrary` segment — with nothing tying
 the two together. Splice one honest compilation's body onto another's bytecode
-and a `<:` VMcast downstream cashes the lie.
+and a `<:` VMcast downstream cashes the misstatement.
 
 It is the only exhibit in this repository where **two modes of the same tool
 disagree about the same bytes**: `rocqchk -bytecode-compiler yes` certifies the

@@ -45,7 +45,7 @@ models. The correction, and what was wrong with the original argument, is
 
 | File | What it is | Needs |
 | --- | --- | --- |
-| [`EquivManagerMissingIH.lean`](EquivManagerMissingIH.lean) | `theorem inconsistent : False`, `#print axioms` clean. The def-eq cache was a **union-find**, so it answered from the transitive closure — but only for hash-colliding terms. A crafted `Expr.hash` collision makes a K-like reduction fire while the recursor's *minor premises* are built and not while its *rules* are built, so `Owner.rec`'s `step` premise takes four arguments and its rule supplies three. A `Prop`-valued application then reduces to `Bool`. | [lean4#14806](https://github.com/leanprover/lean4/pull/14806) |
+| [`EquivManagerMissingIH.lean`](EquivManagerMissingIH.lean) | `theorem inconsistent : False`, `#print axioms` clean. The def-eq cache was a **union-find**, so it answered from the transitive closure — but only for hash-colliding terms. A constructed `Expr.hash` collision makes a K-like reduction fire while the recursor's *minor premises* are built and not while its *rules* are built, so `Owner.rec`'s `step` premise takes four arguments and its rule supplies three. A `Prop`-valued application then reduces to `Bool`. | [lean4#14806](https://github.com/leanprover/lean4/pull/14806) |
 | [`EquivManagerStuckSort.lean`](EquivManagerStuckSort.lean) | The same cache, a different consequence: the order-dependent comparison decides an inductive family's **result sort**, so `Owner x h` is a `Prop` under `_kernel_fresh.0` and a stuck sort for the closed instantiation. `infer_proj` reads the stuck sort as "not a proposition" and hands out the hidden `Bool`. | #14806 **and** [#14807](https://github.com/leanprover/lean4/pull/14807) |
 | [`SubstStuckSort.lean`](SubstStuckSort.lean) | **The sharpest one: no cache at all.** `P := a = b` and `Q := a = c` are definitionally equal *types* whose proofs behave differently under `Eq.rec`'s K-like reduction, so a family declared over `P` is a family of propositions while its instance at a proof of `Q` has a sort that does not reduce. Every comparison comes out the same way in a fresh type-checker session, so #14806 alone does not close it. | #14807 |
 | [`DefEqHistoryDependence.lean`](DefEqHistoryDependence.lean) | The 2026-07-29 measurement of the union-find itself: the same non-transitivity, the engineered 32-bit hash collision, and the six-row table showing that acceptance depends on query order and on the collision. **Its header's "not unsoundness" claim is now marked as refuted.** No `False`; kept because the measurement is what the three above are built on. | — |
@@ -67,7 +67,7 @@ The three `False`s differ in what they need, and the difference is the point.
 
 #14807 is the **second** way `type_checker::is_prop` has been found wrong in
 three weeks. The first is
-[`../Universes/ImaxPropLaundering.lean`](../Universes/ImaxPropLaundering.lean)
+[`../Universes/ImaxPropSpelling.lean`](../Universes/ImaxPropSpelling.lean)
 ([#14613](https://github.com/leanprover/lean4/pull/14613)), which compared the
 sort *spelling* against `Prop` syntactically, and which is *also* live on every
 release. Six lines of C++, one `False` each.

@@ -110,7 +110,7 @@ documents a mechanism on its way out.
 **3. The audit is not the last line of safeguard — reading the statement is.**
 
 `Misreading.lean` and `Misreading.v` produce theorems that are entirely honest, fully
-closed, and accepted by every checker, whose displayed statements are lies. No
+closed, and accepted by every checker, whose displayed statements are misstatements. No
 assumption-tracking machinery in either system can catch this, and none is
 supposed to. The lexical half of the question — *which* confusable identifiers a
 system will actually accept — is studied systematically for Lean in

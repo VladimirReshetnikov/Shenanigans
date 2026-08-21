@@ -204,7 +204,7 @@ it is about:
 
 That is [#14613](https://github.com/leanprover/lean4/pull/14613) — the defect
 this repository exhibits in
-[`Universes/ImaxPropLaundering.lean`](../KernelDefects/Lean/Universes/ImaxPropLaundering.lean),
+[`Universes/ImaxPropSpelling.lean`](../KernelDefects/Lean/Universes/ImaxPropSpelling.lean),
 and *also* still live on every release. **This six-line function has now yielded
 two distinct axiom-free `False`s in three weeks**, one for each of its two ways of
 being wrong: comparing the sort spelling syntactically (#14613, fixed by making
@@ -293,7 +293,7 @@ what it is for, and it is worth being precise about which way each row cuts.
   landed. Kernels that construct the recursor independently reject the export.
 * For #14807, the third row is
   [`CATALOG.md`](../CATALOG.md) §3.0 happening **again**: `nanoda` accepted the
-  bogus proof too, so the official kernel and the main external checker agreed
+  ill-typed proof too, so the official kernel and the main external checker agreed
   and were both wrong. The postmortem's case had two *unrelated* bugs producing
   one agreement; here it is the same omission in both. `lean4lean` is unaffected
   for a reason worth recording — its `isProp` already used `ensureSortCore`, so

@@ -5,7 +5,7 @@
     `dev/doc/critical-bugs.md` and, before this file, from CATALOG.md.
 
     `abstract` generates its side-effect constant with the GLOBAL typing flags
-    rather than the declaration's local ones, so the taint the declaration
+    rather than the declaration's local ones, so the flag record the declaration
     carries is not recorded on the constant that actually holds the proof.
 
     `bar` and `foo` state the same thing and are proved by the same tactic under

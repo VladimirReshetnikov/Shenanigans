@@ -107,9 +107,12 @@ were verified on `4.33.0` and `4.34.0-rc1`.
 7. **Write about consistency, not about security.** The subject here is whether
    a formal system proves things that are false, and the vocabulary should say
    so. Prefer *construction*, *derivation*, *witness*, *probe*, *reachable*,
-   *deliberately constructed*, *hand-edited*, *misstate*, *safeguard*. Avoid
+   *deliberately constructed*, *hand-edited*, *misstate*, *safeguard*,
+   *unsound step*, *rely on*, *inheritance*, *non-normal spelling*, *re-label*.
+   Avoid
    *exploit*, *attack*, *spoof*, *adversarial*, *malicious*, *payload*,
-   *poison*, *victim*, *threat*, *tamper*, *defeat*. Nothing here is an intrusion
+   *poison*, *victim*, *threat*, *tamper*, *defeat*, *launder*, *fraud*,
+   *smuggle*, *get around*. Nothing here is an intrusion
    into anyone's system: a kernel that accepts `False` is a mathematical defect,
    and a file that produces one is a counterexample, not a weapon.
 
@@ -165,7 +168,7 @@ rejecting it, so a data field could be projected out of a proof. Three axiom-fre
 `False`s between them, all live on `v4.33.0` and `v4.34.0-rc1`, all reproduced
 here in [`KernelDefects/Lean/DefEq/`](KernelDefects/Lean/DefEq/). On two of the
 three, cross-checking worked as designed. On the third, **`nanoda` accepted the
-bogus proof too** — and unlike July's near-miss, which needed two unrelated bugs
+ill-typed proof too** — and unlike July's near-miss, which needed two unrelated bugs
 in two implementations, this is one omission present in both.
 [`Reports/2026-08-18-defeq-cache-and-stuck-sort.md`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md)
 works through it, including the correction it forces on this repository's own

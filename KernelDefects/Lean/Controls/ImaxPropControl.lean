@@ -1,5 +1,5 @@
 /-
-CONTROL for ../Universes/ImaxPropLaundering.lean.
+CONTROL for ../Universes/ImaxPropSpelling.lean.
 
 Same construction, honest spelling: the inductive's sort is written `Sort 0`
 rather than `Sort (imax 1 0)`.  Everything else — the `Bool` field in a `Prop`,

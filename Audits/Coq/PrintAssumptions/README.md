@@ -43,7 +43,7 @@ the same reachable set to report `bypass_check` flags:
 | [`GuardViaBody.v`](GuardViaBody.v) | the same flag through the **body** (control) | `Axioms: loop is assumed to be guarded.` |
 
 Same flag, same `Unset Guard Checking` fixpoint, two answers, decided by whether
-the taint sits in a type or a body.
+the flag record sits in a type or a body.
 
 Two precision points. The gap is constants that **have a body** — bodiless ones
 were always traversed, which is how `Axiom ax : nat` was ever reported at all.
@@ -67,7 +67,7 @@ Labelled `kind: inconsistency` upstream, closed 2026-04-24 with the fix on
 | the same lemma, same tactic, **without** `abstract` (control) | `foo relies on an unsafe hierarchy.` |
 
 `abstract` generates its side-effect constant with the *global* typing flags
-rather than the declaration's local ones, so the taint never lands on the
+rather than the declaration's local ones, so the flag record never lands on the
 constant that holds the proof.
 
 **Contained, and the harness measures the containment:** `rocqchk` rejects the
@@ -106,7 +106,7 @@ feature, not a soundness bug. Worth knowing anyway, because the fix (merged
 It is the same shape as [`../../../KernelDefects/Coq/Checker/`](../../../KernelDefects/Coq/Checker/),
 where `rocqchk` in one mode certifies a `False` that the same tool in its default
 mode rejects. In every case the audit's verdict depends on something other than
-the thing being audited — where the taint sits, which tactic produced the
+the thing being audited — where the flag record sits, which tactic produced the
 constant, which flags the reader passed, which mode the checker ran in. A
 verdict that varies with the asker is not a property of the artifact, and a CI
 script that records the verdict has recorded the asker.
