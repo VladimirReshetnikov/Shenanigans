@@ -892,11 +892,17 @@ closed by the same PR without a construction being built for it.
 This lands squarely on §4.7's asymmetry and on §1.2's hand-edited-`.vo` row, and it
 is the sharper form of both: not "neither system re-typechecks on import", but
 "the checker *does* re-typecheck, and then runs code it did not derive from what
-it checked". The Lean analogue would be `leanchecker` trusting a compiled-code
-segment of an `.olean`; it has none, because the kernel's only native hook is
-`Lean.reduceBool`, which `leanchecker` cannot replay at all
-([`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
-is this repo's measurement of exactly that).
+it checked". **The Lean analogue exists, corrected 2026-08-20.** `leanchecker`
+does not trust a compiled-code *segment* of an `.olean` — there is none — but it
+does hand the kernel's `Lean.reduceBool` hook to an interpreter, and it replays
+that hook rather than declining it. The interpreter resolves imported constants
+and not module-local ones, so the same axiom-free `False` is accepted or refused
+depending only on which module its evaluated constant sits in:
+[`Audits/Lean/Checkers/reducebool/`](Audits/Lean/Checkers/reducebool/). The
+earlier reading of
+[`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
+— that its rejection measured a structural inability — mistook that exhibit's
+module layout for a property of the checker.
 
 Coverage: **artifact** + **report** —
 [`KernelDefects/Coq/Checker/`](KernelDefects/Coq/Checker/),
@@ -1029,14 +1035,38 @@ re-typechecks the bodies — not the checksum, not the file list it prints — a
 #22352 is a hand-edited `.vo` that lies in the one segment the re-typechecking
 does not derive its answers from.
 
-The Lean column of this table is empty for a structural reason rather than a
-lucky one. `leanchecker` is not a second implementation carrying a second copy of
-a serialised artefact; it is Lean's own kernel replaying declarations. The only
-compiled-code hook the Lean kernel has is `Lean.reduceBool`, and `leanchecker`
-cannot replay it at all — which is why
+The Lean column of this table was recorded as empty "for a structural reason
+rather than a lucky one". **Corrected 2026-08-20: it was luck, and it has run
+out.** `leanchecker` is indeed not a second implementation carrying a second copy
+of a serialised artefact; it is Lean's own kernel replaying declarations. But the
+claim built on that — that the kernel's only compiled-code hook is
+`Lean.reduceBool`, that `leanchecker` "cannot replay it at all", and that this is
+why
 [`ReduceBoolFreeName.lean`](KernelDefects/Lean/Accelerators/ReduceBoolFreeName.lean)
-is the one exhibit in that directory `leanchecker` *rejects*. The failure mode in
-the first row needs the arrangement Rocq has and Lean does not.
+is the one exhibit in that directory `leanchecker` *rejects* — is false on
+v4.33.0, measured in
+[`Audits/Lean/Checkers/reducebool/`](Audits/Lean/Checkers/reducebool/).
+
+`leanchecker` **does** replay the hook. Its refusal of the module-local case
+names the declaration it was replaying:
+
+    uncaught exception: while replaying declaration 'rb_nativeL':
+    (kernel) (interpreter) unknown declaration 'probeL'
+
+The interpreter behind `reduce_native` resolves *imported* constants and not
+constants local to the module under replay. So moving `probe` into an imported
+module — a change that leaves the kernel's verdict, the proof term and
+`#print axioms` untouched — flips `leanchecker` from reject to **accept**, on an
+axiom-free `False` that then crosses a plain `import` with a clean audit. Four
+modules, three of them accepted at exit 0.
+
+The `False` itself is not new: it is the §2.3 free-name hook, closed upstream as
+working-as-intended ([lean4#13626](https://github.com/leanprover/lean4/issues/13626)),
+and it needs `prelude`. What is new is the checker's verdict on it, and that is
+precisely what this table is about. Rocq's checker trusts a spliced bytecode
+segment; Lean's checker trusts an interpreter whose constant resolution depends
+on module placement. **The first row's failure mode does not need an arrangement
+Lean lacks.**
 
 Write-up: [`Reports/2026-08-18-rocqchk-vm-bytecode.md`](Reports/2026-08-18-rocqchk-vm-bytecode.md).
 

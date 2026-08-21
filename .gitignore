@@ -60,3 +60,6 @@ Thumbs.db
 *.synctex.gz
 *.bbl
 *.blg
+
+# Lake regenerates this per-package; the repo has never tracked one
+lake-manifest.json

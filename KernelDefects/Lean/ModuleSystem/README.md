@@ -69,8 +69,10 @@ the defect is in the frontend rather than in the kernel it shares.
 | | |
 | --- | --- |
 | Upstream | [lean4#14609](https://github.com/leanprover/lean4/pull/14609), merged `master` 2026-07-30 (`d53dcb222f`), one character of substance: `defn.safety == .unsafe` → `defn.safety != .safe` |
-| Released toolchains carrying the fix | **none** |
-| On `releases/v4.33.0`? | **no** — that branch is still at `f839b65ba4` (#14577) |
+| Released toolchains carrying the fix | **`v4.33.0` and later**, corrected 2026-08-20 |
+| On `releases/v4.33.0`? | **yes.** The installed toolchain's own `src/lean/Lean/AddDecl.lean:121` reads `isUnsafe := defn.safety != .safe` — the one character of substance |
+| Measured both ways, 2026-08-20 | On the pinned `v4.32.2` the exhibit builds and `Paradox : False` is accepted. Under `v4.33.0` the same tree gives `error: Paradox/Consumer.lean:22:15: (kernel) invalid declaration, it uses unsafe declaration 'partialFalse'`, exit 1. **This directory is now a regression witness**, and `verify.ps1` defaults to the pinned `v4.32.2` where the defect is live — running it with `-Toolchains v4.33.0` reports the `Consumer` case as rejected, which is the fix landing, not a harness failure |
+| How the stale reading happened | The earlier "**none**" / "still at `f839b65ba4`" came from reading a source mirror checked out on `master`. **A source mirror is not evidence about a release branch** — read the toolchain elan actually runs |
 | `#print axioms` | **reports nothing** |
 | `leanchecker` | **rejects** (and did not exist before `v4.28.0`) |
 | Where the defect lives | `src/Lean/AddDecl.lean`, **not** `src/kernel/` |

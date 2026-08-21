@@ -5,9 +5,18 @@ citation. [`CATALOG.md`](../../../CATALOG.md) §2.5 says `nanoda` *"decides all
 three semantically"*; lean4#14613's commit message says *"`nanoda` rejects it"*.
 This directory runs it.
 
-Category ([`../../README.md`](../../README.md)): no `False` is produced here.
-The result is a measurement, and it is a **positive** one — the cross-checking
-safeguard works on the exact construction this repository ships an exhibit for.
+Category ([`../../README.md`](../../README.md)): no `False` is produced by *this*
+measurement. The result is a **positive** one — the cross-checking safeguard
+works on the exact construction this repository ships an exhibit for.
+
+**The other measurement in this directory came out the other way.**
+[`reducebool/`](reducebool/) asks the same kind of question about `leanchecker`
+rather than `nanoda`, and the answer is that `leanchecker` **exits 0 over an
+axiom-free `False`** — falsifying [`CATALOG.md`](../../../CATALOG.md) §4.7's
+claim that it "cannot replay `Lean.reduceBool` at all". Read the two together:
+an independent checker caught the laundered universe spelling, and a one-line
+rearrangement that changes nothing about the kernel's verdict gets a different
+`False` past the same class of tool.
 
 ## The question
 

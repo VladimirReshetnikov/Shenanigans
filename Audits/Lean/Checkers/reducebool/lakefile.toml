@@ -1,0 +1,6 @@
+name = "reducebool"
+defaultTargets = ["P"]
+
+[[lean_lib]]
+name = "P"
+roots = ["P.Base", "P.Boom", "P.Downstream", "P.LocalControl"]
