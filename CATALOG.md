@@ -200,6 +200,54 @@ does.
 > [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/) builds on `v4.32.2` and is
 > refused by `v4.33.0`.
 >
+> ## Corrected 2026-08-21, again, and this time within hours: `v4.33.1` shipped
+>
+> **`v4.33.1` was released 2026-08-21T12:02:41Z and `v4.34.0-rc2` at 11:42:29Z —
+> both *after* the sweep earlier the same day that produced the paragraphs
+> below.** They carry the entire August soundness batch, so the two items this
+> section spent the day calling "live on every released toolchain" are fixed on
+> the current stable. Checked the way this file keeps saying it should be —
+> exhibits re-run, not tracker re-read:
+>
+> * `src/kernel/equiv_manager.cpp` is **gone** at `v4.33.1` and `v4.34.0-rc2`
+>   and present at `v4.33.0` (#14806); `is_prop` uses `ensure_sort(infer_type(e))`
+>   at both new tags and not at `v4.33.0` (#14807); `check_recursors` appears
+>   twice in `inductive.cpp` at both and zero times at `v4.33.0` (#14808); and
+>   `LEAN_RC_STICKY` appears ten times in `lean.h` at both and zero times at
+>   `v4.33.0` (#14838).
+> * **All three [`DefEq/`](KernelDefects/Lean/DefEq/) exhibits are refused by
+>   `v4.33.1`**, each with `kernel error` and a failing `#guard_msgs` where the
+>   documented *"Kernel accepted `inconsistent : False`"* used to be, while
+>   `DefEqCollisionControl` is unchanged. They are **regression witnesses** now,
+>   and their harness stays pinned to `v4.33.0`.
+>
+> **What is left live on `v4.33.1` is one thing, and it is the row added below:**
+> [#14875](https://github.com/leanprover/lean4/issues/14875), measured here on
+> **five** toolchains — `v4.32.2`, `v4.33.0`, `v4.33.1`, `v4.34.0-rc1` and
+> `v4.34.0-rc2` — twenty assertions, all as documented.
+>
+> The methodology note is getting repetitive on purpose: this file has now been
+> wrong about release status **three times in three weeks**, in both directions.
+> First a `master` fix read as shipped, then a mirror on `master` read as a
+> release branch, and now a sweep overtaken by a patch release published while it
+> ran. The only procedure that has never been wrong is running the exhibit
+> against the tag.
+>
+> **Added 2026-08-21, a fifth pass** — written before `v4.33.1` appeared, and
+> the box above is the correction to it. Read "a fourth item" as **"the one item
+> still live on the current stable"**:
+> [#14875](https://github.com/leanprover/lean4/issues/14875), **open**, in which
+> a `public class inductive`'s generated recursor keeps a reference to a
+> declaration the producer saw only through `import all`, that dependency is
+> dropped from the exported view, and a downstream module binds the same global
+> name to something else. Measured here on **all five** of `v4.32.2`, `v4.33.0`,
+> `v4.33.1`, `v4.34.0-rc1` and `v4.34.0-rc2`: builds at exit 0, `#print axioms`
+> reports nothing, and both controls behave. So the module system now has one route closed
+> ([`ModuleSystem/paradox/`](KernelDefects/Lean/ModuleSystem/paradox/), #14609,
+> fixed in `v4.33.0`) and one open
+> ([`ModuleSystem/classrec/`](KernelDefects/Lean/ModuleSystem/classrec/)) —
+> and unlike the August pair, this one **`leanchecker` catches**.
+>
 > **What is actually live on `v4.33.0` and `v4.34.0-rc1`** is the August pair
 > plus its strengthening — [#14806](https://github.com/leanprover/lean4/pull/14806),
 > [#14807](https://github.com/leanprover/lean4/pull/14807) and
@@ -232,6 +280,7 @@ relation.
 | --- | --- | --- |
 | [#14806](https://github.com/leanprover/lean4/pull/14806) | **`master`-only fix (2026-08-17); live on every release.** The kernel cached successful `is_def_eq` queries in a **union-find** (`equiv_manager`), consulted whenever two expressions share an `Expr.hash`. Since the implemented `is_def_eq` is incomplete and therefore not transitive, exposing the union-find's transitive closure makes a query's answer depend on which unrelated queries ran earlier. Recursor construction calls `is_def_eq` to decide which constructor fields are recursive, calls it more than once, and assumes a stable answer: a constructed collision makes a K-like reduction fire while the **minor premises** are built and not while the **rules** are, so `Owner.rec`'s `step` premise takes four arguments and its rule supplies three. A `Prop`-valued application then reduces to `Bool`. **`#print axioms` reports nothing.** Two distinct constructions, both produced by an OpenAI agent. This is §2.6's def-eq history dependence, reclassified. | **artifact** ×2 + **report** — [`DefEq/EquivManagerMissingIH.lean`](KernelDefects/Lean/DefEq/EquivManagerMissingIH.lean), [`DefEq/EquivManagerStuckSort.lean`](KernelDefects/Lean/DefEq/EquivManagerStuckSort.lean), [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md). **Verified here** on `v4.33.0` and `v4.34.0-rc1`; controls rejected on both |
 | [#14807](https://github.com/leanprover/lean4/pull/14807) | **`master`-only fix (2026-08-18); live on every release.** `type_checker::is_prop` computed `whnf(infer_type(e))` and returned `false` when the result was a **stuck term rather than a sort** — but `false` means "not a proposition", so `infer_proj` skipped its proof-irrelevance guard and let a data field out of a proof. A value whose type does not reduce to a sort is ill-formed and should be *rejected*, not answered about; the fix uses `ensure_sort`. **The second distinct way `is_prop` has been found wrong in three weeks**, after #14613's syntactic sort comparison — same six lines of code, one `False` each, and #14613 is *also* still live. The sharpest witness needs nothing from #14806's cache: `P := a = b` and `Q := a = c` are definitionally equal types whose proofs behave differently under K-like reduction, so an inductive family declared over `P` is a family of propositions while its instance at a proof of `Q` has a sort that does not reduce. **Also accepted by `nanoda`** — §3.0 happening a second time. `lean4lean` never had it: its `isProp` already used `ensureSortCore`. | **artifact** + **report** — [`DefEq/SubstStuckSort.lean`](KernelDefects/Lean/DefEq/SubstStuckSort.lean), [`Reports/2026-08-18-defeq-…`](Reports/2026-08-18-defeq-cache-and-stuck-sort.md). **Verified here** on `v4.33.0` and `v4.34.0-rc1`; control rejected on both |
+| [#14875](https://github.com/leanprover/lean4/issues/14875) | **OPEN, reported 2026-08-21; live on every release including today's `v4.33.1` and `v4.34.0-rc2` — the only Lean route in this catalog still live on the current stable.** A `public class inductive`'s generated recursor retains a reference to a declaration the producer saw only through `import all`. That dependency is **omitted from the producer's exported view**, so a downstream module may bind the same global name to a different declaration — and the recursor, *checked* against the producer's `ClassHidden := False`, is *interpreted* against the consumer's one-constructor `ClassHidden`. The minor premise's induction hypothesis then accepts the consumer's `ClassHidden.intro` and returns the `False` the original type promised. **`#print axioms` reports nothing.** Not a `src/kernel/` defect — it is the module system's export view, the same layer as #14609, which makes this directory's second exhibit. Reported by @nielstron, and credited in the issue body to **GPT 5.6 Sol** — the fourth distinct model-driven wave this catalog records, after Lean's July and August waves and the 2026-08-20 Rocq wave. | **artifact** — [`ModuleSystem/classrec/`](KernelDefects/Lean/ModuleSystem/classrec/). **Verified here** on `v4.32.2`, `v4.33.0`, `v4.33.1`, `v4.34.0-rc1` and `v4.34.0-rc2` — twenty assertions: exit 0 with a `#guard_msgs`-asserted clean audit, **`leanchecker` rejects** (`constant has already been declared 'ClassHidden'`), and two controls — replacing `import all` with a plain `import` stops the producer building, and withdrawing the consumer's redefinition gives `Unknown constant ClassHidden`, which is the missing-dependency claim stated as a measurement |
 | [#14609](https://github.com/leanprover/lean4/pull/14609) | **`master`-only fix; live on every release.** A `module` publishes a definition whose body stays private as an axiom stub, and `addDeclCore` (`src/Lean/AddDecl.lean:118`) built it with `isUnsafe := defn.safety == .unsafe` — false for `.partial`. The kernel accepts a `partial` definition of type `False` (a `partial` mutual block has no inhabitance obligation), the boundary re-labels it as a *safe* axiom, and both of `infer_constant`'s gates miss: the first because `is_unsafe()` says false, the second because it inspects definitions and a stub is an axiom. **`#print axioms` reports nothing**; `leanchecker` rejects. Not a `src/kernel/` defect, which is why §5.2's first pass missed it. | **artifact** + **report** — [`ModuleSystem/`](KernelDefects/Lean/ModuleSystem/), [`Reports/2026-08-01-module-boundary-…`](Reports/2026-08-01-module-boundary-partial-stub.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected and `leanchecker` rejects on all of them |
 | [#14613](https://github.com/leanprover/lean4/pull/14613) | **`master`-only fix; live on every release.** `type_checker::is_prop` compares `whnf(infer_type(e))` against `Prop` syntactically, so `Sort (imax 1 0)` — which denotes `Prop` — is a proposition for proof irrelevance and not one for `infer_proj`'s field restriction. Projecting a `Bool` out of two proofs of it gives `false = true`. See §2.2 for the fix and §2.6 for the *second* weakness the reproducer needs. | **artifact** + **report** — [`Universes/ImaxPropSpelling.lean`](KernelDefects/Lean/Universes/ImaxPropSpelling.lean), [`Reports/2026-08-01-imax-prop-…`](Reports/2026-08-01-imax-prop-spelling.md). **Verified here** on `v4.27.0-rc1` … `v4.33.0-rc1`; control rejected on all of them |
 | [#14616](https://github.com/leanprover/lean4/pull/14616) | **`master`-only fix; live on every release.** An inductive declaration may name one of the kernel's transient `_nested` auxiliary types, and `restore_nested` then rewrites the name back to a type in a different universe, leaving a stored constructor that is ill typed; `equiv_manager` closes the consequences transitively. Cannot be captured as an arena export test, so **no artifact exists anywhere**. | **gap** — the highest-value remaining item in §5 |
@@ -408,6 +457,7 @@ accepts for well-formed input.
 
 | Finding | Nature | Coverage |
 | --- | --- | --- |
+| **#14807's fix does not reach `inductive.h`** — and upstream shipped exactly that one day later | `type_checker::is_prop` was fixed by #14807 to use `ensure_sort`, but `to_cnstr_when_structure` (`src/kernel/inductive.h`) **hand-inlines the same predicate** and was left on the old `whnf`-and-match form. Filed here 2026-08-18 as a draft upstream report, with the source claim verified against both branches and the behavioural claim measured on `v4.33.0`; it was explicitly **not** a `False` on any toolchain and said so. [lean4#14843](https://github.com/leanprover/lean4/pull/14843) — *"fix: apply #14807 fix to `inductive.h`"*, same two files — was opened and merged 2026-08-19 by the author of #14807. **No causal claim is made**: the report was never sent, and upstream was auditing the same code the same week. What it establishes is that reading for the *copies* of a just-patched check is a productive method, and that this one found what upstream found. | **report** — [`Reports/2026-08-18-upstream-14807-incomplete.md`](Reports/2026-08-18-upstream-14807-incomplete.md). Fix present in `v4.33.1` and `v4.34.0-rc2`, absent from `v4.33.0` |
 | `Nat` accelerator family (`Nat.add`, `Nat.beq`, and the nine free names under `Init.Prelude`) | Kernel normalizer extensions keyed on *names only*, tried before delta-reduction; two disagreeing reduction rules give `False`. Out of scope upstream per §2.3. | **artifact** + **report** — [`Reports/2026-07-28-…`](Reports/2026-07-28-lean-kernel-nat-accelerator-unsoundness.md) |
 | `StringLitEmptyInhabitant` | Expanding a *string literal* makes the kernel assemble a term by name and hand it to a recursor rule **without type-checking it**, manufacturing an inhabitant of `Empty`. The most severe failure mode of the family. | **artifact** |
 | Comparator `accepted/` | [`leanprover/comparator`](https://github.com/leanprover/comparator) checks only that challenge and solution *agree* on kernel primitives, never that the primitives are genuine; a challenge that does not import `Init` gets no protection. | **artifact** — [`Comparator/`](KernelDefects/Lean/Comparator/) |
@@ -424,6 +474,14 @@ accepts for well-formed input.
 | `is_not_zero` differential sweep | `is_not_zero` is the one level predicate the July 2026 wave did **not** convert to a semantic test, and it is read *before* the "mutual ⟹ `Prop`-only" and "more than one constructor ⟹ `Prop`-only" branches of `elim_only_at_universe_zero` — so a false positive there hands an inductive predicate a data-eliminating recursor. Fuzzed through the observable channel (declare a 2-constructor inductive at the level, read whether the recursor gained an elimination universe) against the denotational "can this level be zero?". 360 level spellings to depth 3, 91 large-eliminating: **0 unsound**. | **negative result** — [`Audits/Lean/Fuzz/IsNotZeroFuzzer.lean`](Audits/Lean/Fuzz/IsNotZeroFuzzer.lean) |
 
 ### 2.7 Runtime defects: memory safety below the logic
+
+> **Status corrected 2026-08-21: fixed on stable.** `v4.33.1`, released
+> 2026-08-21T12:02:41Z, carries #14838 — `LEAN_RC_STICKY` appears ten times in
+> `src/include/lean/lean.h` at that tag and zero times at `v4.33.0`, and the same
+> holds at `v4.34.0-rc2`. The paragraphs below were written on 2026-08-20 while
+> it was live on every release, and are kept as written. The category stays: it
+> is still the only entry in this file whose fix touches neither `src/kernel/`
+> nor `src/Lean/`, and that is what it was opened to record.
 
 A category opened on **2026-08-20** by a single entry, and it is a category
 rather than a row because nothing else in §2 sits where it does. §2.1–2.3 are
@@ -862,6 +920,7 @@ you, so the divergence needs a companion file compiled as an expected failure.
 
 | Issue | Mechanism | Affected | Fixed | Coverage |
 | --- | --- | --- | --- | --- |
+| [#22387 comment](https://github.com/rocq-prover/rocq/issues/22387#issuecomment-5357992278) | **A second, distinct route in the same thread, and not the issue body.** Module subtyping does not compare an inductive's let-in **parameters** (nor constructor-argument defaults referring to them), so a functor compiled against `Inductive I (n := 0) := C (m:=n)` accepts `Module MI. Inductive I (n:=1) := C (m:=n).` — and both `A.getm MI.C = 0` and `= 1` typecheck as `eq_refl`. `discriminate` closes it. Reported by Gaëtan Gilbert 2026-08-20, who states it is **not** caught by the #22387 fix ([PR #22394](https://github.com/rocq-prover/rocq/pull/22394), still **OPEN** as of 2026-08-21). | 9.2.0 | **no** | **artifact** — [`ModuleSystem/LetinParamSubtyping.v`](KernelDefects/Coq/ModuleSystem/LetinParamSubtyping.v). **Verified here** on 9.2.0: `rocq c` exit 0 with `Print Assumptions bad` reporting *Closed under the global context*, and **`rocqchk` REJECTS** it — `Fatal Error: Type error: ActualType` at `cst:T.A.getm_spec`, exit 129. That is the interesting half: its sibling [`LetinOrderSubtyping.v`](KernelDefects/Coq/ModuleSystem/LetinOrderSubtyping.v) (the issue body) is **accepted** by `rocqchk`, so one subsystem now yields two routes that differ exactly in whether the independent checker sees through them — see §4.7 |
 | [#15838](https://github.com/rocq-prover/rocq/issues/15838) | Module subtyping allows contravariant `Prop ⊆ Type`, disrespecting squashing → Hurkens | ~7.4–8.15.0 | 8.15.1 | **gap** |
 | [#18503](https://github.com/rocq-prover/rocq/issues/18503) | `Primitive` in a Module Type bypasses subtyping conversion | 8.11.0–8.18.0 | 8.19.0 | **gap** |
 | [#21051](https://github.com/rocq-prover/rocq/issues/21051) | Missing substitution when strengthening functors; `Include` corrupts the delta-resolver → `true = false` | kernel 8.5–9.0.0 | 9.0.1 | **gap** |

@@ -1,5 +1,24 @@
 # Draft upstream report: lean4#14807's fix does not reach `inductive.h`
 
+> ## Upstream shipped exactly this, one day later
+>
+> **[lean4#14843](https://github.com/leanprover/lean4/pull/14843), "fix: apply
+> #14807 fix to `inductive.h`", opened and merged 2026-08-19 by Leonardo de
+> Moura — files changed: `src/kernel/inductive.h` and
+> `src/kernel/type_checker.cpp`.** That is this report's claim, its file, and its
+> remedy, filed here on 2026-08-18 and closed upstream the next day.
+>
+> This report was never sent. There is no evidence it caused the fix, and it
+> would be dishonest to imply otherwise — upstream was auditing the same code in
+> the same week, and #14843's author also wrote #14807. What it does establish is
+> that **the analysis was right**: a hand-inlined copy of a predicate that had
+> just been fixed centrally is a real defect class, and reading for the *copies*
+> of a patched check found the same follow-up upstream found.
+>
+> The fix is in `v4.33.1` (released 2026-08-21T12:02Z) and `v4.34.0-rc2`; it is
+> absent from `v4.33.0`. Kept as written for the record, with the status corrected
+> rather than the prose rewritten.
+
 **Intended recipient:** a follow-up comment on
 [leanprover/lean4#14807](https://github.com/leanprover/lean4/pull/14807), or a
 new issue referencing it. Written to be pasted; the prose below is the report,

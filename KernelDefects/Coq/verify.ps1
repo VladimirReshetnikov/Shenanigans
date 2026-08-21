@@ -77,6 +77,7 @@ $cases = @(
   @{ Name = 'GuardChecker/UniformArgsLetBinderControls'; Path = 'GuardChecker/UniformArgsLetBinderControls.v'; Expect = 'reject'; Needle = 'Recursive definition of russell_zeta is ill-formed' },
   @{ Name = 'GuardChecker/UniformArgsLetBinderRequire'; Path = 'GuardChecker/UniformArgsLetBinderRequire.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
   @{ Name = 'ModuleSystem/LetinOrderSubtyping'; Path = 'ModuleSystem/LetinOrderSubtyping.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'accept' },
+  @{ Name = 'ModuleSystem/LetinParamSubtyping'; Path = 'ModuleSystem/LetinParamSubtyping.v'; Expect = 'accept'; Needle = 'Closed under the global context'; Coqchk = 'reject' },
   @{ Name = 'ModuleSystem/LetinOrderSubtypingControls'; Path = 'ModuleSystem/LetinOrderSubtypingControls.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
   @{ Name = 'ModuleSystem/LetinOrderSubtypingEscape'; Path = 'ModuleSystem/LetinOrderSubtypingEscape.v'; Expect = 'accept'; Needle = 'Closed under the global context' },
   @{ Name = 'ModuleSystem/LetinOrderSubtypingUnsealed'; Path = 'ModuleSystem/LetinOrderSubtypingUnsealed.v'; Expect = 'accept'; Needle = 'Closed under the global context' },

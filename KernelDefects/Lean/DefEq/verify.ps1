@@ -4,6 +4,16 @@
 #   pwsh KernelDefects/Lean/DefEq/verify.ps1 -Toolchains v4.33.0,v4.34.0-rc1
 #   pwsh KernelDefects/Lean/DefEq/verify.ps1 -SkipLeanChecker
 #
+# STATUS CHANGED 2026-08-21: these are REGRESSION WITNESSES now, not live
+# defects.  `v4.33.1` shipped 2026-08-21T12:02Z carrying #14806, #14807 and
+# #14808, and all three exhibits here are refused by it -- measured, not read
+# off the tracker: each reports `kernel error` and its `#guard_msgs` fails
+# because the documented "Kernel accepted `inconsistent : False`" no longer
+# holds, while DefEqCollisionControl is unchanged.  The default `-Toolchains`
+# below therefore stays at `v4.33.0`, the newest release that still has them,
+# exactly as ../ModuleSystem/paradox/ is pinned to `v4.32.2` for #14609.
+# Running with `-Toolchains v4.33.1` is EXPECTED to report four deviations.
+#
 # These modules are NOT `prelude` (they import `Lean`), so they get their own
 # script rather than joining ../verify.ps1's loop, for the same reason
 # ../Universes/verify.ps1 does: `leanchecker --fresh` on that closure re-checks
